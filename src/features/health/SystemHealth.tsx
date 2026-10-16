@@ -215,7 +215,7 @@ export default function SystemHealth() {
             unit="°C"
             warn={78}
             danger={88}
-            subLabel="RTX 4090"
+            subLabel="Central GPU Node A"
           />
 
           {/* 5. Memory (RAM) % */}

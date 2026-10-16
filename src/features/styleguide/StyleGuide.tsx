@@ -159,7 +159,7 @@ export default function StyleGuide() {
               <div className="font-mono text-sm space-y-1">
                 <div className="tabular">8.3800°N 76.9820°E · Alt 120 m · Hdg 042°</div>
                 <div className="tabular">14:31:09 IST  ·  SHA-256: 9f3a2c8d1e4f…</div>
-                <div className="tabular">C-1042  ·  ALC-2026-001  ·  M-2026-0415</div>
+                <div className="tabular">C-1042  ·  ALR-20261016-0001  ·  MSN-20261016-0830-01-VIZHINJAM</div>
               </div>
             </div>
           </div>

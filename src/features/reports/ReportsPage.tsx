@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn, formatIST } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
+import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
 import type { PoliceReport, PoliceReportType } from '@/types';
 
 const FORMAL_REPORT_TEMPLATES: Array<{
@@ -374,6 +375,9 @@ export default function ReportsPage() {
           </table>
         </div>
       </div>
+
+      {/* ── Decision-Support Legal Disclaimer Footer (Rule 7) ── */}
+      <HumanInterpretationNote className="mt-4" />
     </div>
   );
 }

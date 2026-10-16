@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { AnomalyRecord, AnomalyType } from '@/types';
+import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
 
 // Mock anomalies
 const INITIAL_ANOMALIES: AnomalyRecord[] = [
@@ -522,9 +523,7 @@ export default function AnomalyMonitorPage() {
       </div>
 
       {/* ── Decision-Support Legal Disclaimer Footer (Rule 7) ── */}
-      <footer className="text-center py-2 text-[11px] font-mono opacity-60 border-t border-[var(--line)]" style={{ color: 'var(--text-muted)' }}>
-        Observed behaviour only. Operational interpretation and action rest with authorised Kerala Police personnel.
-      </footer>
+      <HumanInterpretationNote className="mt-4" />
     </div>
   );
 }

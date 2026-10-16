@@ -615,8 +615,8 @@ export default function PersonReidPage() {
                     )}
                   >
                     {dispatchedAlerts.includes(selectedRecord.trackId)
-                      ? '✓ PATROL UNITS DISPATCHED'
-                      : 'DISPATCH INTERCEPT PATROL'}
+                      ? '✓ PATROL RECOMMENDATION LOGGED'
+                      : 'RECOMMEND PATROL RESPONSE'}
                   </button>
                 )}
               </div>

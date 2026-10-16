@@ -11,11 +11,13 @@ import {
   FileText, Shield, Cpu, Users, Radio,
   ChevronRight, LogOut, Sun, Moon, Laptop,
   AlertTriangle, Activity, Database, Terminal, PanelLeftClose, PanelLeft,
-  Car, ScanFace, ShieldAlert, AlertOctagon
+  Car, ScanFace, ShieldAlert, AlertOctagon, Grid, Sliders, Settings2,
+  Server, Network, ScrollText, CheckSquare, PackageSearch, FolderArchive, Info
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { cn, formatPct } from '@/lib/utils';
 import { ISTClock } from '@/components/ISTClock';
+import { AboutDialog } from '@/components/AboutDialog';
 import { useAlertStore, useAuthStore, useThemeStore, useHealthStore, useMissionStore, useLanguageStore } from '@/lib/store';
 import { t, type TranslationKey } from '@/lib/i18n';
 import { simulator } from '@/lib/simulator';
@@ -41,36 +43,58 @@ const ALL_ROLES: UserRole[] = ['OPERATOR', 'ANALYST', 'SUPERVISOR', 'ZONE_ADMIN'
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: 'Tactical Ops',
-    titleMl: 'ടാക്ടിക്കൽ ഓപ്സ്',
+    title: 'Operations',
+    titleMl: 'ഓപ്പറേഷൻസ്',
     items: [
       { to: '/',                 labelKey: 'nav_command_center', defaultLabel: 'Command Center',     icon: LayoutDashboard, roles: ALL_ROLES },
       { to: '/live',             labelKey: 'nav_live',           defaultLabel: 'Live Monitor',       icon: Monitor,         roles: ALL_ROLES },
-      { to: '/alerts',           labelKey: 'nav_alerts',         defaultLabel: 'Alerts',             icon: Bell,            roles: ALL_ROLES },
-      { to: '/missions',         labelKey: 'nav_missions',       defaultLabel: 'Missions & Sorties', icon: Anchor,          roles: ALL_ROLES },
+      { to: '/fleet-wall',       labelKey: 'nav_fleet_wall',     defaultLabel: 'Fleet Wall (20 Feeds)', icon: Grid,         roles: ALL_ROLES },
       { to: '/map',              labelKey: 'nav_map',            defaultLabel: 'Map / GIS',          icon: Map,             roles: ALL_ROLES },
-      { to: '/history',          labelKey: 'nav_history',        defaultLabel: 'History Playback',   icon: History,         roles: ALL_ROLES },
+      { to: '/missions',         labelKey: 'nav_missions',       defaultLabel: 'Missions & Sorties', icon: Anchor,          roles: ALL_ROLES },
+      { to: '/alerts',           labelKey: 'nav_alerts',         defaultLabel: 'Alerts',             icon: Bell,            roles: ALL_ROLES },
     ]
   },
   {
-    title: 'AI Analytics',
-    titleMl: 'എ.ഐ അനലിറ്റിക്സ്',
+    title: 'Intelligence',
+    titleMl: 'ഇന്റലിജൻസ്',
     items: [
-      { to: '/crowd-analytics',    labelKey: 'nav_crowd',     defaultLabel: 'Crowd Analytics',     icon: Users,           roles: ALL_ROLES },
-      { to: '/vehicle-maritime',   labelKey: 'nav_vehicle',   defaultLabel: 'Vehicle & Maritime',  icon: Car,             roles: ALL_ROLES },
-      { to: '/person-reid',        labelKey: 'nav_reid',      defaultLabel: 'Person Re-ID',        icon: ScanFace,        roles: ALL_ROLES },
-      { to: '/intrusion-detection',labelKey: 'nav_intrusion', defaultLabel: 'Intrusion Geofence',  icon: ShieldAlert,     roles: ALL_ROLES },
-      { to: '/anomaly-monitor',    labelKey: 'nav_anomaly',   defaultLabel: 'Anomaly Monitor',     icon: AlertOctagon,    roles: ALL_ROLES },
+      { to: '/contacts',         labelKey: 'nav_contacts',       defaultLabel: 'Contacts',           icon: Radio,           roles: ALL_ROLES },
+      { to: '/vehicle-maritime', labelKey: 'nav_vehicle',        defaultLabel: 'Vehicle & Maritime',  icon: Car,             roles: ALL_ROLES },
+      { to: '/crowd-analytics',  labelKey: 'nav_crowd',          defaultLabel: 'Crowd & Persons',    icon: Users,           roles: ALL_ROLES },
+      { to: '/intrusion-detection', labelKey: 'nav_intrusion',   defaultLabel: 'Intrusion & Geofence', icon: ShieldAlert,   roles: ALL_ROLES },
+      { to: '/anomaly-monitor',  labelKey: 'nav_anomaly',        defaultLabel: 'Anomaly & Behaviour', icon: AlertOctagon,   roles: ALL_ROLES },
+      { to: '/abandoned-objects',labelKey: 'nav_abandoned',      defaultLabel: 'Abandoned Objects',  icon: PackageSearch,   roles: ALL_ROLES },
+      { to: '/person-reid',      labelKey: 'nav_reid',           defaultLabel: 'Person Re-ID (Optional)', icon: ScanFace,    roles: ALL_ROLES },
     ]
   },
   {
-    title: 'System & Reports',
-    titleMl: 'സിസ്റ്റം & റിപ്പോർട്ടുകൾ',
+    title: 'Evidence & Review',
+    titleMl: 'തെളിവുകൾ & അവലോകനം',
     items: [
-      { to: '/reports',          labelKey: 'nav_reports', defaultLabel: 'Police Reports',    icon: FileText,        roles: ALL_ROLES },
-      { to: '/models',           labelKey: 'nav_models',  defaultLabel: 'AI Models Cluster', icon: Cpu,             roles: ALL_ROLES },
-      { to: '/health',           labelKey: 'nav_health',  defaultLabel: 'System Health',     icon: Activity,        roles: ALL_ROLES },
-      { to: '/admin',            labelKey: 'nav_admin',   defaultLabel: 'Administration',    icon: Shield,          roles: ['SYS_ADMIN', 'SUPERVISOR', 'AUDITOR'] },
+      { to: '/history',          labelKey: 'nav_history',        defaultLabel: 'History & Playback', icon: History,         roles: ALL_ROLES },
+      { to: '/incidents',        labelKey: 'nav_incidents',      defaultLabel: 'Incident Records',   icon: FolderArchive,   roles: ALL_ROLES },
+      { to: '/reports',          labelKey: 'nav_reports',        defaultLabel: 'Reports',            icon: FileText,        roles: ALL_ROLES },
+    ]
+  },
+  {
+    title: 'Configuration',
+    titleMl: 'കോൺഫിഗറേഷൻ',
+    items: [
+      { to: '/config/zones',     labelKey: 'nav_config_zones',   defaultLabel: 'Zones & Context',    icon: Sliders,         roles: ALL_ROLES },
+      { to: '/config/alerts',    labelKey: 'nav_config_alerts',  defaultLabel: 'Alert Configuration',icon: Settings2,       roles: ALL_ROLES },
+      { to: '/models',           labelKey: 'nav_models',         defaultLabel: 'AI Models & Datasets', icon: Cpu,           roles: ALL_ROLES },
+    ]
+  },
+  {
+    title: 'Platform',
+    titleMl: 'പ്ലാറ്റ്ഫോം',
+    items: [
+      { to: '/deployment',       labelKey: 'nav_deployment',     defaultLabel: 'Deployment & Compute', icon: Server,        roles: ALL_ROLES },
+      { to: '/integrations',     labelKey: 'nav_integrations',   defaultLabel: 'API & Integrations', icon: Network,         roles: ALL_ROLES },
+      { to: '/health',           labelKey: 'nav_health',         defaultLabel: 'System Health',      icon: Activity,        roles: ALL_ROLES },
+      { to: '/admin',            labelKey: 'nav_admin',          defaultLabel: 'Administration',     icon: Shield,          roles: ALL_ROLES },
+      { to: '/audit',            labelKey: 'nav_audit',          defaultLabel: 'Audit Log',          icon: ScrollText,      roles: ALL_ROLES },
+      { to: '/acceptance',       labelKey: 'nav_acceptance',     defaultLabel: 'Acceptance Console', icon: CheckSquare,     roles: ALL_ROLES },
     ]
   }
 ];
@@ -81,6 +105,7 @@ const ROLES: UserRole[] = ['OPERATOR', 'ANALYST', 'SUPERVISOR', 'ZONE_ADMIN', 'S
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   const { user, devRole, logout, setDevRole } = useAuthStore();
   const { mode, setMode, resolveTheme, resolved } = useThemeStore();
@@ -533,10 +558,19 @@ export function AppShell() {
           <TideBarItem icon={<Cpu      className="w-3.5 h-3.5" />}  label="GPU"     value={formatPct(health.gpuUsagePct)}                                    ok={health.gpuUsagePct < 85} />
           <TideBarItem icon={<Database className="w-3.5 h-3.5" />}  label="Storage" value={formatPct(health.storageUsagePct)}                                ok={health.storageUsagePct < 85} />
           <TideBarItem icon={<Terminal className="w-3.5 h-3.5" />}  label="Edge"    value={`${health.edgeNodes.filter(n => n.isOnline).length}/${health.edgeNodes.length}`}  ok={health.edgeNodes.every(n => n.isOnline)} />
-          <TideBarItem icon={<Database className="w-3.5 h-3.5" />}  label="DB"      value={health.dbStatus}                                                  ok={health.dbStatus === 'OK'} />
-          <div className="ml-auto flex-shrink-0 opacity-50 font-mono text-[11px]">SmartQEye v1.2.0 · Kerala Coastal Police</div>
+          <button
+            onClick={() => setAboutOpen(true)}
+            className="ml-auto flex-shrink-0 opacity-70 hover:opacity-100 hover:underline font-mono text-[11px] flex items-center gap-1.5 transition-opacity cursor-pointer"
+            title="Click to view Platform & Build specifications"
+          >
+            <span>SmartQEye v1.2.0-coastal · Kerala Coastal Police</span>
+            <Info className="w-3.5 h-3.5 text-[var(--sea-600)]" />
+          </button>
         </footer>
       </div>
+
+      {/* About Platform Modal */}
+      <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
     </div>
   );
 }

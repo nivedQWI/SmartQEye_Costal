@@ -327,9 +327,9 @@ function PreviewPane({ alert, onClose }: { alert: Alert; onClose: () => void }) 
           <button
             className="flex-1 py-1.5 rounded-xl text-xs border font-medium transition-colors hover:bg-orange-50 dark:hover:bg-orange-900/20"
             style={{ borderColor: 'var(--sev-high)', color: 'var(--sev-high)' }}
-            onClick={() => alert.event.type && console.log('escalate')}
+            onClick={() => navigate(`/alerts/${alert.id}`)}
           >
-            <ArrowUpCircle className="w-3 h-3 inline mr-1" />Escalate
+            <ArrowUpCircle className="w-3 h-3 inline mr-1" />Escalate / Review
           </button>
         </div>
         <button

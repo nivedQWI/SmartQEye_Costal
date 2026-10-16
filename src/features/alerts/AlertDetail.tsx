@@ -13,7 +13,10 @@ import { ModalityChip } from '@/components/FeedStateChip';
 import { CoastalMap } from '@/components/CoastalMap';
 import { alertsApi } from '@/lib/api';
 import { useAlertStore } from '@/lib/store';
-import type { EvidenceItem } from '@/types';
+import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
+import { TacticalActionDialog, type TacticalActionType } from '@/components/TacticalActionDialog';
+import type { EvidenceItem, AuditEntry } from '@/types';
+import { Anchor, BellRing } from 'lucide-react';
 
 // ─── Evidence item row ────────────────────────────────────────
 
@@ -83,8 +86,10 @@ export default function AlertDetail() {
   const [activeTab, setActiveTab] = useState<'RGB' | 'THERMAL'>('RGB');
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportReason, setExportReason] = useState('');
-  const [exportCopied, setExportCopied] = useState(false);
   const [noteText, setNoteText] = useState('');
+  const [tacticalAction, setTacticalAction] = useState<TacticalActionType | null>(null);
+  const [localAuditTrail, setLocalAuditTrail] = useState<AuditEntry[]>([]);
+  const [exportCopied, setExportCopied] = useState(false);
 
   const { data: alert, isLoading, error } = useQuery({
     queryKey: ['alert', id],
@@ -150,6 +155,24 @@ export default function AlertDetail() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* Rule 7 Decision Support: Recommend patrol response */}
+          <button
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all hover:opacity-90"
+            style={{ background: 'var(--sea-200)', borderColor: 'var(--sea-400)', color: 'var(--sea-700)' }}
+            onClick={() => setTacticalAction('RECOMMEND_PATROL_RESPONSE')}
+          >
+            <Anchor className="w-3.5 h-3.5" /> Recommend patrol response
+          </button>
+
+          {/* Rule 7 Decision Support: Notify duty officer */}
+          <button
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all hover:opacity-90"
+            style={{ background: 'rgba(235, 114, 53, 0.1)', borderColor: 'var(--sev-high)', color: 'var(--sev-high)' }}
+            onClick={() => setTacticalAction('NOTIFY_DUTY_OFFICER')}
+          >
+            <BellRing className="w-3.5 h-3.5" /> Notify duty officer
+          </button>
+
           <button
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors hover:opacity-80"
             style={{ borderColor: 'var(--line)' }}
@@ -160,6 +183,7 @@ export default function AlertDetail() {
           <button
             className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
             style={{ background: 'var(--sea-600)', color: 'white' }}
+            onClick={() => navigate('/alerts')}
           >
             Close
           </button>
@@ -248,14 +272,19 @@ export default function AlertDetail() {
 
           {/* Operator actions audit */}
           <div className="p-3 border-t" style={{ borderColor: 'var(--line)' }}>
-            <div className="text-xs font-medium opacity-60 uppercase tracking-wider mb-2">Operator Actions</div>
-            {alert.auditTrail.length === 0 ? (
+            <div className="text-xs font-medium opacity-60 uppercase tracking-wider mb-2">Operator Actions &amp; Audit Trail</div>
+            {[...alert.auditTrail, ...localAuditTrail].length === 0 ? (
               <div className="text-xs opacity-40">No actions recorded yet.</div>
-            ) : alert.auditTrail.map(entry => (
-              <div key={entry.id} className="text-xs mb-1.5">
-                <span className="font-mono opacity-50">{formatIST(entry.timestamp)}</span>{' '}
-                <span className="font-medium">{entry.userName}</span>{' '}
-                <span className="opacity-70">{entry.action.toLowerCase()}</span>
+            ) : [...alert.auditTrail, ...localAuditTrail].map(entry => (
+              <div key={entry.id} className="text-xs mb-2 p-1.5 rounded-lg border bg-[var(--panel)]" style={{ borderColor: 'var(--line)' }}>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-[var(--sea-600)]">{entry.userName}</span>
+                  <span className="font-mono opacity-50 text-[10px]">{formatIST(entry.timestamp)}</span>
+                </div>
+                <div className="opacity-80 font-mono text-[11px] mt-0.5">{entry.action.replace(/_/g, ' ')}</div>
+                {Boolean(entry.detail?.reason) && (
+                  <div className="text-[10px] opacity-60 italic mt-0.5">"{String(entry.detail?.reason)}"</div>
+                )}
               </div>
             ))}
           </div>
@@ -378,10 +407,23 @@ export default function AlertDetail() {
         </div>
 
         {/* ── Mandatory Decision-Support Disclaimer Footer (Rule 7) ── */}
-        <footer className="mt-8 pt-4 pb-2 border-t text-center text-xs font-mono opacity-70" style={{ borderColor: 'var(--line)', color: 'var(--text-muted)' }}>
-          Observed behaviour only. Operational interpretation and action rest with authorised Kerala Police personnel.
-        </footer>
+        <HumanInterpretationNote className="mt-8 mb-4 px-6" />
       </div>
+
+      {/* Tactical action confirmation dialog (Rule 7) */}
+      {tacticalAction && (
+        <TacticalActionDialog
+          open={!!tacticalAction}
+          onOpenChange={open => { if (!open) setTacticalAction(null); }}
+          actionType={tacticalAction}
+          targetId={alert.id}
+          targetCode={alert.alertCode}
+          onConfirm={entry => {
+            setLocalAuditTrail(prev => [...prev, entry]);
+            setTacticalAction(null);
+          }}
+        />
+      )}
 
       {/* Export modal */}
       {showExportModal && (

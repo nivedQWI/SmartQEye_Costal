@@ -31,6 +31,20 @@ const PersonReidPage        = lazy(() => import('@/features/person-reid/PersonRe
 const IntrusionDetectionPage = lazy(() => import('@/features/intrusion/IntrusionDetectionPage'));
 const AnomalyMonitorPage    = lazy(() => import('@/features/anomaly/AnomalyMonitorPage'));
 
+// New Phase 1 Pages (RFP Compliance & Platform Architecture)
+const FleetWallPage         = lazy(() => import('@/features/fleet/FleetWallPage'));
+const ContactsPage          = lazy(() => import('@/features/contacts/ContactsPage'));
+const ContactDetailPage    = lazy(() => import('@/features/contacts/ContactDetailPage'));
+const AbandonedObjectsPage  = lazy(() => import('@/features/abandoned/AbandonedObjectsPage'));
+const IncidentsPage         = lazy(() => import('@/features/incidents/IncidentsPage'));
+const ZonesConfigPage       = lazy(() => import('@/features/config/ZonesConfigPage'));
+const AlertConfigPage       = lazy(() => import('@/features/config/AlertConfigPage'));
+const DeploymentPage        = lazy(() => import('@/features/platform/DeploymentPage'));
+const IntegrationsPage      = lazy(() => import('@/features/platform/IntegrationsPage'));
+const AdminPage             = lazy(() => import('@/features/admin/AdminPage'));
+const AuditLogPage          = lazy(() => import('@/features/platform/AuditLogPage'));
+const AcceptancePage        = lazy(() => import('@/features/platform/AcceptancePage'));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 30_000, retry: 1 },
@@ -73,33 +87,45 @@ export default function App() {
                 <AppShell />
               </RequireAuth>
             }>
-              {/* Tactical Operations */}
+              {/* Operations */}
               <Route index element={<CommandCenter />} />
               <Route path="live" element={<LiveMonitor />} />
+              <Route path="fleet-wall" element={<FleetWallPage />} />
               <Route path="alerts" element={<AlertQueue />} />
               <Route path="alerts/:id" element={<AlertDetail />} />
               <Route path="map" element={<MapGIS />} />
               <Route path="missions" element={<MissionsPage />} />
-              <Route path="history" element={<HistoryPlayback />} />
 
-              {/* AI Analytics Pages */}
-              <Route path="crowd-analytics" element={<CrowdAnalyticsPage />} />
+              {/* Intelligence */}
+              <Route path="contacts" element={<ContactsPage />} />
+              <Route path="contacts/:id" element={<ContactDetailPage />} />
               <Route path="vehicle-maritime" element={<VehicleMaritimePage />} />
-              <Route path="person-reid" element={<PersonReidPage />} />
+              <Route path="crowd-analytics" element={<CrowdAnalyticsPage />} />
               <Route path="intrusion-detection" element={<IntrusionDetectionPage />} />
               <Route path="anomaly-monitor" element={<AnomalyMonitorPage />} />
+              <Route path="abandoned-objects" element={<AbandonedObjectsPage />} />
+              <Route path="person-reid" element={<PersonReidPage />} />
 
-              {/* System & Governance */}
+              {/* Evidence & Review */}
+              <Route path="history" element={<HistoryPlayback />} />
+              <Route path="incidents" element={<IncidentsPage />} />
               <Route path="reports" element={<ReportsPage />} />
-              <Route path="models" element={<AIModelsPage />} />
-              <Route path="health" element={<SystemHealthPage />} />
-              <Route path="styleguide" element={<StyleGuide />} />
 
-              {/* Auxiliary stubs */}
-              <Route path="contacts" element={<ComingSoon title="Contacts" description="Persistent Coastal Contacts — long-lived contact records, history, relationships, and behaviour. Coming in Phase 2." />} />
-              <Route path="contacts/:id" element={<ComingSoon title="Contact Detail" />} />
-              <Route path="admin" element={<ComingSoon title="Administration" description="User & role management, RBAC, audit log, retention policies. Coming in Phase 2." />} />
-              {/* NOTE: /rules route has been completely removed as per Costal Police .docx specifications */}
+              {/* Configuration */}
+              <Route path="config/zones" element={<ZonesConfigPage />} />
+              <Route path="config/alerts" element={<AlertConfigPage />} />
+              <Route path="models" element={<AIModelsPage />} />
+
+              {/* Platform */}
+              <Route path="deployment" element={<DeploymentPage />} />
+              <Route path="integrations" element={<IntegrationsPage />} />
+              <Route path="health" element={<SystemHealthPage />} />
+              <Route path="admin" element={<AdminPage />} />
+              <Route path="audit" element={<AuditLogPage />} />
+              <Route path="acceptance" element={<AcceptancePage />} />
+
+              {/* Auxiliary / Style Guide */}
+              <Route path="styleguide" element={<StyleGuide />} />
             </Route>
 
             {/* Catch-all */}

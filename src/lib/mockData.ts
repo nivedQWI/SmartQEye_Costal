@@ -9,6 +9,7 @@ import type {
   ContactClass, Severity, FeedState, ZoneType, ZoneProfile,
   AttentionLevel, Modality,
 } from '@/types';
+import { formatMissionId, formatUavCode, formatAlertId } from '@/lib/idGenerator';
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -137,59 +138,59 @@ export const ZONES: Zone[] = [
   },
 ];
 
-// ─── UAVs ─────────────────────────────────────────────────────
+// ─── UAVs (Complies with Rule 1D: UAV-KL-01 ... UAV-KL-06) ───
 
 export const UAVS: Uav[] = [
-  { id: 'u-01', droneCode: 'UAV-01', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-001-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
-  { id: 'u-02', droneCode: 'UAV-02', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-002-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
-  { id: 'u-03', droneCode: 'UAV-03', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-003-KP', adapterType: 'mavlink', hasOnboardCompute: true, isActive: true },
-  { id: 'u-04', droneCode: 'UAV-04', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-004-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
-  { id: 'u-05', droneCode: 'UAV-05', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-005-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
-  { id: 'u-06', droneCode: 'UAV-06', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-006-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
+  { id: 'u-01', droneCode: 'UAV-KL-01', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-001-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
+  { id: 'u-02', droneCode: 'UAV-KL-02', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-002-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
+  { id: 'u-03', droneCode: 'UAV-KL-03', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-003-KP', adapterType: 'mavlink', hasOnboardCompute: true, isActive: true },
+  { id: 'u-04', droneCode: 'UAV-KL-04', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-004-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
+  { id: 'u-05', droneCode: 'UAV-KL-05', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-005-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
+  { id: 'u-06', droneCode: 'UAV-KL-06', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-006-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
 ];
 
-// ─── Missions ─────────────────────────────────────────────────
+// ─── Missions (Complies with Rule 1D: MSN-YYYYMMDD-HHMM-SS-SQUADRON) ─
 
 export const MISSIONS: Mission[] = [
-  { id: 'm-01', missionCode: 'M-2026-0415', title: 'Vizhinjam Harbour Patrol', profile: 'harbour_patrol', uavId: 'u-03', uavCode: 'UAV-03', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(180), area: 'Vizhinjam' },
-  { id: 'm-02', missionCode: 'M-2026-0416', title: 'Kovalam Beach Surveillance', profile: 'beach_patrol', uavId: 'u-01', uavCode: 'UAV-01', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(120), area: 'Kovalam' },
-  { id: 'm-03', missionCode: 'M-2026-0417', title: 'Poovar Estuary Watch', profile: 'estuary_patrol', uavId: 'u-05', uavCode: 'UAV-05', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(90), area: 'Poovar' },
-  { id: 'm-04', missionCode: 'M-2026-0414', title: 'Morning Coastal Survey', profile: 'coastal_survey', uavId: 'u-02', uavCode: 'UAV-02', status: 'COMPLETED', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(480), endedAt: minutesAgo(120), area: 'Thiruvananthapuram Coast' },
-  { id: 'm-05', missionCode: 'M-2026-0418', title: 'Valiyathura Jetty Monitor', profile: 'harbour_patrol', uavId: 'u-04', uavCode: 'UAV-04', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(60), area: 'Valiyathura' },
-  { id: 'm-06', missionCode: 'M-2026-0419', title: 'Shanghumugham Patrol', profile: 'beach_patrol', uavId: 'u-06', uavCode: 'UAV-06', status: 'ACTIVE', processingMode: 'LOCAL_EDGE', startedAt: minutesAgo(45), area: 'Shanghumugham' },
+  { id: 'm-01', missionCode: formatMissionId('VIZHINJAM', '0830', 1), title: 'Vizhinjam Harbour Patrol', profile: 'harbour_patrol', uavId: 'u-03', uavCode: 'UAV-KL-03', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(180), area: 'Vizhinjam' },
+  { id: 'm-02', missionCode: formatMissionId('KOVALAM', '0915', 1), title: 'Kovalam Beach Surveillance', profile: 'beach_patrol', uavId: 'u-01', uavCode: 'UAV-KL-01', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(120), area: 'Kovalam' },
+  { id: 'm-03', missionCode: formatMissionId('POOVAR', '1000', 1), title: 'Poovar Estuary Watch', profile: 'estuary_patrol', uavId: 'u-05', uavCode: 'UAV-KL-05', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(90), area: 'Poovar' },
+  { id: 'm-04', missionCode: formatMissionId('TRIVANDRUM', '0600', 1), title: 'Morning Coastal Survey', profile: 'coastal_survey', uavId: 'u-02', uavCode: 'UAV-KL-02', status: 'COMPLETED', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(480), endedAt: minutesAgo(120), area: 'Thiruvananthapuram Coast' },
+  { id: 'm-05', missionCode: formatMissionId('VALIYATHURA', '1100', 1), title: 'Valiyathura Jetty Monitor', profile: 'harbour_patrol', uavId: 'u-04', uavCode: 'UAV-KL-04', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(60), area: 'Valiyathura' },
+  { id: 'm-06', missionCode: formatMissionId('SHANGHUMUGHAM', '1130', 1), title: 'Shanghumugham Patrol', profile: 'beach_patrol', uavId: 'u-06', uavCode: 'UAV-KL-06', status: 'ACTIVE', processingMode: 'LOCAL_EDGE', startedAt: minutesAgo(45), area: 'Shanghumugham' },
 ];
 
 // ─── Telemetry (initial values) ───────────────────────────────
 
 export const INITIAL_TELEMETRY: Record<string, TelemetrySample> = {
-  'f-01': { feedId: 'f-01', uavCode: 'UAV-03', missionCode: 'M-2026-0415', timestamp: new Date().toISOString(), lat: 8.380, lon: 76.982, altitudeM: 120, headingDeg: 42, groundSpeedMs: 9.2, batteryPct: 63, flightStatus: 'AUTO', signalStrengthPct: 94, satelliteCount: 14, telemetryAvailable: true },
-  'f-02': { feedId: 'f-02', uavCode: 'UAV-03', missionCode: 'M-2026-0415', timestamp: new Date().toISOString(), lat: 8.380, lon: 76.982, altitudeM: 120, headingDeg: 42, groundSpeedMs: 9.2, batteryPct: 63, flightStatus: 'AUTO', signalStrengthPct: 94, satelliteCount: 14, telemetryAvailable: true },
-  'f-03': { feedId: 'f-03', uavCode: 'UAV-01', missionCode: 'M-2026-0416', timestamp: new Date().toISOString(), lat: 8.400, lon: 76.991, altitudeM: 100, headingDeg: 195, groundSpeedMs: 7.5, batteryPct: 78, flightStatus: 'AUTO', signalStrengthPct: 88, satelliteCount: 13, telemetryAvailable: true },
-  'f-05': { feedId: 'f-05', uavCode: 'UAV-05', missionCode: 'M-2026-0417', timestamp: new Date().toISOString(), lat: 8.320, lon: 76.965, altitudeM: 80, headingDeg: 320, groundSpeedMs: 5.0, batteryPct: 91, flightStatus: 'AUTO', signalStrengthPct: 82, satelliteCount: 11, telemetryAvailable: true },
-  'f-07': { feedId: 'f-07', uavCode: 'UAV-04', missionCode: 'M-2026-0418', timestamp: new Date().toISOString(), lat: 8.483, lon: 76.920, altitudeM: 90, headingDeg: 110, groundSpeedMs: 8.1, batteryPct: 55, flightStatus: 'AUTO', signalStrengthPct: 76, satelliteCount: 12, telemetryAvailable: true },
-  'f-09': { feedId: 'f-09', uavCode: 'UAV-06', missionCode: 'M-2026-0419', timestamp: new Date().toISOString(), lat: 8.483, lon: 76.892, altitudeM: 110, headingDeg: 270, groundSpeedMs: 6.3, batteryPct: 82, flightStatus: 'AUTO', signalStrengthPct: 91, satelliteCount: 15, telemetryAvailable: true },
+  'f-01': { feedId: 'f-01', uavCode: 'UAV-KL-03', missionCode: formatMissionId('VIZHINJAM', '0830', 1), timestamp: new Date().toISOString(), lat: 8.380, lon: 76.982, altitudeM: 120, headingDeg: 42, groundSpeedMs: 9.2, batteryPct: 63, flightStatus: 'AUTO', signalStrengthPct: 94, satelliteCount: 14, telemetryAvailable: true },
+  'f-02': { feedId: 'f-02', uavCode: 'UAV-KL-03', missionCode: formatMissionId('VIZHINJAM', '0830', 1), timestamp: new Date().toISOString(), lat: 8.380, lon: 76.982, altitudeM: 120, headingDeg: 42, groundSpeedMs: 9.2, batteryPct: 63, flightStatus: 'AUTO', signalStrengthPct: 94, satelliteCount: 14, telemetryAvailable: true },
+  'f-03': { feedId: 'f-03', uavCode: 'UAV-KL-01', missionCode: formatMissionId('KOVALAM', '0915', 1), timestamp: new Date().toISOString(), lat: 8.400, lon: 76.991, altitudeM: 100, headingDeg: 195, groundSpeedMs: 7.5, batteryPct: 78, flightStatus: 'AUTO', signalStrengthPct: 88, satelliteCount: 13, telemetryAvailable: true },
+  'f-05': { feedId: 'f-05', uavCode: 'UAV-KL-05', missionCode: formatMissionId('POOVAR', '1000', 1), timestamp: new Date().toISOString(), lat: 8.320, lon: 76.965, altitudeM: 80, headingDeg: 320, groundSpeedMs: 5.0, batteryPct: 91, flightStatus: 'AUTO', signalStrengthPct: 82, satelliteCount: 11, telemetryAvailable: true },
+  'f-07': { feedId: 'f-07', uavCode: 'UAV-KL-04', missionCode: formatMissionId('VALIYATHURA', '1100', 1), timestamp: new Date().toISOString(), lat: 8.483, lon: 76.920, altitudeM: 90, headingDeg: 110, groundSpeedMs: 8.1, batteryPct: 55, flightStatus: 'AUTO', signalStrengthPct: 76, satelliteCount: 12, telemetryAvailable: true },
+  'f-09': { feedId: 'f-09', uavCode: 'UAV-KL-06', missionCode: formatMissionId('SHANGHUMUGHAM', '1130', 1), timestamp: new Date().toISOString(), lat: 8.483, lon: 76.892, altitudeM: 110, headingDeg: 270, groundSpeedMs: 6.3, batteryPct: 82, flightStatus: 'AUTO', signalStrengthPct: 91, satelliteCount: 15, telemetryAvailable: true },
 };
 
 // ─── Feeds ────────────────────────────────────────────────────
 
 export const INITIAL_FEEDS: Feed[] = [
-  { id: 'f-01', uavCode: 'UAV-03', missionCode: 'M-2026-0415', label: 'UAV-03 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 820, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 8.4, droppedFrames: 12, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: true, telemetry: INITIAL_TELEMETRY['f-01'] },
-  { id: 'f-02', uavCode: 'UAV-03', missionCode: 'M-2026-0415', label: 'UAV-03 Thermal', modality: 'THERMAL', state: 'LIVE', latencyMs: 840, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 4.2, droppedFrames: 8, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: true, telemetry: INITIAL_TELEMETRY['f-02'] },
-  { id: 'f-03', uavCode: 'UAV-01', missionCode: 'M-2026-0416', label: 'UAV-01 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 1200, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.8, droppedFrames: 3, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: true, telemetry: INITIAL_TELEMETRY['f-03'] },
-  { id: 'f-04', uavCode: 'UAV-01', missionCode: 'M-2026-0416', label: 'UAV-01 Thermal', modality: 'THERMAL', state: 'BUFFERING', latencyMs: 3200, fpsCurrent: 12, fpsTarget: 25, bitrateMbps: 2.1, droppedFrames: 87, lastFrameAt: minutesAgo(0.5), resolution: '640x512', isPinned: true, telemetry: INITIAL_TELEMETRY['f-03'] },
-  { id: 'f-05', uavCode: 'UAV-05', missionCode: 'M-2026-0417', label: 'UAV-05 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 950, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 6.9, droppedFrames: 0, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-05'] },
-  { id: 'f-06', uavCode: 'UAV-05', missionCode: 'M-2026-0417', label: 'UAV-05 Thermal', modality: 'THERMAL', state: 'LIVE', latencyMs: 970, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 3.8, droppedFrames: 0, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: false, telemetry: INITIAL_TELEMETRY['f-05'] },
-  { id: 'f-07', uavCode: 'UAV-04', missionCode: 'M-2026-0418', label: 'UAV-04 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 1100, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.2, droppedFrames: 5, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-07'] },
-  { id: 'f-08', uavCode: 'UAV-04', missionCode: 'M-2026-0418', label: 'UAV-04 Thermal', modality: 'THERMAL', state: 'LIVE', latencyMs: 1120, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 3.5, droppedFrames: 2, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: false, telemetry: INITIAL_TELEMETRY['f-07'] },
-  { id: 'f-09', uavCode: 'UAV-06', missionCode: 'M-2026-0419', label: 'UAV-06 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 780, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 8.1, droppedFrames: 1, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-09'] },
-  { id: 'f-10', uavCode: 'UAV-06', missionCode: 'M-2026-0419', label: 'UAV-06 Thermal', modality: 'THERMAL', state: 'EDGE_SYNC_LAG', latencyMs: 8500, fpsCurrent: 8, fpsTarget: 25, bitrateMbps: 1.2, droppedFrames: 143, lastFrameAt: minutesAgo(2), resolution: '640x512', isPinned: false, edgeSyncLagSec: 127 },
-  { id: 'f-11', uavCode: 'UAV-02', missionCode: 'M-2026-0414', label: 'UAV-02 RGB', modality: 'RGB', state: 'RECORDED', latencyMs: 0, fpsCurrent: 0, fpsTarget: 25, bitrateMbps: 0, droppedFrames: 0, resolution: '1920x1080', isPinned: false },
-  { id: 'f-12', uavCode: 'UAV-02', missionCode: 'M-2026-0414', label: 'UAV-02 Thermal', modality: 'THERMAL', state: 'RECORDED', latencyMs: 0, fpsCurrent: 0, fpsTarget: 25, bitrateMbps: 0, droppedFrames: 0, resolution: '640x512', isPinned: false },
+  { id: 'f-01', uavCode: 'UAV-KL-03', missionCode: formatMissionId('VIZHINJAM', '0830', 1), label: 'UAV-KL-03 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 820, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 8.4, droppedFrames: 12, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: true, telemetry: INITIAL_TELEMETRY['f-01'] },
+  { id: 'f-02', uavCode: 'UAV-KL-03', missionCode: formatMissionId('VIZHINJAM', '0830', 1), label: 'UAV-KL-03 Thermal', modality: 'THERMAL', state: 'LIVE', latencyMs: 840, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 4.2, droppedFrames: 8, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: true, telemetry: INITIAL_TELEMETRY['f-02'] },
+  { id: 'f-03', uavCode: 'UAV-KL-01', missionCode: formatMissionId('KOVALAM', '0915', 1), label: 'UAV-KL-01 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 1200, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.8, droppedFrames: 3, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: true, telemetry: INITIAL_TELEMETRY['f-03'] },
+  { id: 'f-04', uavCode: 'UAV-KL-01', missionCode: formatMissionId('KOVALAM', '0915', 1), label: 'UAV-KL-01 Thermal', modality: 'THERMAL', state: 'BUFFERING', latencyMs: 3200, fpsCurrent: 12, fpsTarget: 25, bitrateMbps: 2.1, droppedFrames: 87, lastFrameAt: minutesAgo(0.5), resolution: '640x512', isPinned: true, telemetry: INITIAL_TELEMETRY['f-03'] },
+  { id: 'f-05', uavCode: 'UAV-KL-05', missionCode: formatMissionId('POOVAR', '1000', 1), label: 'UAV-KL-05 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 950, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 6.9, droppedFrames: 0, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-05'] },
+  { id: 'f-06', uavCode: 'UAV-KL-05', missionCode: formatMissionId('POOVAR', '1000', 1), label: 'UAV-KL-05 Thermal', modality: 'THERMAL', state: 'LIVE', latencyMs: 970, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 3.8, droppedFrames: 0, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: false, telemetry: INITIAL_TELEMETRY['f-05'] },
+  { id: 'f-07', uavCode: 'UAV-KL-04', missionCode: formatMissionId('VALIYATHURA', '1100', 1), label: 'UAV-KL-04 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 1100, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.2, droppedFrames: 5, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-07'] },
+  { id: 'f-08', uavCode: 'UAV-KL-04', missionCode: formatMissionId('VALIYATHURA', '1100', 1), label: 'UAV-KL-04 Thermal', modality: 'THERMAL', state: 'LIVE', latencyMs: 1120, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 3.5, droppedFrames: 2, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: false, telemetry: INITIAL_TELEMETRY['f-07'] },
+  { id: 'f-09', uavCode: 'UAV-KL-06', missionCode: formatMissionId('SHANGHUMUGHAM', '1130', 1), label: 'UAV-KL-06 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 780, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 8.1, droppedFrames: 1, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-09'] },
+  { id: 'f-10', uavCode: 'UAV-KL-06', missionCode: formatMissionId('SHANGHUMUGHAM', '1130', 1), label: 'UAV-KL-06 Thermal', modality: 'THERMAL', state: 'EDGE_SYNC_LAG', latencyMs: 8500, fpsCurrent: 8, fpsTarget: 25, bitrateMbps: 1.2, droppedFrames: 143, lastFrameAt: minutesAgo(2), resolution: '640x512', isPinned: false, edgeSyncLagSec: 127 },
+  { id: 'f-11', uavCode: 'UAV-KL-02', missionCode: formatMissionId('TRIVANDRUM', '0600', 1), label: 'UAV-KL-02 RGB', modality: 'RGB', state: 'RECORDED', latencyMs: 0, fpsCurrent: 0, fpsTarget: 25, bitrateMbps: 0, droppedFrames: 0, resolution: '1920x1080', isPinned: false },
+  { id: 'f-12', uavCode: 'UAV-KL-02', missionCode: formatMissionId('TRIVANDRUM', '0600', 1), label: 'UAV-KL-02 Thermal', modality: 'THERMAL', state: 'RECORDED', latencyMs: 0, fpsCurrent: 0, fpsTarget: 25, bitrateMbps: 0, droppedFrames: 0, resolution: '640x512', isPinned: false },
   // Additional feeds (thumbnails strip)
   ...Array.from({ length: 8 }, (_, i) => ({
     id: `f-${13 + i}`,
-    uavCode: `UAV-0${(i % 6) + 1}`,
-    missionCode: 'M-2026-0415',
+    uavCode: formatUavCode((i % 6) + 1),
+    missionCode: formatMissionId('VIZHINJAM', '0830', 1),
     label: `Feed ${13 + i}`,
     modality: (i % 2 === 0 ? 'RGB' : 'THERMAL') as 'RGB' | 'THERMAL',
     state: (['LIVE', 'LIVE', 'LIVE', 'NO_SIGNAL', 'LIVE', 'BUFFERING', 'LIVE', 'LIVE'] as FeedState[])[i],
@@ -303,12 +304,12 @@ const SEV_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 export const ALERTS: Alert[] = [
   // Alert 1 - CRITICAL intrusion
   {
-    id: 'a-001', alertCode: 'ALC-2026-001',
+    id: 'a-001', alertCode: formatAlertId(1),
     severity: 'CRITICAL', status: 'NEW',
     createdAt: minutesAgo(1.5), updatedAt: minutesAgo(1.5),
     event: {
       id: 'ev-001', type: 'intrusion', occurredAt: minutesAgo(1.5),
-      uav: { id: 'u-03', code: 'UAV-03' }, mission: { id: 'm-01', code: 'M-2026-0415', title: 'Vizhinjam Harbour Patrol' },
+      uav: { id: 'u-03', code: formatUavCode(3) }, mission: { id: 'm-01', code: formatMissionId('VIZHINJAM', '0830', 1), title: 'Vizhinjam Harbour Patrol' },
       location: { lat: 8.373, lon: 76.974, method: 'DRONE_POSITION' },
       zone: { code: 'Z-07', name: 'Restricted – Vizhinjam Military Approach', version: 4, profile: 'Restricted 24×7' },
       contact: { code: 'C-1042', class: 'SMALL_CRAFT', classConf: 0.91, continuityConf: 0.93 },
@@ -325,7 +326,7 @@ export const ALERTS: Alert[] = [
         zoneProfileUsed: 'Restricted 24×7',
         contextCondition: 'Night restriction active',
       },
-      versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.0.3' },
+      versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.2.0-coastal' },
       relatedContacts: [{ code: 'C-1050', class: 'SMALL_CRAFT', relationshipType: 'co_travel' }],
     },
     evidence: makeEvidence('a001'),
@@ -333,13 +334,13 @@ export const ALERTS: Alert[] = [
   },
   // Alert 2 - HIGH repeated approach
   {
-    id: 'a-002', alertCode: 'ALC-2026-002',
+    id: 'a-002', alertCode: formatAlertId(2),
     severity: 'HIGH', status: 'ACKNOWLEDGED',
     createdAt: minutesAgo(4.5), updatedAt: minutesAgo(2),
-    acknowledgedAt: minutesAgo(2), acknowledgedBy: 'Operator Rajan',
+    acknowledgedAt: minutesAgo(2), acknowledgedBy: 'SI Ananya Ramesh',
     event: {
       id: 'ev-002', type: 'repeated_shoreline_approach', occurredAt: minutesAgo(4.5),
-      uav: { id: 'u-01', code: 'UAV-01' }, mission: { id: 'm-02', code: 'M-2026-0416', title: 'Kovalam Beach Surveillance' },
+      uav: { id: 'u-01', code: formatUavCode(1) }, mission: { id: 'm-02', code: formatMissionId('KOVALAM', '0900', 2), title: 'Kovalam Beach Surveillance' },
       location: { lat: 8.397, lon: 76.992, method: 'DRONE_POSITION' },
       zone: { code: 'Z-03', name: 'Kovalam Beach North', version: 1, profile: 'Beach Monitoring' },
       contact: { code: 'C-1031', class: 'SMALL_CRAFT', classConf: 0.88, continuityConf: 0.82 },
@@ -354,21 +355,21 @@ export const ALERTS: Alert[] = [
         note: 'Contact approached shoreline 4 times in 11 minutes — exceeds threshold of 3.',
         zoneProfileUsed: 'Beach Monitoring',
       },
-      versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.0.3' },
+      versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.2.0-coastal' },
     },
     evidence: makeEvidence('a002'),
     auditTrail: [
-      { id: 'au-001', timestamp: minutesAgo(2), userId: 'u-op1', userName: 'Operator Rajan', userRole: 'OPERATOR', action: 'ACKNOWLEDGED', targetType: 'ALERT', targetId: 'a-002', ipAddress: '10.10.1.5' },
+      { id: 'au-001', timestamp: minutesAgo(2), userId: 'u-op1', userName: 'SI Ananya Ramesh', userRole: 'OPERATOR', action: 'ACKNOWLEDGED', targetType: 'ALERT', targetId: 'a-002', ipAddress: '10.10.1.5' },
     ],
   },
   // Alert 3 - MEDIUM crowd
   {
-    id: 'a-003', alertCode: 'ALC-2026-003',
+    id: 'a-003', alertCode: formatAlertId(3),
     severity: 'MEDIUM', status: 'NEW',
     createdAt: minutesAgo(12), updatedAt: minutesAgo(12),
     event: {
       id: 'ev-003', type: 'crowd_threshold_exceeded', occurredAt: minutesAgo(12),
-      uav: { id: 'u-05', code: 'UAV-05' }, mission: { id: 'm-03', code: 'M-2026-0417', title: 'Poovar Estuary Watch' },
+      uav: { id: 'u-05', code: formatUavCode(5) }, mission: { id: 'm-03', code: formatMissionId('POOVAR', '0930', 3), title: 'Poovar Estuary Watch' },
       location: { lat: 8.403, lon: 76.993, method: 'DRONE_POSITION' },
       zone: { code: 'Z-03', name: 'Kovalam Beach North', version: 1, profile: 'Beach Monitoring' },
       attention: 'MONITOR', modality: 'RGB',
@@ -380,20 +381,20 @@ export const ALERTS: Alert[] = [
         ],
         zoneProfileUsed: 'Beach Monitoring',
       },
-      versions: { appVersion: '1.0.3', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
+      versions: { appVersion: '1.2.0-coastal', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
     },
     evidence: makeEvidence('a003'),
     auditTrail: [],
   },
   // Alert 4 - HIGH convergence
   {
-    id: 'a-004', alertCode: 'ALC-2026-004',
+    id: 'a-004', alertCode: formatAlertId(4),
     severity: 'HIGH', status: 'ASSIGNED',
     createdAt: minutesAgo(18), updatedAt: minutesAgo(10),
-    assignedTo: 'u-sup1', assignedToName: 'SI Menon',
+    assignedTo: 'u-sup1', assignedToName: 'CI Saji Varghese',
     event: {
       id: 'ev-004', type: 'convergence', occurredAt: minutesAgo(18),
-      uav: { id: 'u-03', code: 'UAV-03' }, mission: { id: 'm-01', code: 'M-2026-0415' },
+      uav: { id: 'u-03', code: formatUavCode(3) }, mission: { id: 'm-01', code: formatMissionId('VIZHINJAM', '0830', 1) },
       location: { lat: 8.382, lon: 76.983, method: 'DRONE_POSITION' },
       zone: { code: 'Z-02', name: 'Vizhinjam Outer Harbour', version: 2, profile: 'Harbour Patrol' },
       contact: { code: 'C-1038', class: 'VESSEL', classConf: 0.79, continuityConf: 0.86 },
@@ -407,21 +408,21 @@ export const ALERTS: Alert[] = [
         ],
         zoneProfileUsed: 'Harbour Patrol',
       },
-      versions: { appVersion: '1.0.3', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
+      versions: { appVersion: '1.2.0-coastal', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
     },
     evidence: makeEvidence('a004'),
     auditTrail: [
-      { id: 'au-002', timestamp: minutesAgo(10), userId: 'u-op2', userName: 'Operator Priya', userRole: 'OPERATOR', action: 'ASSIGNED', targetType: 'ALERT', targetId: 'a-004', detail: { assignedTo: 'SI Menon' }, ipAddress: '10.10.1.6' },
+      { id: 'au-002', timestamp: minutesAgo(10), userId: 'u-op2', userName: 'SI Ananya Ramesh', userRole: 'OPERATOR', action: 'ASSIGNED', targetType: 'ALERT', targetId: 'a-004', detail: { assignedTo: 'CI Saji Varghese' }, ipAddress: '10.10.1.6' },
     ],
   },
   // Alert 5 - MEDIUM loitering
   {
-    id: 'a-005', alertCode: 'ALC-2026-005',
+    id: 'a-005', alertCode: formatAlertId(5),
     severity: 'MEDIUM', status: 'UNDER_REVIEW',
     createdAt: minutesAgo(25), updatedAt: minutesAgo(15),
     event: {
       id: 'ev-005', type: 'loitering', occurredAt: minutesAgo(25), endedAt: minutesAgo(18),
-      uav: { id: 'u-04', code: 'UAV-04' }, mission: { id: 'm-05', code: 'M-2026-0418' },
+      uav: { id: 'u-04', code: formatUavCode(4) }, mission: { id: 'm-05', code: formatMissionId('VIZHINJAM', '1015', 5) },
       location: { lat: 8.390, lon: 76.992, method: 'DRONE_POSITION' },
       zone: { code: 'Z-04', name: 'Lighthouse Beach – Tourism Zone', version: 2, profile: 'Tourism – Evening' },
       contact: { code: 'C-1055', class: 'VESSEL', classConf: 0.83, continuityConf: 0.79 },
@@ -433,7 +434,7 @@ export const ALERTS: Alert[] = [
         ],
         zoneProfileUsed: 'Tourism – Evening',
       },
-      versions: { appVersion: '1.0.3', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
+      versions: { appVersion: '1.2.0-coastal', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
     },
     evidence: makeEvidence('a005'),
     auditTrail: [],
@@ -446,7 +447,7 @@ export const ALERTS: Alert[] = [
     const idx = i + 6;
     return {
       id: `a-${String(idx).padStart(3, '0')}`,
-      alertCode: `ALC-2026-${String(idx).padStart(3, '0')}`,
+      alertCode: formatAlertId(idx),
       severity: sev,
       status: (['NEW', 'ACKNOWLEDGED', 'NEW', 'RESOLVED', 'ASSIGNED'] as Alert['status'][])[i % 5],
       createdAt: minutesAgo(30 + i * 8),
@@ -455,14 +456,14 @@ export const ALERTS: Alert[] = [
         id: `ev-${String(idx).padStart(3, '0')}`,
         type: evDef.type,
         occurredAt: minutesAgo(30 + i * 8),
-        uav: { id: `u-0${(i % 6) + 1}`, code: `UAV-0${(i % 6) + 1}` },
-        mission: { id: 'm-01', code: 'M-2026-0415' },
+        uav: { id: `u-0${(i % 6) + 1}`, code: formatUavCode((i % 6) + 1) },
+        mission: { id: 'm-01', code: formatMissionId('VIZHINJAM', '0830', 1) },
         location: { lat: 8.380 + (i * 0.005), lon: 76.982 + (i * 0.003), method: 'DRONE_POSITION' as const },
         zone: evDef.zone ? { code: evDef.zone, name: evDef.zoneName!, version: 1, profile: 'Beach Monitoring' } : undefined,
         contact: { code: `C-${1030 + i}`, class: CONTACT_CLASSES[i % CONTACT_CLASSES.length], classConf: 0.7 + Math.random() * 0.28, continuityConf: 0.65 + Math.random() * 0.32 },
         attention: (['MONITOR', 'ATTENTION', 'RECORD_ONLY', 'CRITICAL', 'MONITOR'] as AttentionLevel[])[i % 5],
         rationale: { factors: [{ factorName: 'Threshold exceeded', value: 1, threshold: 1, contribution: 'PRIMARY' as const }] },
-        versions: { appVersion: '1.0.3' },
+        versions: { appVersion: '1.2.0-coastal' },
         modality: (i % 2 === 0 ? 'RGB' : 'THERMAL') as 'RGB' | 'THERMAL',
       } as CoastalEvent,
       evidence: makeEvidence(`a${String(idx).padStart(3, '0')}`),
@@ -482,14 +483,14 @@ export const HISTORICAL_EVENTS: CoastalEvent[] = Array.from({ length: 200 }, (_,
     id: `hev-${String(i + 1).padStart(4, '0')}`,
     type: evDef.type,
     occurredAt: new Date(Date.now() - hoursAgo * 3_600_000 - (i % 60) * 60_000).toISOString(),
-    uav: { id: `u-0${(i % 6) + 1}`, code: `UAV-0${(i % 6) + 1}` },
-    mission: { id: 'm-01', code: ['M-2026-0415', 'M-2026-0416', 'M-2026-0417', 'M-2026-0414'][i % 4] },
+    uav: { id: `u-0${(i % 6) + 1}`, code: formatUavCode((i % 6) + 1) },
+    mission: { id: 'm-01', code: [formatMissionId('VIZHINJAM', '0830', 1), formatMissionId('KOVALAM', '0900', 2), formatMissionId('POOVAR', '0930', 3), formatMissionId('SHANGHUMUGHAM', '0745', 4)][i % 4] },
     location: { lat: 8.350 + (i % 20) * 0.004, lon: 76.960 + (i % 20) * 0.003, method: 'DRONE_POSITION' },
     zone: evDef.zone ? { code: evDef.zone, name: evDef.zoneName!, version: 1, profile: 'Monitor' } : undefined,
     contact: { code: `C-${1030 + (i % 40)}`, class: CONTACT_CLASSES[i % CONTACT_CLASSES.length], classConf: 0.7 + (i % 10) * 0.025, continuityConf: 0.65 + (i % 10) * 0.03 },
     attention: (['RECORD_ONLY', 'MONITOR', 'ATTENTION', 'CRITICAL', 'RECORD_ONLY'] as AttentionLevel[])[i % 5],
     rationale: { factors: [] },
-    versions: { appVersion: '1.0.3' },
+    versions: { appVersion: '1.2.0-coastal' },
     modality: (i % 3 === 2 ? 'THERMAL' : 'RGB') as Modality,
   };
 });

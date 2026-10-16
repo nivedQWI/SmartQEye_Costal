@@ -9,6 +9,7 @@ import type {
 import {
   ALERTS, INITIAL_FEEDS, INITIAL_TELEMETRY, INITIAL_HEALTH, CONTACTS,
 } from './mockData';
+import { formatAlertId, formatMissionId, formatUavCode } from '@/lib/idGenerator';
 
 // ─── Event types ─────────────────────────────────────────────
 
@@ -83,8 +84,8 @@ class CoastalSimulator {
 
       const sample: TelemetrySample = {
         feedId,
-        uavCode: this.feeds.find(f => f.id === feedId)?.uavCode ?? 'UAV-??',
-        missionCode: 'M-2026-0415',
+        uavCode: this.feeds.find(f => f.id === feedId)?.uavCode ?? 'UAV-KL-01',
+        missionCode: formatMissionId('VIZHINJAM', '0830', 1),
         timestamp: new Date().toISOString(),
         lat: path.lat,
         lon: path.lon,
@@ -154,7 +155,7 @@ class CoastalSimulator {
 
     const contactIdx = Math.floor(Math.random() * CONTACTS.length);
     const contact = CONTACTS[contactIdx];
-    const uavCodes = ['UAV-01', 'UAV-03', 'UAV-05'];
+    const uavCodes = [formatUavCode(1), formatUavCode(3), formatUavCode(5)];
     const uavCode = uavCodes[Math.floor(Math.random() * uavCodes.length)];
 
     this.alertIndex++;
@@ -162,7 +163,7 @@ class CoastalSimulator {
 
     const newAlert: Alert = {
       id: alertId,
-      alertCode: `ALC-2026-${String(this.alertIndex).padStart(3, '0')}`,
+      alertCode: formatAlertId(this.alertIndex),
       severity,
       status: 'NEW',
       createdAt: new Date().toISOString(),
@@ -172,7 +173,7 @@ class CoastalSimulator {
         type: eventType,
         occurredAt: new Date().toISOString(),
         uav: { id: 'u-03', code: uavCode },
-        mission: { id: 'm-01', code: 'M-2026-0415' },
+        mission: { id: 'm-01', code: formatMissionId('VIZHINJAM', '0830', 1) },
         location: {
           lat: 8.350 + Math.random() * 0.05,
           lon: 76.960 + Math.random() * 0.04,
@@ -182,7 +183,7 @@ class CoastalSimulator {
         rationale: {
           factors: [{ factorName: 'Threshold exceeded', value: 1, threshold: 1, contribution: 'PRIMARY' }],
         },
-        versions: { appVersion: '1.0.3' },
+        versions: { appVersion: '1.2.0-coastal' },
         contact: {
           code: contact.code,
           class: contact.class as ContactClass,

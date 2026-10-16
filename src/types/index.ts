@@ -563,13 +563,17 @@ export interface AiModelItem {
   name: string;
   version: string;
   licence: string;
-  task: 'TARGET_DETECTION' | 'OBJECT_TRACKING' | 'FACE_RECOGNITION' | 'ANPR_OCR' | 'CROWD_DENSITY' | 'BEHAVIOR_ANOMALY';
+  task: string;
+  taskLabel?: string;
+  modality: 'RGB' | 'THERMAL' | 'BOTH';
   framework: string;
   vramMb: number;
+  status: 'ACTIVE' | 'STANDBY' | 'CANDIDATE' | 'STOPPED' | 'ERROR';
   state: 'ACTIVE' | 'STARTING' | 'STOPPED' | 'ERROR';
   assignedDroneCodes: string[];
   fpsAverage: number;
   latencyMs: number;
+  isOptionalModule?: boolean;
 }
 
 // ─── Police Reports (Costal Police docx) ────────────────────

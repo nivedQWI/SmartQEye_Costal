@@ -979,7 +979,7 @@ export default function VehicleMaritimePage() {
               {inspectVehicle.isWatchlistMatch && (
                 <div className="p-3 bg-red-100 border border-red-300 rounded text-red-900 font-sans text-xs mt-2">
                   <div className="font-bold flex items-center gap-1.5 text-red-800 mb-1">
-                    <ShieldAlert className="w-4 h-4" /> WATCHLIST ALERT DISPATCH
+                    <ShieldAlert className="w-4 h-4" /> AUTHORISED WATCHLIST MATCH · RECOMMEND ATTENTION
                   </div>
                   {inspectVehicle.watchlistReason}
                 </div>

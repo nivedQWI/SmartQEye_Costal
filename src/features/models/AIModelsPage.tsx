@@ -11,87 +11,177 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
+import { CENTRAL_DEPLOYMENT_CONFIG } from '@/config/deployment';
 import type { AiModelItem } from '@/types';
 
 export default function AIModelsPage() {
   const [models, setModels] = useState<AiModelItem[]>([
     {
       id: 'mod-1',
-      name: 'RTMDet-x / RT-DETRv2',
+      name: 'RTMDet-L (MMDetection)',
+      task: 'object detection, central GPU profile',
       version: 'v2.4.1-coastal',
+      modality: 'RGB',
       licence: 'Apache-2.0',
-      task: 'TARGET_DETECTION',
+      status: 'ACTIVE',
+      state: 'ACTIVE',
       framework: 'OpenMMLab / TensorRT 10.2',
       vramMb: 3450,
-      state: 'ACTIVE',
       assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-02', 'UAV-KL-03', 'UAV-KL-04'],
       fpsAverage: 31.4,
       latencyMs: 14.2,
     },
     {
       id: 'mod-2',
-      name: 'ByteTrack Multi-Object Tracker',
-      version: 'v2.1.0',
-      licence: 'MIT',
-      task: 'OBJECT_TRACKING',
-      framework: 'C++ CUDA Plugin',
-      vramMb: 850,
+      name: 'RTMDet-S',
+      task: 'edge-laptop profile',
+      version: 'v2.4.1-edge',
+      modality: 'RGB',
+      licence: 'Apache-2.0',
+      status: 'ACTIVE',
       state: 'ACTIVE',
-      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-02', 'UAV-KL-03'],
+      framework: 'ONNX Runtime / TensorRT-LLM',
+      vramMb: 1150,
+      assignedDroneCodes: ['UAV-KL-05', 'UAV-KL-06'],
+      fpsAverage: 42.0,
+      latencyMs: 9.8,
+    },
+    {
+      id: 'mod-3',
+      name: 'RT-DETRv2',
+      task: 'detection (candidate)',
+      version: 'v2.0.0-rc3',
+      modality: 'RGB',
+      licence: 'Apache-2.0',
+      status: 'CANDIDATE',
+      state: 'STOPPED',
+      framework: 'PaddleDetection / TensorRT',
+      vramMb: 2850,
+      assignedDroneCodes: [],
+      fpsAverage: 36.5,
+      latencyMs: 12.1,
+    },
+    {
+      id: 'mod-4',
+      name: 'RTMDet-Thermal (sensor-specific)',
+      task: 'detection',
+      version: 'v1.8.0-lwir',
+      modality: 'THERMAL',
+      licence: 'Apache-2.0',
+      status: 'ACTIVE',
+      state: 'ACTIVE',
+      framework: 'OpenMMLab / TensorRT 10.2',
+      vramMb: 2400,
+      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-03'],
+      fpsAverage: 29.1,
+      latencyMs: 16.4,
+    },
+    {
+      id: 'mod-5',
+      name: 'ByteTrack',
+      task: 'multi-object tracking',
+      version: 'v2.1.0',
+      modality: 'BOTH',
+      licence: 'MIT',
+      status: 'ACTIVE',
+      state: 'ACTIVE',
+      framework: 'C++ CUDA / Cython Plugin',
+      vramMb: 850,
+      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-02', 'UAV-KL-03', 'UAV-KL-04', 'UAV-KL-05', 'UAV-KL-06'],
       fpsAverage: 45.0,
       latencyMs: 4.8,
     },
     {
-      id: 'mod-3',
-      name: 'PaddleOCR / CRNN License Plate',
-      version: 'v2.8-in-anpr',
-      licence: 'Apache-2.0',
-      task: 'ANPR_OCR',
-      framework: 'PaddleInference / ONNX',
-      vramMb: 1950,
-      state: 'ACTIVE',
-      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-05'],
-      fpsAverage: 24.8,
-      latencyMs: 22.1,
-    },
-    {
-      id: 'mod-4',
-      name: 'OSNet-IBN / ArcFace Re-ID',
-      version: 'v1.4.2-r100',
-      licence: 'Permissive — to be confirmed',
-      task: 'FACE_RECOGNITION',
-      framework: 'InsightFace / TensorRT',
-      vramMb: 2400,
-      state: 'ACTIVE',
-      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-02'],
-      fpsAverage: 28.2,
-      latencyMs: 18.6,
-    },
-    {
-      id: 'mod-5',
-      name: 'CSRNet Density Estimator',
+      id: 'mod-6',
+      name: 'Density estimator (crowd)',
+      task: 'crowd count',
       version: 'v3.0.1-crowd',
-      licence: 'MIT',
-      task: 'CROWD_DENSITY',
-      framework: 'PyTorch CUDA 12.4',
-      vramMb: 2100,
+      modality: 'RGB',
+      licence: 'Permissive — to be confirmed',
+      status: 'ACTIVE',
       state: 'ACTIVE',
+      framework: 'PyTorch CUDA 12.4',
+      vramMb: 1950,
       assignedDroneCodes: ['UAV-KL-02', 'UAV-KL-06'],
       fpsAverage: 26.5,
       latencyMs: 19.4,
     },
     {
-      id: 'mod-6',
-      name: 'SlowFast Behavior Anomaly',
-      version: 'v2.0-action',
+      id: 'mod-7',
+      name: 'Behaviour/temporal analytics engine (rule + learned)',
+      task: 'behaviour',
+      version: 'v3.1.2-kerala-context',
+      modality: 'BOTH',
+      licence: 'Proprietary (QWI)',
+      status: 'ACTIVE',
+      state: 'ACTIVE',
+      framework: 'Rust + LibTorch C++ Engine',
+      vramMb: 3100,
+      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-02', 'UAV-KL-03', 'UAV-KL-04'],
+      fpsAverage: 38.0,
+      latencyMs: 11.2,
+    },
+    {
+      id: 'mod-8',
+      name: 'Cognitive Frame Selector (QWI)',
+      task: 'compute optimisation',
+      version: 'v2.0.0-cfs',
+      modality: 'BOTH',
+      licence: 'Proprietary (QWI)',
+      status: 'ACTIVE',
+      state: 'ACTIVE',
+      framework: 'Zero-Copy Optical Flow / CUDA',
+      vramMb: 450,
+      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-02', 'UAV-KL-03', 'UAV-KL-04', 'UAV-KL-05', 'UAV-KL-06'],
+      fpsAverage: 120.0,
+      latencyMs: 1.5,
+    },
+    {
+      id: 'mod-9',
+      name: 'Cognitive Keyframe Extractor (QWI)',
+      task: 'evidence selection',
+      version: 'v2.0.0-ckfe',
+      modality: 'BOTH',
+      licence: 'Proprietary (QWI)',
+      status: 'ACTIVE',
+      state: 'ACTIVE',
+      framework: 'Post-Event Keyframe Salience Engine',
+      vramMb: 600,
+      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-02', 'UAV-KL-03'],
+      fpsAverage: 85.0,
+      latencyMs: 3.2,
+    },
+    {
+      id: 'mod-10',
+      name: 'ANPR OCR (License Plate)',
+      task: 'vehicle registration recognition',
+      version: 'v2.8-in-anpr',
+      modality: 'RGB',
       licence: 'Apache-2.0',
-      task: 'BEHAVIOR_ANOMALY',
-      framework: 'TorchVision / TensorRT',
-      vramMb: 4200,
-      state: 'STARTING',
-      assignedDroneCodes: ['UAV-KL-01'],
-      fpsAverage: 18.2,
-      latencyMs: 34.0,
+      status: 'ACTIVE',
+      state: 'ACTIVE',
+      framework: 'PaddleInference / ONNX',
+      vramMb: 1450,
+      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-05'],
+      fpsAverage: 24.8,
+      latencyMs: 22.1,
+      isOptionalModule: true,
+    },
+    {
+      id: 'mod-11',
+      name: 'Person Re-ID (Appearance Matching)',
+      task: 'cross-camera re-identification',
+      version: 'v1.4.2-r100',
+      modality: 'RGB',
+      licence: 'MIT',
+      status: 'ACTIVE',
+      state: 'ACTIVE',
+      framework: 'InsightFace / TensorRT',
+      vramMb: 2200,
+      assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-02'],
+      fpsAverage: 28.2,
+      latencyMs: 18.6,
+      isOptionalModule: true,
     },
   ]);
 
@@ -160,11 +250,11 @@ export default function AIModelsPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="rounded-2xl p-4 border shadow-sm" style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}>
           <div className="flex items-center justify-between opacity-60 text-xs mb-1">
-            <span>GPU Workers</span>
+            <span>Primary Compute Node</span>
             <Cpu className="w-4 h-4 text-[var(--sea-600)]" />
           </div>
-          <div className="text-xl font-bold font-mono">2x NVIDIA RTX 4090</div>
-          <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">Dual Cluster Online</div>
+          <div className="text-base font-bold font-mono truncate">{CENTRAL_DEPLOYMENT_CONFIG.nodes.primaryGpuNode.name}</div>
+          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5 truncate">{CENTRAL_DEPLOYMENT_CONFIG.nodes.primaryGpuNode.hardwareString}</div>
         </div>
 
         <div className="rounded-2xl p-4 border shadow-sm" style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}>
@@ -230,6 +320,7 @@ export default function AIModelsPage() {
             <thead>
               <tr className="border-b font-mono opacity-60 uppercase text-[11px]" style={{ borderColor: 'var(--line)' }}>
                 <th className="py-2.5 px-3">Model Name &amp; Task</th>
+                <th className="py-2.5 px-3">Modality</th>
                 <th className="py-2.5 px-3">Engine / Framework</th>
                 <th className="py-2.5 px-3">Licence</th>
                 <th className="py-2.5 px-3">VRAM</th>
@@ -243,14 +334,33 @@ export default function AIModelsPage() {
                 <tr key={m.id} className="border-b transition-colors hover:bg-[var(--sand-100)]" style={{ borderColor: 'var(--line)' }}>
                   {/* Model Name & Task */}
                   <td className="py-3 px-3">
-                    <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>{m.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm" style={{ color: 'var(--text)' }}>{m.name}</span>
+                      {m.isOptionalModule && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                          Optional module
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] font-mono px-1.5 py-0.2 rounded font-semibold"
                         style={{ background: 'var(--sand-200)', color: 'var(--ink-900)' }}>
-                        {m.task.replace(/_/g, ' ')}
+                        {m.task}
                       </span>
                       <span className="text-[11px] opacity-60 font-mono">{m.version}</span>
                     </div>
+                  </td>
+
+                  {/* Modality */}
+                  <td className="py-3 px-3">
+                    <span className={cn(
+                      'px-2 py-0.5 rounded text-[10px] font-mono font-bold border',
+                      m.modality === 'RGB' && 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+                      m.modality === 'THERMAL' && 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
+                      m.modality === 'BOTH' && 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
+                    )}>
+                      {m.modality}
+                    </span>
                   </td>
 
                   {/* Engine */}
@@ -271,14 +381,15 @@ export default function AIModelsPage() {
                     <span
                       className={cn(
                         'px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border inline-flex items-center gap-1',
-                        m.state === 'ACTIVE' && 'bg-emerald-100 text-emerald-800 border-emerald-300',
-                        m.state === 'STARTING' && 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse',
-                        m.state === 'STOPPED' && 'bg-gray-200 text-gray-700 border-gray-300',
-                        m.state === 'ERROR' && 'bg-red-100 text-red-800 border-red-300'
+                        m.status === 'ACTIVE' && 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                        m.status === 'CANDIDATE' && 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                        m.status === 'STANDBY' && 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse',
+                        m.status === 'STOPPED' && 'bg-gray-200 text-gray-700 border-gray-300',
+                        m.status === 'ERROR' && 'bg-red-100 text-red-800 border-red-300'
                       )}
                     >
-                      <span className={cn('w-1.5 h-1.5 rounded-full', m.state === 'ACTIVE' ? 'bg-emerald-500' : m.state === 'STARTING' ? 'bg-amber-500' : 'bg-gray-400')} />
-                      {m.state}
+                      <span className={cn('w-1.5 h-1.5 rounded-full', m.status === 'ACTIVE' ? 'bg-emerald-500' : m.status === 'CANDIDATE' ? 'bg-indigo-500' : 'bg-gray-400')} />
+                      {m.status}
                     </span>
                   </td>
 

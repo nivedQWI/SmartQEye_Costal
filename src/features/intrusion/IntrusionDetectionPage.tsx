@@ -10,6 +10,7 @@ import {
   Plus, Trash2, Video, Layers, AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
 import { IntrusionRecord } from '@/types';
 
 // Mock Geofence Zones
@@ -452,9 +453,9 @@ export default function IntrusionDetectionPage() {
                       {item.status === 'ACTIVE' && (
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'DISPATCHED')}
-                          className="px-2 py-1 rounded bg-red-700 hover:bg-red-800 text-white font-mono text-[10px] font-bold"
+                          className="px-2 py-1 rounded bg-amber-700 hover:bg-amber-800 text-white font-mono text-[10px] font-bold"
                         >
-                          Dispatch
+                          Recommend response
                         </button>
                       )}
                       {item.status === 'DISPATCHED' && (
@@ -547,6 +548,9 @@ export default function IntrusionDetectionPage() {
           </div>
         </div>
       )}
+
+      {/* ── Decision-Support Legal Disclaimer Footer (Rule 7) ── */}
+      <HumanInterpretationNote className="mt-4" />
     </div>
   );
 }
