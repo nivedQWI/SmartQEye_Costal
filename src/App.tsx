@@ -45,6 +45,7 @@ const IntegrationsPage      = lazy(() => import('@/features/platform/Integration
 const AdminPage             = lazy(() => import('@/features/admin/AdminPage'));
 const AuditLogPage          = lazy(() => import('@/features/platform/AuditLogPage'));
 const AcceptancePage        = lazy(() => import('@/features/platform/AcceptancePage'));
+const NotFoundPage          = lazy(() => import('@/features/error/NotFoundPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -168,10 +169,13 @@ export default function App() {
 
               {/* Auxiliary / Style Guide */}
               <Route path="styleguide" element={<StyleGuide />} />
+
+              {/* In-shell 404 route */}
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
 
-            {/* Catch-all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Top-level catch-all */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

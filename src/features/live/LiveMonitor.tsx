@@ -3,7 +3,7 @@
 // Multi-feed wall + Focus mode with canvas overlays + DVR
 // ============================================================
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Grid2x2, Grid3x3, Maximize2, Minimize2,
@@ -32,7 +32,7 @@ interface FeedTileProps {
   showOverlays: boolean;
 }
 
-function FeedTile({ feed, isActive, isFocus: _isFocus, onClick, onDoubleClick, showOverlays: _showOverlays }: FeedTileProps) {
+const FeedTile = memo(function FeedTile({ feed, isActive, isFocus: _isFocus, onClick, onDoubleClick, showOverlays: _showOverlays }: FeedTileProps) {
   const stateColour = {
     LIVE: '#2ECC71', BUFFERING: '#E0A526', NO_SIGNAL: '#C8352E', RECORDED: '#2B7FA6', EDGE_SYNC_LAG: '#9B59B6',
   }[feed.state];
@@ -93,7 +93,7 @@ function FeedTile({ feed, isActive, isFocus: _isFocus, onClick, onDoubleClick, s
       </div>
     </div>
   );
-}
+});
 
 // ─── Focus Mode ──────────────────────────────────────────────
 

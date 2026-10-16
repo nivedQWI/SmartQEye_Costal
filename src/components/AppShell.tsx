@@ -105,7 +105,9 @@ const ROLES: UserRole[] = ['OPERATOR', 'ANALYST', 'SUPERVISOR', 'ZONE_ADMIN', 'S
 // ─── AppShell ─────────────────────────────────────────────────
 
 export function AppShell() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 1366 : false
+  );
   const [aboutOpen, setAboutOpen] = useState(false);
 
   const { user, devRole, logout, setDevRole, viewAsRole, setViewAsRole, getEffectiveRole } = useAuthStore();
