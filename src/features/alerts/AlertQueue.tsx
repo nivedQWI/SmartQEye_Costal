@@ -10,9 +10,10 @@ import { Filter, ChevronDown, Users, CheckCheck, ArrowUpCircle, XCircle, Externa
 import { cn, formatIST, timeAgo, eventTypeLabel, formatCoords, SEV_GLYPH } from '@/lib/utils';
 import { SeverityChip, SeverityDot } from '@/components/SeverityChip';
 import { FeedStateChip, ModalityChip } from '@/components/FeedStateChip';
-import { useAlertStore } from '@/lib/store';
+import { useAlertStore, useAuthStore } from '@/lib/store';
 import { alertsApi } from '@/lib/api';
-import type { Alert, Severity, AlertStatus } from '@/types';
+import { can } from '@/lib/roleConfig';
+import type { Alert, Severity, AlertStatus, UserRole } from '@/types';
 
 // ─── Filter bar ───────────────────────────────────────────────
 
@@ -105,12 +106,15 @@ function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filt
 // ─── Alert row ────────────────────────────────────────────────
 
 function AlertRow({
-  alert, isSelected, onClick, onAck, onEscalate,
+  alert, isSelected, onClick, onAck, onEscalate, role,
 }: {
   alert: Alert; isSelected: boolean;
   onClick: () => void; onAck: () => void; onEscalate: () => void;
+  role: UserRole;
 }) {
   const navigate = useNavigate();
+  const canAck = can(role, 'ACK_ALERT');
+  const canEscalate = can(role, 'ESCALATE_ALERT');
   
   return (
     <tr
@@ -173,18 +177,20 @@ function AlertRow({
           >
             Open
           </button>
-          {alert.status === 'NEW' && (
+          {canAck && alert.status === 'NEW' && (
             <button
               className="px-2 py-0.5 rounded text-xs border hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
               style={{ borderColor: 'var(--sev-low)', color: 'var(--sev-low)' }}
               onClick={e => { e.stopPropagation(); onAck(); }}
             >Ack</button>
           )}
-          <button
-            className="px-2 py-0.5 rounded text-xs border hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-            style={{ borderColor: 'var(--sev-high)', color: 'var(--sev-high)' }}
-            onClick={e => { e.stopPropagation(); onEscalate(); }}
-          >↑</button>
+          {canEscalate && (
+            <button
+              className="px-2 py-0.5 rounded text-xs border hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+              style={{ borderColor: 'var(--sev-high)', color: 'var(--sev-high)' }}
+              onClick={e => { e.stopPropagation(); onEscalate(); }}
+            >↑</button>
+          )}
         </div>
       </td>
     </tr>
@@ -193,11 +199,15 @@ function AlertRow({
 
 // ─── Preview pane ─────────────────────────────────────────────
 
-function PreviewPane({ alert, onClose }: { alert: Alert; onClose: () => void }) {
+function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => void; role: UserRole }) {
   const navigate = useNavigate();
   const { updateAlert } = useAlertStore();
   const [showFalseAlertModal, setShowFalseAlertModal] = useState(false);
   const [falseAlertReason, setFalseAlertReason] = useState('');
+
+  const canAck = can(role, 'ACK_ALERT');
+  const canEscalate = can(role, 'ESCALATE_ALERT');
+  const canResolve = can(role, 'RESOLVE_ALERT');
 
   async function handleAck() {
     const updated = await alertsApi.acknowledge(alert.id);
@@ -314,34 +324,40 @@ function PreviewPane({ alert, onClose }: { alert: Alert; onClose: () => void }) 
           <ExternalLink className="w-3.5 h-3.5 inline mr-1.5" />
           Open Full Record
         </button>
-        <div className="flex gap-2">
-          {alert.status === 'NEW' && (
-            <button
-              className="flex-1 py-1.5 rounded-xl text-xs border font-medium transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-              style={{ borderColor: 'var(--sev-low)', color: 'var(--sev-low)' }}
-              onClick={handleAck}
-            >
-              <CheckCheck className="w-3 h-3 inline mr-1" />Acknowledge
-            </button>
-          )}
+        {(canAck || canEscalate) && (
+          <div className="flex gap-2">
+            {canAck && alert.status === 'NEW' && (
+              <button
+                className="flex-1 py-1.5 rounded-xl text-xs border font-medium transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                style={{ borderColor: 'var(--sev-low)', color: 'var(--sev-low)' }}
+                onClick={handleAck}
+              >
+                <CheckCheck className="w-3 h-3 inline mr-1" />Acknowledge
+              </button>
+            )}
+            {canEscalate && (
+              <button
+                className="flex-1 py-1.5 rounded-xl text-xs border font-medium transition-colors hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                style={{ borderColor: 'var(--sev-high)', color: 'var(--sev-high)' }}
+                onClick={() => alert.event.type && console.log('escalate')}
+              >
+                <ArrowUpCircle className="w-3 h-3 inline mr-1" />Escalate
+              </button>
+            )}
+          </div>
+        )}
+        {canResolve && (
           <button
-            className="flex-1 py-1.5 rounded-xl text-xs border font-medium transition-colors hover:bg-orange-50 dark:hover:bg-orange-900/20"
-            style={{ borderColor: 'var(--sev-high)', color: 'var(--sev-high)' }}
-            onClick={() => alert.event.type && console.log('escalate')}
+            className="w-full py-1.5 rounded-xl text-xs border opacity-60 hover:opacity-100 transition-opacity"
+            style={{ borderColor: 'var(--line)' }}
+            onClick={() => setShowFalseAlertModal(true)}
           >
-            <ArrowUpCircle className="w-3 h-3 inline mr-1" />Escalate
+            <XCircle className="w-3 h-3 inline mr-1" />Mark False Alert
           </button>
-        </div>
-        <button
-          className="w-full py-1.5 rounded-xl text-xs border opacity-60 hover:opacity-100 transition-opacity"
-          style={{ borderColor: 'var(--line)' }}
-          onClick={() => setShowFalseAlertModal(true)}
-        >
-          <XCircle className="w-3 h-3 inline mr-1" />Mark False Alert
-        </button>
+        )}
 
         {/* False alert modal */}
-        {showFalseAlertModal && (
+        {showFalseAlertModal && canResolve && (
           <div className="rounded-xl p-3 border" style={{ background: 'var(--raised)', borderColor: 'var(--sev-medium)' }}>
             <div className="text-xs font-medium mb-2">Reason (required)</div>
             <textarea
@@ -375,6 +391,8 @@ function PreviewPane({ alert, onClose }: { alert: Alert; onClose: () => void }) 
 
 export default function AlertQueue() {
   const { alerts, updateAlert } = useAlertStore();
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>({ severity: [], status: [], groupByContact: false });
   const [selectedId, setSelectedId] = useState<string | null>(alerts[0]?.id ?? null);
@@ -413,14 +431,18 @@ export default function AlertQueue() {
       } else if (e.key === 'Enter' && selectedAlert) {
         navigate(`/alerts/${selectedAlert.id}`);
       } else if (e.key === 'a' && selectedAlert) {
-        alertsApi.acknowledge(selectedAlert.id).then(updated => updateAlert(updated));
+        if (can(activeRole, 'ACK_ALERT')) {
+          alertsApi.acknowledge(selectedAlert.id).then(updated => updateAlert(updated));
+        }
       } else if (e.key === 'e' && selectedAlert) {
-        alertsApi.updateStatus(selectedAlert.id, 'ESCALATED').then(updated => updateAlert(updated));
+        if (can(activeRole, 'ESCALATE_ALERT')) {
+          alertsApi.updateStatus(selectedAlert.id, 'ESCALATED').then(updated => updateAlert(updated));
+        }
       }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [filtered, selectedAlert, navigate, updateAlert]);
+  }, [filtered, selectedAlert, navigate, updateAlert, activeRole]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -434,8 +456,12 @@ export default function AlertQueue() {
           {/* Keyboard shortcuts hint */}
           <div className="px-4 py-1.5 text-[10px] border-b flex items-center gap-3" style={{ borderColor: 'var(--line)', color: 'var(--text-muted)', background: 'var(--panel)' }}>
             <span><kbd className="font-mono bg-black/10 px-1 rounded">J</kbd>/<kbd className="font-mono bg-black/10 px-1 rounded">K</kbd> navigate</span>
-            <span><kbd className="font-mono bg-black/10 px-1 rounded">A</kbd> acknowledge</span>
-            <span><kbd className="font-mono bg-black/10 px-1 rounded">E</kbd> escalate</span>
+            {can(activeRole, 'ACK_ALERT') && (
+              <span><kbd className="font-mono bg-black/10 px-1 rounded">A</kbd> acknowledge</span>
+            )}
+            {can(activeRole, 'ESCALATE_ALERT') && (
+              <span><kbd className="font-mono bg-black/10 px-1 rounded">E</kbd> escalate</span>
+            )}
             <span><kbd className="font-mono bg-black/10 px-1 rounded">↵</kbd> open</span>
             <span className="ml-auto">{filtered.length} alerts</span>
           </div>
@@ -464,6 +490,7 @@ export default function AlertQueue() {
                   <AlertRow
                     key={alert.id}
                     alert={alert}
+                    role={activeRole}
                     isSelected={alert.id === selectedId}
                     onClick={() => { setSelectedId(alert.id); setSelectedIndex(idx); }}
                     onAck={() => alertsApi.acknowledge(alert.id).then(u => updateAlert(u))}
@@ -478,7 +505,7 @@ export default function AlertQueue() {
         {/* Preview pane */}
         {selectedAlert && (
           <div className="w-80 flex-shrink-0 flex flex-col overflow-hidden">
-            <PreviewPane alert={selectedAlert} onClose={() => setSelectedId(null)} />
+            <PreviewPane alert={selectedAlert} role={activeRole} onClose={() => setSelectedId(null)} />
           </div>
         )}
       </div>

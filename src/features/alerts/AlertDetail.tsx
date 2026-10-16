@@ -12,7 +12,8 @@ import { SeverityChip } from '@/components/SeverityChip';
 import { ModalityChip } from '@/components/FeedStateChip';
 import { CoastalMap } from '@/components/CoastalMap';
 import { alertsApi } from '@/lib/api';
-import { useAlertStore } from '@/lib/store';
+import { useAlertStore, useAuthStore } from '@/lib/store';
+import { can } from '@/lib/roleConfig';
 import type { EvidenceItem } from '@/types';
 
 // ─── Evidence item row ────────────────────────────────────────
@@ -80,6 +81,8 @@ export default function AlertDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { updateAlert } = useAlertStore();
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const [activeTab, setActiveTab] = useState<'RGB' | 'THERMAL'>('RGB');
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportReason, setExportReason] = useState('');
@@ -150,14 +153,17 @@ export default function AlertDetail() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {can(activeRole, 'EXPORT_DOWNLOAD') && (
+            <button
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors hover:opacity-80"
+              style={{ borderColor: 'var(--line)' }}
+              onClick={() => setShowExportModal(true)}
+            >
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
+          )}
           <button
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors hover:opacity-80"
-            style={{ borderColor: 'var(--line)' }}
-            onClick={() => setShowExportModal(true)}
-          >
-            <Download className="w-3.5 h-3.5" /> Export
-          </button>
-          <button
+            onClick={() => navigate('/alerts')}
             className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
             style={{ background: 'var(--sea-600)', color: 'white' }}
           >

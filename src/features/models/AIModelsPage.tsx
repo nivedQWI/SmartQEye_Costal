@@ -11,9 +11,13 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
+import { useAuthStore } from '@/lib/store';
+import { can } from '@/lib/roleConfig';
 import type { AiModelItem } from '@/types';
 
 export default function AIModelsPage() {
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const [models, setModels] = useState<AiModelItem[]>([
     {
       id: 'mod-1',
@@ -214,8 +218,10 @@ export default function AIModelsPage() {
                 <th className="py-2.5 px-3">Engine / Framework</th>
                 <th className="py-2.5 px-3">VRAM</th>
                 <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3">Assigned Drones (Check to Hot-Swap)</th>
-                <th className="py-2.5 px-3 text-right">Cluster Controls</th>
+                <th className="py-2.5 px-3">Assigned Drones {can(activeRole, 'HOT_SWAP_MODEL') ? '(Check to Hot-Swap)' : ''}</th>
+                {can(activeRole, 'HOT_SWAP_MODEL') && (
+                  <th className="py-2.5 px-3 text-right">Cluster Controls</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -260,7 +266,7 @@ export default function AIModelsPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {UAVS.map(u => {
                         const isAssigned = m.assignedDroneCodes.includes(u.droneCode);
-                        return (
+                        return can(activeRole, 'HOT_SWAP_MODEL') ? (
                           <button
                             key={u.id}
                             type="button"
@@ -275,43 +281,57 @@ export default function AIModelsPage() {
                           >
                             {u.droneCode.replace('UAV-KL-', 'KL-')}
                           </button>
+                        ) : (
+                          <span
+                            key={u.id}
+                            className={cn(
+                              'px-2 py-1 rounded-lg text-[10px] font-mono font-bold border',
+                              isAssigned
+                                ? 'bg-[var(--sea-600)] text-white border-[var(--sea-600)] shadow-xs'
+                                : 'bg-[var(--panel)] border-[var(--line)] opacity-40'
+                            )}
+                          >
+                            {u.droneCode.replace('UAV-KL-', 'KL-')}
+                          </span>
                         );
                       })}
                     </div>
                   </td>
 
                   {/* Hot-Swap Actions */}
-                  <td className="py-3 px-3 text-right">
-                    <div className="inline-flex items-center gap-1.5">
-                      {m.state !== 'ACTIVE' ? (
-                        <button
-                          onClick={() => handleHotSwap(m.id, 'START')}
-                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
-                          title="Start Model"
-                        >
-                          <Play className="w-3 h-3 inline fill-white mr-1" />
-                          Start
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleHotSwap(m.id, 'STOP')}
-                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-600 text-white hover:bg-gray-700 transition-colors"
-                          title="Stop Model"
-                        >
-                          <Square className="w-3 h-3 inline fill-white mr-1" />
-                          Stop
-                        </button>
-                      )}
+                  {can(activeRole, 'HOT_SWAP_MODEL') && (
+                    <td className="py-3 px-3 text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        {m.state !== 'ACTIVE' ? (
+                          <button
+                            onClick={() => handleHotSwap(m.id, 'START')}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                            title="Start Model"
+                          >
+                            <Play className="w-3 h-3 inline fill-white mr-1" />
+                            Start
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleHotSwap(m.id, 'STOP')}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-600 text-white hover:bg-gray-700 transition-colors"
+                            title="Stop Model"
+                          >
+                            <Square className="w-3 h-3 inline fill-white mr-1" />
+                            Stop
+                          </button>
+                        )}
 
-                      <button
-                        onClick={() => handleHotSwap(m.id, 'RESTART')}
-                        className="p-1.5 rounded-lg border hover:bg-[var(--panel)] transition-colors opacity-70 hover:opacity-100"
-                        title="Hot-Swap / Reload Model"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
+                        <button
+                          onClick={() => handleHotSwap(m.id, 'RESTART')}
+                          className="p-1.5 rounded-lg border hover:bg-[var(--panel)] transition-colors opacity-70 hover:opacity-100"
+                          title="Hot-Swap / Reload Model"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

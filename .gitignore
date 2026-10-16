@@ -31,3 +31,15 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Testing, temporary & scratch artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.py
+test-results/
+playwright-report/
+coverage/
+*scratch*
+*.tmp
+

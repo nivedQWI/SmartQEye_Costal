@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { cn, formatIST } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
+import { useAuthStore } from '@/lib/store';
+import { can } from '@/lib/roleConfig';
 import type { PoliceReport, PoliceReportType } from '@/types';
 
 const FORMAL_REPORT_TEMPLATES: Array<{
@@ -51,6 +53,8 @@ const FORMAL_REPORT_TEMPLATES: Array<{
 ];
 
 export default function ReportsPage() {
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const [reports, setReports] = useState<PoliceReport[]>([
     {
       id: 'rep-01',
@@ -182,50 +186,52 @@ export default function ReportsPage() {
       {/* ══════════════════════════════════════════════════
           TOP: 4 ON-DEMAND FORMAL POLICE REPORT GENERATORS
          ══════════════════════════════════════════════════ */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <FileCheck className="w-4 h-4 text-[var(--sea-600)]" />
-          <h2 className="font-serif text-sm font-bold uppercase tracking-wider">
-            On-Demand Formal Report Templates (PDF)
-          </h2>
-        </div>
+      {can(activeRole, 'GENERATE_SIGN_REPORT') && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <FileCheck className="w-4 h-4 text-[var(--sea-600)]" />
+            <h2 className="font-serif text-sm font-bold uppercase tracking-wider">
+              On-Demand Formal Report Templates (PDF)
+            </h2>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {FORMAL_REPORT_TEMPLATES.map(t => (
-            <div
-              key={t.type}
-              className="rounded-2xl p-4 border shadow-sm flex flex-col justify-between transition-all hover:shadow-md"
-              style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded"
-                    style={{ background: 'var(--sand-200)', color: 'var(--ink-900)' }}>
-                    {t.badge}
-                  </span>
-                  <span className="text-[11px] font-mono opacity-60">{t.period}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {FORMAL_REPORT_TEMPLATES.map(t => (
+              <div
+                key={t.type}
+                className="rounded-2xl p-4 border shadow-sm flex flex-col justify-between transition-all hover:shadow-md"
+                style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded"
+                      style={{ background: 'var(--sand-200)', color: 'var(--ink-900)' }}>
+                      {t.badge}
+                    </span>
+                    <span className="text-[11px] font-mono opacity-60">{t.period}</span>
+                  </div>
+                  <h3 className="font-serif text-sm font-bold leading-snug mb-2" style={{ color: 'var(--text)' }}>
+                    {t.title}
+                  </h3>
+                  <p className="text-xs opacity-75 line-clamp-3 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                    {t.desc}
+                  </p>
                 </div>
-                <h3 className="font-serif text-sm font-bold leading-snug mb-2" style={{ color: 'var(--text)' }}>
-                  {t.title}
-                </h3>
-                <p className="text-xs opacity-75 line-clamp-3 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                  {t.desc}
-                </p>
-              </div>
 
-              <div className="pt-4 mt-3 border-t flex justify-end" style={{ borderColor: 'var(--line)' }}>
-                <button
-                  onClick={() => handleStartGenerate(t.type)}
-                  className="w-full py-2 px-3 rounded-xl text-xs font-bold text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 shadow-xs"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  Generate PDF
-                </button>
+                <div className="pt-4 mt-3 border-t flex justify-end" style={{ borderColor: 'var(--line)' }}>
+                  <button
+                    onClick={() => handleStartGenerate(t.type)}
+                    className="w-full py-2 px-3 rounded-xl text-xs font-bold text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    Generate PDF
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ══════════════════════════════════════════════════
           MODAL: REPORT GENERATION CONFIGURATION
@@ -338,7 +344,9 @@ export default function ReportsPage() {
                 <th className="py-2.5 px-3">Generated At</th>
                 <th className="py-2.5 px-3">Sign-off Officer</th>
                 <th className="py-2.5 px-3">Size</th>
-                <th className="py-2.5 px-3 text-right">Download</th>
+                {can(activeRole, 'EXPORT_DOWNLOAD') && (
+                  <th className="py-2.5 px-3 text-right">Download</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -357,17 +365,19 @@ export default function ReportsPage() {
                   <td className="py-2.5 px-3 font-mono opacity-80">{formatIST(r.generatedAt)}</td>
                   <td className="py-2.5 px-3 font-medium text-[11px]">{r.signOffOfficer}</td>
                   <td className="py-2.5 px-3 font-mono font-bold">{r.fileSizeMb} MB</td>
-                  <td className="py-2.5 px-3 text-right">
-                    <button
-                      onClick={() => handleSimulatedDownload(r)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors bg-[var(--sand-200)] text-[var(--ink-900)] hover:bg-[var(--sand-300)]"
-                      style={{ borderColor: 'var(--sand-300)' }}
-                      title="Download PDF"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      PDF
-                    </button>
-                  </td>
+                  {can(activeRole, 'EXPORT_DOWNLOAD') && (
+                    <td className="py-2.5 px-3 text-right">
+                      <button
+                        onClick={() => handleSimulatedDownload(r)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors bg-[var(--sand-200)] text-[var(--ink-900)] hover:bg-[var(--sand-300)]"
+                        style={{ borderColor: 'var(--sand-300)' }}
+                        title="Download PDF"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        PDF
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

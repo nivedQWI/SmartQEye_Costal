@@ -3,29 +3,58 @@
 // Full-screen Harbor photograph + Light yellowish gradient overlay + Centered white card
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Shield, Lock } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
+import { ROLE_CONFIG, ROLES_LIST, getRoleDisplayName } from '@/lib/roleConfig';
+import { authApi } from '@/lib/api';
+import type { UserRole } from '@/types';
 
 type Step = 'credentials' | 'mfa';
 
 export default function LoginPage() {
   const [step, setStep] = useState<Step>('credentials');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('OPERATOR');
+  const [username, setUsername] = useState(() => {
+    const users = authApi.getMockUsers();
+    return users.find(u => u.role === 'OPERATOR')?.username ?? 'op.rajan';
+  });
+  const [password, setPassword] = useState('admin123');
   const [mfaCode, setMfaCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuthStore();
+  const { login, isAuthenticated, user, devRole } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const activeRole = user?.role ?? devRole ?? 'OPERATOR';
+      const landing = ROLE_CONFIG[activeRole]?.landing ?? '/';
+      navigate(landing, { replace: true });
+    }
+  }, [isAuthenticated, user, devRole, navigate]);
+
+  function handleRoleChange(newRole: UserRole) {
+    setSelectedRole(newRole);
+    setError('');
+    const mockUser = authApi.getMockUsers().find(u => u.role === newRole);
+    if (mockUser) {
+      setUsername(mockUser.username);
+    }
+    setPassword('admin123');
+  }
 
   async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     if (!username || !password) {
       setError('Username and password are required.');
+      return;
+    }
+    if (password !== ROLE_CONFIG[selectedRole].demoPassword) {
+      setError('Incorrect password for the selected role.');
       return;
     }
     setStep('mfa');
@@ -36,8 +65,9 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(username, password, mfaCode);
-      navigate('/');
+      const roleMockUser = authApi.getMockUsers().find(u => u.role === selectedRole) ?? authApi.getMockUsers()[0];
+      await login(roleMockUser.username, password, mfaCode);
+      navigate(ROLE_CONFIG[roleMockUser.role].landing);
     } catch {
       setError('Authentication failed. Please try again.');
     } finally {
@@ -48,8 +78,9 @@ export default function LoginPage() {
   async function handleSSO() {
     setLoading(true);
     try {
-      await login('op.rajan', 'demo', '000000');
-      navigate('/');
+      const roleMockUser = authApi.getMockUsers().find(u => u.role === selectedRole) ?? authApi.getMockUsers()[0];
+      await login(roleMockUser.username, 'demo', '000000');
+      navigate(ROLE_CONFIG[roleMockUser.role].landing);
     } finally {
       setLoading(false);
     }
@@ -127,13 +158,39 @@ export default function LoginPage() {
                 <h2 className="font-serif text-xl font-semibold" style={{ color: 'var(--ink-900)' }}>
                   Sign In
                 </h2>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--ink-600)' }}>
-                  Enter your credentials or use Single Sign-On
-                </p>
+              </div>
+
+              {/* Role selection dropdown */}
+              <div className="mb-4">
+                <label
+                  htmlFor="login-role"
+                  className="block text-xs font-semibold mb-1.5"
+                  style={{ color: 'var(--ink-800)' }}
+                >
+                  Role
+                </label>
+                <select
+                  id="login-role"
+                  value={selectedRole}
+                  onChange={e => handleRoleChange(e.target.value as UserRole)}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs cursor-pointer"
+                  style={{
+                    background: 'var(--sand-50)',
+                    borderColor: 'var(--sand-300)',
+                    color: 'var(--ink-900)',
+                  }}
+                >
+                  {ROLES_LIST.map(role => (
+                    <option key={role} value={role}>
+                      {getRoleDisplayName(role)}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* SSO Button */}
               <button
+                id="login-sso"
                 type="button"
                 onClick={handleSSO}
                 disabled={loading}
@@ -154,10 +211,15 @@ export default function LoginPage() {
 
               <form onSubmit={handleCredentials} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--ink-800)' }}>
+                  <label
+                    htmlFor="login-username"
+                    className="block text-xs font-semibold mb-1.5"
+                    style={{ color: 'var(--ink-800)' }}
+                  >
                     Username
                   </label>
                   <input
+                    id="login-username"
                     type="text"
                     value={username}
                     onChange={e => setUsername(e.target.value)}
@@ -172,11 +234,16 @@ export default function LoginPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--ink-800)' }}>
+                  <label
+                    htmlFor="login-password"
+                    className="block text-xs font-semibold mb-1.5"
+                    style={{ color: 'var(--ink-800)' }}
+                  >
                     Password
                   </label>
                   <div className="relative">
                     <input
+                      id="login-password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
@@ -201,7 +268,11 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
+                {error && (
+                  <p role="alert" className="text-xs text-red-600 font-semibold">
+                    {error}
+                  </p>
+                )}
 
                 <button
                   type="submit"
@@ -240,25 +311,35 @@ export default function LoginPage() {
               </div>
 
               <form onSubmit={handleMfa} className="space-y-4">
-                <input
-                  type="text"
-                  value={mfaCode}
-                  onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="000000"
-                  maxLength={6}
-                  className="w-full text-center px-3 py-3 rounded-xl text-2xl font-mono tracking-[0.5em] border outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
-                  style={{
-                    background: 'var(--sand-50)',
-                    borderColor: 'var(--sand-300)',
-                    color: 'var(--ink-900)',
-                  }}
-                  autoFocus
-                />
+                <div>
+                  <label htmlFor="login-mfa" className="sr-only">
+                    Authentication Code
+                  </label>
+                  <input
+                    id="login-mfa"
+                    type="text"
+                    value={mfaCode}
+                    onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    maxLength={6}
+                    className="w-full text-center px-3 py-3 rounded-xl text-2xl font-mono tracking-[0.5em] border outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
+                    style={{
+                      background: 'var(--sand-50)',
+                      borderColor: 'var(--sand-300)',
+                      color: 'var(--ink-900)',
+                    }}
+                    autoFocus
+                  />
+                </div>
                 <p className="text-xs text-center font-medium opacity-70" style={{ color: 'var(--ink-600)' }}>
                   Demo: enter any 6 digits and click Verify
                 </p>
 
-                {error && <p className="text-xs text-red-600 text-center font-semibold">{error}</p>}
+                {error && (
+                  <p role="alert" className="text-xs text-red-600 text-center font-semibold">
+                    {error}
+                  </p>
+                )}
 
                 <button
                   type="submit"

@@ -11,8 +11,9 @@ import {
   Shield, Layers, AlertTriangle, Check
 } from 'lucide-react';
 import { CoastalMap } from '@/components/CoastalMap';
-import { useMapStore } from '@/lib/store';
+import { useMapStore, useAuthStore } from '@/lib/store';
 import { zonesApi } from '@/lib/api';
+import { can } from '@/lib/roleConfig';
 import { ZONES, ZONE_PROFILES, UAVS } from '@/lib/mockData';
 import type { Zone, ZoneType } from '@/types';
 import { cn } from '@/lib/utils';
@@ -189,7 +190,7 @@ function TelemetryHUD({
 
 // ─── Zone properties drawer ───────────────────────────────────
 
-function ZonePropertiesDrawer({ zone, onClose, onSave }: { zone: Zone; onClose: () => void; onSave: (z: Zone) => void }) {
+function ZonePropertiesDrawer({ zone, onClose, onSave, canEdit }: { zone: Zone; onClose: () => void; onSave: (z: Zone) => void; canEdit: boolean }) {
   const [draft, setDraft] = useState<Zone>({ ...zone });
 
   function save() {
@@ -217,6 +218,7 @@ function ZonePropertiesDrawer({ zone, onClose, onSave }: { zone: Zone; onClose: 
           <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Zone Name</label>
           <input
             value={draft.name}
+            disabled={!canEdit}
             onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
             className="w-full px-3 py-2 rounded-xl text-sm border outline-none font-sans"
             style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}
@@ -228,6 +230,7 @@ function ZonePropertiesDrawer({ zone, onClose, onSave }: { zone: Zone; onClose: 
           <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Zone Classification</label>
           <select
             value={draft.type}
+            disabled={!canEdit}
             onChange={e => setDraft(d => ({ ...d, type: e.target.value as ZoneType }))}
             className="w-full px-3 py-2 rounded-xl text-sm border outline-none font-sans"
             style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}
@@ -243,6 +246,7 @@ function ZonePropertiesDrawer({ zone, onClose, onSave }: { zone: Zone; onClose: 
           <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Assigned Profile</label>
           <select
             value={draft.profileId}
+            disabled={!canEdit}
             onChange={e => setDraft(d => ({ ...d, profileId: e.target.value }))}
             className="w-full px-3 py-2 rounded-xl text-sm border outline-none font-sans"
             style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}
@@ -259,6 +263,7 @@ function ZonePropertiesDrawer({ zone, onClose, onSave }: { zone: Zone; onClose: 
           <input
             type="color"
             value={draft.color}
+            disabled={!canEdit}
             onChange={e => setDraft(d => ({ ...d, color: e.target.value }))}
             className="w-full h-9 rounded-xl border outline-none cursor-pointer p-1"
             style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
@@ -272,14 +277,16 @@ function ZonePropertiesDrawer({ zone, onClose, onSave }: { zone: Zone; onClose: 
           onClick={onClose}
           className="px-3 py-2 rounded-xl text-xs font-mono font-medium opacity-70 hover:opacity-100"
         >
-          Cancel
+          {canEdit ? 'Cancel' : 'Close'}
         </button>
-        <button
-          onClick={save}
-          className="btn-navy text-xs px-4 py-2 rounded-xl flex items-center gap-1.5"
-        >
-          <Save className="w-3.5 h-3.5" /> Save Zone
-        </button>
+        {canEdit && (
+          <button
+            onClick={save}
+            className="btn-navy text-xs px-4 py-2 rounded-xl flex items-center gap-1.5"
+          >
+            <Save className="w-3.5 h-3.5" /> Save Zone
+          </button>
+        )}
       </div>
     </div>
   );
@@ -289,10 +296,12 @@ function ZonePropertiesDrawer({ zone, onClose, onSave }: { zone: Zone; onClose: 
 
 function ZoneList({
   selectedId,
-  onSelect
+  onSelect,
+  canEdit,
 }: {
   selectedId: string | null;
   onSelect: (id: string) => void;
+  canEdit: boolean;
 }) {
   return (
     <div
@@ -301,13 +310,15 @@ function ZoneList({
     >
       <div className="flex items-center justify-between px-3 py-2.5 border-b flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
         <span className="font-serif text-sm font-semibold">Active Geofences</span>
-        <button
-          onClick={() => alert('Click "Geofence Polygon" tool on the map to trace new perimeter vertices.')}
-          className="text-xs px-2.5 py-1 rounded-lg transition-colors font-mono font-bold"
-          style={{ background: 'var(--sand-200)', color: 'var(--ink-900)' }}
-        >
-          + New
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => alert('Click "Geofence Polygon" tool on the map to trace new perimeter vertices.')}
+            className="text-xs px-2.5 py-1 rounded-lg transition-colors font-mono font-bold"
+            style={{ background: 'var(--sand-200)', color: 'var(--ink-900)' }}
+          >
+            + New
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto">
         {ZONES.map(zone => (
@@ -336,6 +347,10 @@ function ZoneList({
 // ─── Map GIS page ─────────────────────────────────────────────
 
 export default function MapGIS() {
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
+  const canEditGeofence = can(activeRole, 'EDIT_GEOFENCE');
+
   const [drawTool, setDrawTool] = useState<DrawTool>('none');
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [selectedDroneIndex, setSelectedDroneIndex] = useState(0);
@@ -358,6 +373,7 @@ export default function MapGIS() {
       <ZoneList
         selectedId={selectedZoneId}
         onSelect={(id) => setSelectedZoneId(id === selectedZoneId ? null : id)}
+        canEdit={canEditGeofence}
       />
 
       {/* Map canvas */}
@@ -369,9 +385,11 @@ export default function MapGIS() {
         />
 
         {/* Draw tools overlay (Top Left) */}
-        <div className="absolute top-4 left-4 z-10">
-          <DrawTools tool={drawTool} onSelect={setDrawTool} />
-        </div>
+        {canEditGeofence && (
+          <div className="absolute top-4 left-4 z-10">
+            <DrawTools tool={drawTool} onSelect={setDrawTool} />
+          </div>
+        )}
 
         {/* Digital Compass & Telemetry HUD (Top Right) */}
         <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-3 pointer-events-auto">
@@ -406,6 +424,7 @@ export default function MapGIS() {
           zone={selectedZone}
           onClose={() => setSelectedZoneId(null)}
           onSave={handleZoneSave}
+          canEdit={canEditGeofence}
         />
       )}
     </div>

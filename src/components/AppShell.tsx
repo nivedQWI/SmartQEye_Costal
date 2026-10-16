@@ -18,7 +18,11 @@ import { cn, formatPct } from '@/lib/utils';
 import { ISTClock } from '@/components/ISTClock';
 import { useAlertStore, useAuthStore, useThemeStore, useHealthStore, useMissionStore } from '@/lib/store';
 import { simulator } from '@/lib/simulator';
+import { ROLE_CONFIG, canAccess, can } from '@/lib/roleConfig';
 import type { UserRole } from '@/types';
+
+// Toggle to display developer role switcher in HarbourBar (hidden for customer demo)
+const SHOW_DEV_ROLE_SWITCHER = false;
 
 // ─── Nav Structure with Thematic Sections ────────────────────
 
@@ -69,7 +73,7 @@ const NAV_SECTIONS: NavSection[] = [
   }
 ];
 
-const ROLES: UserRole[] = ['OPERATOR', 'ANALYST', 'SUPERVISOR', 'ZONE_ADMIN', 'SYS_ADMIN', 'MODEL_CUSTODIAN', 'AUDITOR'];
+const ROLES: UserRole[] = ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'];
 
 // ─── AppShell ─────────────────────────────────────────────────
 
@@ -77,6 +81,9 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
 
   const { user, devRole, logout, setDevRole } = useAuthStore();
+  const activeRole: UserRole = user?.role ?? devRole ?? 'OPERATOR';
+  const primaryList = ROLE_CONFIG[activeRole]?.primary ?? [];
+
   const { mode, setMode, resolveTheme, resolved } = useThemeStore();
   const { criticalBanner, unreadCount, addAlert, dismissBanner } = useAlertStore();
   const { updateHealth } = useHealthStore();
@@ -170,72 +177,108 @@ export function AppShell() {
 
         {/* ── Grouped Navigation Sections ── */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-1 divide-y divide-[var(--line)]">
-          {NAV_SECTIONS.map((section, sIdx) => {
-            const visibleItems = section.items.filter(item => item.roles.includes(devRole));
+          {NAV_SECTIONS.map((section, originalSectionIndex) => {
+            const visibleItems = section.items.filter(item => canAccess(activeRole, item.to));
             if (visibleItems.length === 0) return null;
 
-            return (
-              <div key={section.title} className={cn("py-1.5", sIdx === 0 ? "pt-0" : "")}>
-                {/* Section title (visible when expanded) */}
-                {!collapsed && (
-                  <div className="px-3 pt-2 pb-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-80">
-                    {section.title}
-                  </div>
-                )}
+            // Earliest primary index in this section
+            let earliestPrimaryIndex = Infinity;
+            visibleItems.forEach(item => {
+              const idx = primaryList.indexOf(item.to);
+              if (idx !== -1 && idx < earliestPrimaryIndex) {
+                earliestPrimaryIndex = idx;
+              }
+            });
 
-                {visibleItems.map(item => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === '/'}
-                    title={collapsed ? item.label : undefined}
-                    className={({ isActive }) => cn(
-                      'flex items-center gap-3 mx-1 my-0.5 rounded-lg transition-all duration-150 group relative',
-                      collapsed ? 'px-0 justify-center h-10' : 'px-3 py-2',
-                      isActive
-                        ? 'font-semibold shadow-xs'
-                        : 'opacity-75 hover:opacity-100 hover:bg-[var(--surface-hover)]',
-                    )}
-                    style={({ isActive }) => ({
-                      background: isActive ? 'var(--sea-200)' : 'transparent',
-                      color: isActive ? 'var(--sea-600)' : 'var(--text)',
-                    })}
-                  >
-                    {({ isActive }) => (
-                      <>
-                        {/* Active bar */}
-                        {isActive && (
-                          <span
-                            className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full"
-                            style={{ background: 'var(--sea-600)' }}
+            // Reorder items within section
+            const primaryItems: NavEntry[] = [];
+            const secondaryItems: NavEntry[] = [];
+            visibleItems.forEach(item => {
+              if (primaryList.includes(item.to)) {
+                primaryItems.push(item);
+              } else {
+                secondaryItems.push(item);
+              }
+            });
+            primaryItems.sort((a, b) => primaryList.indexOf(a.to) - primaryList.indexOf(b.to));
+
+            return {
+              section,
+              visibleItems: [...primaryItems, ...secondaryItems],
+              earliestPrimaryIndex,
+              originalSectionIndex,
+            };
+          })
+            .filter((s): s is NonNullable<typeof s> => s !== null)
+            .sort((a, b) => {
+              if (a.earliestPrimaryIndex !== b.earliestPrimaryIndex) {
+                return a.earliestPrimaryIndex - b.earliestPrimaryIndex;
+              }
+              return a.originalSectionIndex - b.originalSectionIndex;
+            })
+            .map(({ section, visibleItems }, sIdx) => {
+              return (
+                <div key={section.title} className={cn("py-1.5", sIdx === 0 ? "pt-0" : "")}>
+                  {/* Section title (visible when expanded) */}
+                  {!collapsed && (
+                    <div className="px-3 pt-2 pb-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-80">
+                      {section.title}
+                    </div>
+                  )}
+
+                  {visibleItems.map(item => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.to === '/'}
+                      title={collapsed ? item.label : undefined}
+                      className={({ isActive }) => cn(
+                        'flex items-center gap-3 mx-1 my-0.5 rounded-lg transition-all duration-150 group relative',
+                        collapsed ? 'px-0 justify-center h-10' : 'px-3 py-2',
+                        isActive
+                          ? 'font-semibold shadow-xs'
+                          : 'opacity-75 hover:opacity-100 hover:bg-[var(--surface-hover)]',
+                      )}
+                      style={({ isActive }) => ({
+                        background: isActive ? 'var(--sea-200)' : 'transparent',
+                        color: isActive ? 'var(--sea-600)' : 'var(--text)',
+                      })}
+                    >
+                      {({ isActive }) => (
+                        <>
+                          {/* Active bar */}
+                          {isActive && (
+                            <span
+                              className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full"
+                              style={{ background: 'var(--sea-600)' }}
+                            />
+                          )}
+
+                          {/* Icon */}
+                          <item.icon
+                            className={cn('flex-shrink-0', collapsed ? 'w-5 h-5' : 'w-4 h-4')}
+                            strokeWidth={isActive ? 2.5 : 1.9}
+                            style={{ color: isActive ? 'var(--sea-600)' : 'inherit' }}
                           />
-                        )}
 
-                        {/* Icon */}
-                        <item.icon
-                          className={cn('flex-shrink-0', collapsed ? 'w-5 h-5' : 'w-4 h-4')}
-                          strokeWidth={isActive ? 2.5 : 1.9}
-                          style={{ color: isActive ? 'var(--sea-600)' : 'inherit' }}
-                        />
+                          {/* Label — clearly visible */}
+                          {!collapsed && (
+                            <span className="text-[13px] font-medium truncate flex-1">
+                              {item.label}
+                            </span>
+                          )}
 
-                        {/* Label — clearly visible */}
-                        {!collapsed && (
-                          <span className="text-[13px] font-medium truncate flex-1">
-                            {item.label}
-                          </span>
-                        )}
-
-                        {/* Chevron indicator for active item */}
-                        {!collapsed && isActive && (
-                          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
-                        )}
-                      </>
-                    )}
-                  </NavLink>
-                ))}
-              </div>
-            );
-          })}
+                          {/* Chevron indicator for active item */}
+                          {!collapsed && isActive && (
+                            <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  ))}
+                </div>
+              );
+            })}
         </nav>
 
         {/* ── User Profile at bottom ── */}
@@ -267,7 +310,7 @@ export function AppShell() {
                   className="text-[10px] font-mono truncate font-semibold"
                   style={{ color: 'var(--text-muted)' }}
                 >
-                  {devRole.replace(/_/g, ' ')}
+                  {activeRole.replace(/_/g, ' ')}
                 </div>
               </div>
             </div>
@@ -286,46 +329,56 @@ export function AppShell() {
           style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}
         >
           {/* Mission selector */}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-opacity hover:opacity-80 max-w-[240px]"
-                style={{ background: 'var(--sand-200)', borderColor: 'var(--sand-300)', color: 'var(--ink-900)' }}
-              >
-                <Anchor className="w-3.5 h-3.5 flex-shrink-0 text-[var(--accent)]" />
-                <span className="truncate">{activeMission?.title ?? 'All Missions'}</span>
-                <ChevronRight className="w-3 h-3 rotate-90 opacity-50 flex-shrink-0" />
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                className="z-50 min-w-[240px] rounded-xl shadow-2xl p-1"
-                style={{ background: 'var(--raised)', border: '1px solid var(--line)' }}
-                sideOffset={6}
-              >
-                {missions.map(m => (
-                  <DropdownMenu.Item
-                    key={m.id}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors outline-none',
-                      'hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]',
-                      m.id === activeMissionId && 'font-semibold',
-                    )}
-                    onSelect={() => setActiveMission(m.id)}
-                  >
-                    <span
-                      className={cn('w-2 h-2 rounded-full flex-shrink-0', m.status === 'ACTIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400')}
-                    />
-                    <div className="min-w-0">
-                      <div className="truncate font-medium">{m.title}</div>
-                      <div className="text-[10px] opacity-60 font-mono">{m.missionCode}</div>
-                    </div>
-                    {m.id === activeMissionId && <span className="ml-auto text-xs" style={{ color: 'var(--sea-600)' }}>✓</span>}
-                  </DropdownMenu.Item>
-                ))}
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
+          {can(activeRole, 'CHANGE_MISSION') ? (
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-opacity hover:opacity-80 max-w-[240px]"
+                  style={{ background: 'var(--sand-200)', borderColor: 'var(--sand-300)', color: 'var(--ink-900)' }}
+                >
+                  <Anchor className="w-3.5 h-3.5 flex-shrink-0 text-[var(--accent)]" />
+                  <span className="truncate">{activeMission?.title ?? 'All Missions'}</span>
+                  <ChevronRight className="w-3 h-3 rotate-90 opacity-50 flex-shrink-0" />
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  className="z-50 min-w-[240px] rounded-xl shadow-2xl p-1"
+                  style={{ background: 'var(--raised)', border: '1px solid var(--line)' }}
+                  sideOffset={6}
+                >
+                  {missions.map(m => (
+                    <DropdownMenu.Item
+                      key={m.id}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors outline-none',
+                        'hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]',
+                        m.id === activeMissionId && 'font-semibold',
+                      )}
+                      onSelect={() => setActiveMission(m.id)}
+                    >
+                      <span
+                        className={cn('w-2 h-2 rounded-full flex-shrink-0', m.status === 'ACTIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400')}
+                      />
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{m.title}</div>
+                        <div className="text-[10px] opacity-60 font-mono">{m.missionCode}</div>
+                      </div>
+                      {m.id === activeMissionId && <span className="ml-auto text-xs" style={{ color: 'var(--sea-600)' }}>✓</span>}
+                    </DropdownMenu.Item>
+                  ))}
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          ) : (
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border max-w-[240px]"
+              style={{ background: 'var(--sand-200)', borderColor: 'var(--sand-300)', color: 'var(--ink-900)' }}
+            >
+              <Anchor className="w-3.5 h-3.5 flex-shrink-0 text-[var(--accent)]" />
+              <span className="truncate">{activeMission?.title ?? 'All Missions'}</span>
+            </div>
+          )}
 
           <div className="flex-1" />
 
@@ -333,24 +386,26 @@ export function AppShell() {
           <ISTClock />
 
           {/* Alert Bell */}
-          <button
-            className="relative p-2 rounded-lg transition-colors hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]"
-            onClick={() => navigate('/alerts')}
-            aria-label={`${unreadCount} unread alerts`}
-          >
-            <Bell
-              className="w-5 h-5"
-              style={{ color: unreadCount > 0 ? 'var(--sev-critical)' : 'var(--text-muted)' }}
-            />
-            {unreadCount > 0 && (
-              <span
-                className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center text-white"
-                style={{ background: 'var(--sev-critical)' }}
-              >
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </button>
+          {['OPERATOR', 'SUPERVISOR', 'AUDITOR'].includes(activeRole) && (
+            <button
+              className="relative p-2 rounded-lg transition-colors hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]"
+              onClick={() => navigate('/alerts')}
+              aria-label={`${unreadCount} unread alerts`}
+            >
+              <Bell
+                className="w-5 h-5"
+                style={{ color: unreadCount > 0 ? 'var(--sev-critical)' : 'var(--text-muted)' }}
+              />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center text-white"
+                  style={{ background: 'var(--sev-critical)' }}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Theme toggle */}
           <DropdownMenu.Root>
@@ -409,7 +464,7 @@ export function AppShell() {
                 </div>
                 <div className="text-left hidden sm:block">
                   <div className="text-xs font-semibold leading-tight">{user?.fullName ?? 'Kerala Police'}</div>
-                  <div className="text-[10px] font-mono opacity-50">{devRole.replace(/_/g, ' ')}</div>
+                  <div className="text-[10px] font-mono opacity-50">{activeRole.replace(/_/g, ' ')}</div>
                 </div>
                 <ChevronRight className="w-3 h-3 rotate-90 opacity-30 hidden sm:block" />
               </button>
@@ -426,28 +481,32 @@ export function AppShell() {
                   <div className="text-xs opacity-50 font-mono">{user?.username}</div>
                 </div>
 
-                <div className="px-3 py-1 text-[10px] uppercase tracking-widest font-semibold opacity-40">
-                  Dev · Switch Role
-                </div>
-                {ROLES.map(role => (
-                  <DropdownMenu.Item
-                    key={role}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-xs transition-colors outline-none',
-                      'hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]',
-                      devRole === role && 'font-semibold',
-                    )}
-                    onSelect={() => setDevRole(role)}
-                  >
-                    <Shield className="w-3 h-3 opacity-40 flex-shrink-0" />
-                    <span>{role.replace(/_/g, ' ')}</span>
-                    {devRole === role && (
-                      <span className="ml-auto text-xs" style={{ color: 'var(--sea-600)' }}>✓</span>
-                    )}
-                  </DropdownMenu.Item>
-                ))}
+                {SHOW_DEV_ROLE_SWITCHER && (
+                  <>
+                    <div className="px-3 py-1 text-[10px] uppercase tracking-widest font-semibold opacity-40">
+                      Dev · Switch Role
+                    </div>
+                    {ROLES.map(role => (
+                      <DropdownMenu.Item
+                        key={role}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-xs transition-colors outline-none',
+                          'hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]',
+                          activeRole === role && 'font-semibold',
+                        )}
+                        onSelect={() => setDevRole(role)}
+                      >
+                        <Shield className="w-3 h-3 opacity-40 flex-shrink-0" />
+                        <span>{role.replace(/_/g, ' ')}</span>
+                        {activeRole === role && (
+                          <span className="ml-auto text-xs" style={{ color: 'var(--sea-600)' }}>✓</span>
+                        )}
+                      </DropdownMenu.Item>
+                    ))}
+                    <DropdownMenu.Separator className="my-1 h-px" style={{ background: 'var(--line)' }} />
+                  </>
+                )}
 
-                <DropdownMenu.Separator className="my-1 h-px" style={{ background: 'var(--line)' }} />
                 <DropdownMenu.Item
                   className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors outline-none"
                   onSelect={logout}
@@ -460,7 +519,7 @@ export function AppShell() {
         </header>
 
         {/* ── Critical Alert Banner ── */}
-        {criticalBanner && (
+        {criticalBanner && ['OPERATOR', 'SUPERVISOR', 'AUDITOR'].includes(activeRole) && (
           <div
             className="flex items-center gap-3 px-4 py-2 text-xs border-b flex-shrink-0 animate-pulse"
             style={{ background: 'var(--sev-critical)', color: 'white', borderColor: 'rgba(0,0,0,0.25)' }}
@@ -476,10 +535,12 @@ export function AppShell() {
               className="px-2.5 py-0.5 rounded border border-white/40 text-xs font-medium hover:bg-white/20 transition-colors flex-shrink-0"
               onClick={() => navigate(`/alerts/${criticalBanner.id}`)}
             >Open</button>
-            <button
-              className="px-2.5 py-0.5 rounded border border-white/40 text-xs font-medium hover:bg-white/20 transition-colors flex-shrink-0"
-              onClick={dismissBanner}
-            >Acknowledge</button>
+            {can(activeRole, 'ACK_ALERT') && (
+              <button
+                className="px-2.5 py-0.5 rounded border border-white/40 text-xs font-medium hover:bg-white/20 transition-colors flex-shrink-0"
+                onClick={dismissBanner}
+              >Acknowledge</button>
+            )}
           </div>
         )}
 

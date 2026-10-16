@@ -8,8 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { Layers, ChevronDown, ChevronUp } from 'lucide-react';
 import { CoastalMap } from '@/components/CoastalMap';
 import { SeverityChip, SeverityDot } from '@/components/SeverityChip';
-import { useAlertStore, useFeedStore, useMapStore, useMissionStore } from '@/lib/store';
-import { formatIST, eventTypeLabel } from '@/lib/utils';
+import { useAlertStore, useFeedStore, useMapStore, useMissionStore, useAuthStore } from '@/lib/store';
+import { canAccess } from '@/lib/roleConfig';
+import { cn, formatIST, eventTypeLabel } from '@/lib/utils';
 import { MISSIONS } from '@/lib/mockData';
 
 // ─── Alert Queue (right panel) ────────────────────────────────
@@ -68,7 +69,7 @@ function AlertQueue() {
 
 // ─── Mission Stats Box ────────────────────────────────────────
 
-function MissionStats() {
+function MissionStats({ borderTop = true }: { borderTop?: boolean }) {
   const { alerts } = useAlertStore();
   const { feeds } = useFeedStore();
   const { missions, activeMissionId } = useMissionStore();
@@ -78,7 +79,7 @@ function MissionStats() {
   const liveFeeds = feeds.filter(f => f.state === 'LIVE').length;
 
   return (
-    <div className="p-3 border-t flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
+    <div className={cn("p-3 flex-shrink-0", borderTop && "border-t")} style={{ borderColor: 'var(--line)' }}>
       <div className="font-serif text-sm font-semibold mb-2 truncate">
         {activeMission?.title ?? 'Active Operation'}
       </div>
@@ -145,6 +146,9 @@ function LayerToggles() {
 
 export default function CommandCenter() {
   const navigate = useNavigate();
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
+  const hasAlertsAccess = canAccess(activeRole, '/alerts');
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -154,7 +158,9 @@ export default function CommandCenter() {
           height="100%"
           className="absolute inset-0"
           showContacts={false}
-          onAlertClick={id => navigate(`/alerts/${id}`)}
+          onAlertClick={id => {
+            if (hasAlertsAccess) navigate(`/alerts/${id}`);
+          }}
         />
         <LayerToggles />
       </div>
@@ -164,10 +170,18 @@ export default function CommandCenter() {
         className="w-80 flex-shrink-0 flex flex-col border-l chart-paper"
         style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}
       >
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <AlertQueue />
-        </div>
-        <MissionStats />
+        {hasAlertsAccess ? (
+          <>
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <AlertQueue />
+            </div>
+            <MissionStats />
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col">
+            <MissionStats borderTop={false} />
+          </div>
+        )}
       </div>
     </div>
   );

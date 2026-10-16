@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
+import { useAuthStore } from '@/lib/store';
+import { can } from '@/lib/roleConfig';
 import type { MissionSortie, Squadron, VideoSourceType } from '@/types';
 
 function generateMissionId(squadron: Squadron): string {
@@ -24,6 +26,8 @@ function generateMissionId(squadron: Squadron): string {
 }
 
 export default function MissionsPage() {
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const [squadron, setSquadron] = useState<Squadron>('ALPHA');
   const [missionName, setMissionName] = useState('');
   const [missionId, setMissionId] = useState(generateMissionId('ALPHA'));
@@ -261,15 +265,17 @@ export default function MissionsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 ml-auto">
-            <button
-              onClick={handleStopMission}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
-            >
-              <Square className="w-4 h-4 fill-white" />
-              Stop Mission
-            </button>
-          </div>
+          {can(activeRole, 'START_STOP_MISSION') && (
+            <div className="flex items-center gap-3 ml-auto">
+              <button
+                onClick={handleStopMission}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
+              >
+                <Square className="w-4 h-4 fill-white" />
+                Stop Mission
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div
@@ -523,16 +529,17 @@ export default function MissionsPage() {
                   />
                 </div>
               </div>
-
-              <div className="pt-3 flex justify-end">
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
-                >
-                  <Play className="w-4 h-4 fill-white" />
-                  Start Mission
-                </button>
-              </div>
+              {can(activeRole, 'START_STOP_MISSION') && (
+                <div className="pt-3 flex justify-end">
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+                  >
+                    <Play className="w-4 h-4 fill-white" />
+                    Start Mission
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>
@@ -735,7 +742,9 @@ export default function MissionsPage() {
                 <th className="py-2.5 px-3">Pilot</th>
                 <th className="py-2.5 px-3">Duration</th>
                 <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3 text-right">Actions</th>
+                {can(activeRole, 'DELETE_MISSION') && (
+                  <th className="py-2.5 px-3 text-right">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -757,15 +766,17 @@ export default function MissionsPage() {
                       {s.status}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-right">
-                    <button
-                      onClick={() => handleDeleteMission(s.id)}
-                      className="p-1 rounded text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                      title="Delete Mission Record"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
+                  {can(activeRole, 'DELETE_MISSION') && (
+                    <td className="py-2.5 px-3 text-right">
+                      <button
+                        onClick={() => handleDeleteMission(s.id)}
+                        className="p-1 rounded text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Delete Mission Record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -10,6 +10,8 @@ import {
   Plus, Trash2, Video, Layers, AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/lib/store';
+import { can } from '@/lib/roleConfig';
 import { IntrusionRecord } from '@/types';
 
 // Mock Geofence Zones
@@ -110,6 +112,8 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
 ];
 
 export default function IntrusionDetectionPage() {
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const [zones, setZones] = useState<VirtualZone[]>(INITIAL_ZONES);
   const [intrusions, setIntrusions] = useState<IntrusionRecord[]>(INITIAL_INTRUSIONS);
   const [selectedZone, setSelectedZone] = useState<VirtualZone | null>(INITIAL_ZONES[0]);
@@ -180,13 +184,15 @@ export default function IntrusionDetectionPage() {
             {isSimulatingBreach ? 'SIMULATING BREACH...' : 'Simulate Breach'}
           </button>
 
-          <button
-            onClick={handleExportJson}
-            className="btn-navy text-xs flex items-center gap-1.5 px-3 py-1.5 rounded"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export JSON Audit
-          </button>
+          {can(activeRole, 'EXPORT_DOWNLOAD') && (
+            <button
+              onClick={handleExportJson}
+              className="btn-navy text-xs flex items-center gap-1.5 px-3 py-1.5 rounded"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export JSON Audit
+            </button>
+          )}
         </div>
       </div>
 
@@ -449,7 +455,7 @@ export default function IntrusionDetectionPage() {
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      {item.status === 'ACTIVE' && (
+                      {item.status === 'ACTIVE' && can(activeRole, 'DISPATCH_INTERCEPTOR') && (
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'DISPATCHED')}
                           className="px-2 py-1 rounded bg-red-700 hover:bg-red-800 text-white font-mono text-[10px] font-bold"
@@ -457,7 +463,7 @@ export default function IntrusionDetectionPage() {
                           Dispatch
                         </button>
                       )}
-                      {item.status === 'DISPATCHED' && (
+                      {item.status === 'DISPATCHED' && can(activeRole, 'RESOLVE_ALERT') && (
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'RESOLVED')}
                           className="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-[10px] font-bold"
@@ -528,14 +534,16 @@ export default function IntrusionDetectionPage() {
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
-              {inspectRecord.status !== 'RESOLVED' ? (
+              {inspectRecord.status !== 'RESOLVED' && can(activeRole, 'RESOLVE_ALERT') ? (
                 <button
                   onClick={() => handleUpdateStatus(inspectRecord.id, 'RESOLVED')}
                   className="px-3 py-1.5 rounded bg-emerald-700 text-white font-mono text-xs font-bold"
                 >
                   Mark Resolved
                 </button>
-              ) : <span className="text-xs text-emerald-700 font-bold">✓ Incident Closed</span>}
+              ) : inspectRecord.status === 'RESOLVED' ? (
+                <span className="text-xs text-emerald-700 font-bold">✓ Incident Closed</span>
+              ) : null}
 
               <button
                 onClick={() => setInspectRecord(null)}

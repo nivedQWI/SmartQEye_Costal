@@ -17,7 +17,8 @@ import {
 import { cn, formatPct, formatIST } from '@/lib/utils';
 import { FeedStateChip, ModalityChip } from '@/components/FeedStateChip';
 import { healthApi } from '@/lib/api';
-import { useHealthStore } from '@/lib/store';
+import { useHealthStore, useAuthStore } from '@/lib/store';
+import { can } from '@/lib/roleConfig';
 import { simulator } from '@/lib/simulator';
 import type { SystemHealth } from '@/types';
 
@@ -95,6 +96,19 @@ function SvgDonutGauge({
 
 export default function SystemHealth() {
   const { health: storeHealth, updateHealth } = useHealthStore();
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
+  const [toast, setToast] = useState<string | null>(null);
+
+  function handleRestartNode() {
+    setToast('Node TVM-EDGE-PRIMARY reboot sequence initiated');
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  function handleForceSync() {
+    setToast('Hardware sensor and database sync completed');
+    setTimeout(() => setToast(null), 3500);
+  }
 
   const { data: health = storeHealth } = useQuery({
     queryKey: ['system-health'],
@@ -157,12 +171,37 @@ export default function SystemHealth() {
             Real-time server hardware telemetry, GPU thermals, rolling load curves, and live camera feed diagnostics
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs px-3 py-1 rounded-full font-mono font-medium border bg-emerald-50 text-emerald-800 border-emerald-300">
             Node: TVM-EDGE-PRIMARY · DB: {health.dbStatus}
           </span>
+          {can(activeRole, 'RESTART_NODE') && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRestartNode}
+                className="px-2.5 py-1 text-xs font-mono font-bold rounded-lg border bg-[var(--raised)] hover:bg-[var(--sand-200)] transition-colors shadow-xs"
+                style={{ borderColor: 'var(--line)' }}
+                title="Restart node service"
+              >
+                Restart Node
+              </button>
+              <button
+                onClick={handleForceSync}
+                className="px-2.5 py-1 text-xs font-mono font-bold rounded-lg text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity shadow-xs"
+                title="Force sensor and telemetry sync"
+              >
+                Force Sync
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {toast && (
+        <div className="rounded-xl p-3 bg-emerald-500/15 border border-emerald-500 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
+          <span>{toast}</span>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════════
           TOP GRID: 6 HARDWARE SVG DONUT GAUGES (DOCX SPEC)
