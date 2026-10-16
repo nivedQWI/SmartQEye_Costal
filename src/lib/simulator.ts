@@ -48,7 +48,7 @@ class CoastalSimulator {
     return () => this.listeners.delete(listener);
   }
 
-  private emit(event: SimulatorEvent) {
+  emit(event: SimulatorEvent) {
     this.listeners.forEach(l => l(event));
   }
 

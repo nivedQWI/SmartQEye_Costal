@@ -1,0 +1,198 @@
+{
+  "version": "1.2.0-coastal",
+  "sceneName": "vizhinjam_patrol",
+  "durationSec": 90.0,
+  "videoFps": 25.0,
+  "videoWidth": 1280,
+  "videoHeight": 720,
+  "uavCode": "UAV-KL-03",
+  "missionCode": "MSN-20261016-0830-01-VIZHINJAM",
+  "detectorModel": "RTMDet-L (MMDetection, Apache-2.0)",
+  "trackerModel": "ByteTrack (MIT, Permissive)",
+  "frames": [
+    {
+      "timeSec": 0.0,
+      "frameIndex": 0,
+      "boxes": [
+        {
+          "id": "trk-1",
+          "trackId": 1,
+          "contactId": "C-1042",
+          "class": "SMALL_CRAFT",
+          "label": "Small Craft",
+          "conf": 0.89,
+          "bbox": [0.13, 0.68, 0.17, 0.72],
+          "headingDeg": 38,
+          "speedKnots": 18.5,
+          "modality": "RGB",
+          "inZoneBreach": false
+        },
+        {
+          "id": "trk-2",
+          "trackId": 2,
+          "contactId": "C-1038",
+          "class": "MECHANISED_TRAWLER",
+          "label": "Mechanised Trawler",
+          "conf": 0.87,
+          "bbox": [0.24, 0.20, 0.31, 0.24],
+          "headingDeg": 195,
+          "speedKnots": 6.8,
+          "modality": "RGB",
+          "inZoneBreach": false
+        }
+      ],
+      "cfs": {
+        "status": "LIGHT",
+        "rateFps": 12,
+        "reasonCode": "CFS-04: Quiescent open water baseline",
+        "vramSavingsPct": 52
+      }
+    },
+    {
+      "timeSec": 8.0,
+      "frameIndex": 200,
+      "boxes": [
+        {
+          "id": "trk-1",
+          "trackId": 1,
+          "contactId": "C-1042",
+          "class": "SMALL_CRAFT",
+          "label": "Small Craft",
+          "conf": 0.92,
+          "bbox": [0.17, 0.64, 0.21, 0.68],
+          "headingDeg": 38,
+          "speedKnots": 18.5,
+          "modality": "RGB",
+          "inZoneBreach": false
+        }
+      ],
+      "cfs": {
+        "status": "FULL",
+        "rateFps": 25,
+        "reasonCode": "CFS-01: Target C-1042 accelerating towards approach channel",
+        "vramSavingsPct": 0
+      }
+    },
+    {
+      "timeSec": 18.0,
+      "frameIndex": 450,
+      "boxes": [
+        {
+          "id": "trk-1",
+          "trackId": 1,
+          "contactId": "C-1042",
+          "class": "SMALL_CRAFT",
+          "label": "Small Craft",
+          "conf": 0.95,
+          "bbox": [0.36, 0.34, 0.40, 0.38],
+          "headingDeg": 38,
+          "speedKnots": 18.5,
+          "modality": "RGB",
+          "inZoneBreach": true,
+          "zoneCode": "Z-07"
+        }
+      ],
+      "cfs": {
+        "status": "FULL",
+        "rateFps": 25,
+        "reasonCode": "CFS-01: Restricted Zone Z-07 Boundary Breached",
+        "vramSavingsPct": 0
+      }
+    },
+    {
+      "timeSec": 24.0,
+      "frameIndex": 600,
+      "boxes": [
+        {
+          "id": "trk-1",
+          "trackId": 1,
+          "contactId": "C-1042",
+          "class": "SMALL_CRAFT",
+          "label": "Small Craft",
+          "conf": 0.96,
+          "bbox": [0.41, 0.28, 0.45, 0.32],
+          "headingDeg": 38,
+          "speedKnots": 18.5,
+          "modality": "RGB",
+          "inZoneBreach": true,
+          "zoneCode": "Z-07"
+        }
+      ],
+      "cfs": {
+        "status": "FULL",
+        "rateFps": 25,
+        "reasonCode": "CFS-01: Critical Intrusion Alert Active",
+        "vramSavingsPct": 0
+      }
+    }
+  ],
+  "telemetryTrack": [
+    {
+      "timeSec": 0.0,
+      "lat": 8.3732,
+      "lon": 76.9741,
+      "altM": 120.0,
+      "speedMs": 8.2,
+      "headingDeg": 42.0,
+      "gimbalPitchDeg": -35.0,
+      "uavCode": "UAV-KL-03",
+      "missionCode": "MSN-20261016-0830-01-VIZHINJAM"
+    },
+    {
+      "timeSec": 18.0,
+      "lat": 8.3745,
+      "lon": 76.9758,
+      "altM": 122.5,
+      "speedMs": 8.6,
+      "headingDeg": 55.0,
+      "gimbalPitchDeg": -35.0,
+      "uavCode": "UAV-KL-03",
+      "missionCode": "MSN-20261016-0830-01-VIZHINJAM"
+    },
+    {
+      "timeSec": 24.0,
+      "lat": 8.3752,
+      "lon": 76.9765,
+      "altM": 123.0,
+      "speedMs": 8.5,
+      "headingDeg": 60.0,
+      "gimbalPitchDeg": -35.0,
+      "uavCode": "UAV-KL-03",
+      "missionCode": "MSN-20261016-0830-01-VIZHINJAM"
+    }
+  ],
+  "events": [
+    {
+      "timeSec": 0.0,
+      "type": "CONTACT_ACQUIRED",
+      "title": "Sortie Commenced",
+      "description": "UAV-KL-03 patrolling Vizhinjam Outer Approaches",
+      "severity": "INFO"
+    },
+    {
+      "timeSec": 8.0,
+      "type": "CONTACT_ACQUIRED",
+      "title": "Contact C-1042 Acquired",
+      "description": "High-speed craft detected approaching outer channel",
+      "contactId": "C-1042",
+      "severity": "LOW"
+    },
+    {
+      "timeSec": 18.0,
+      "type": "ZONE_BREACH",
+      "title": "Restricted Zone Z-07 Breached",
+      "description": "C-1042 entered restricted military approach",
+      "contactId": "C-1042",
+      "zoneCode": "Z-07",
+      "severity": "HIGH"
+    },
+    {
+      "timeSec": 24.0,
+      "type": "ALERT_RAISED",
+      "title": "Alert ALR-20261016-0001 Raised",
+      "description": "Critical perimeter intrusion alert",
+      "alertCode": "ALR-20261016-0001",
+      "severity": "CRITICAL"
+    }
+  ]
+}

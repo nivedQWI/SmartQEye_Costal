@@ -56,5 +56,5 @@
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | Phase 0 | Oct 2026 | System Audit | Establish baseline audit, green build, offline assets | KSUM RFP compliance baseline | Lead Architect |
 | Phase 1 | Oct 2026 | Licence & i18n | Eliminate Ultralytics YOLO; add Malayalam i18n; adopt RTMDet/RT-DETR | AGPL avoidance & bilingual Kerala Police UI | Lead Architect |
-| Phase 2 | [TBD] | [Component] | [Assumption / Decision] | [Rationale] | [Role] |
+| Phase 2 | Oct 2026 | Realism Engine & Telemetry | Implement DroneVideoPlayer with letterbox-aware canvas, offline sidecar replay, DJI SRT telemetry parser, procedural canvas fallback, and deterministic scenario director | Air-gapped realistic demonstration with zero external CDN/video dependencies | Lead Architect |
 | Phase 3 | [TBD] | [Component] | [Assumption / Decision] | [Rationale] | [Role] |

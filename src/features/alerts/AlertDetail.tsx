@@ -11,6 +11,7 @@ import { cn, formatIST, formatISTFull, formatCoords, timeAgo, eventTypeLabel, tr
 import { SeverityChip } from '@/components/SeverityChip';
 import { ModalityChip } from '@/components/FeedStateChip';
 import { CoastalMap } from '@/components/CoastalMap';
+import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 import { alertsApi } from '@/lib/api';
 import { useAlertStore } from '@/lib/store';
 import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
@@ -90,6 +91,7 @@ export default function AlertDetail() {
   const [tacticalAction, setTacticalAction] = useState<TacticalActionType | null>(null);
   const [localAuditTrail, setLocalAuditTrail] = useState<AuditEntry[]>([]);
   const [exportCopied, setExportCopied] = useState(false);
+  const [seekTimeSec, setSeekTimeSec] = useState<number | undefined>(undefined);
 
   const { data: alert, isLoading, error } = useQuery({
     queryKey: ['alert', id],
@@ -209,34 +211,45 @@ export default function AlertDetail() {
               ))}
             </div>
 
-            {/* Video placeholder */}
-            <div className="relative h-44" style={{ background: '#030C14' }}>
-              <svg viewBox="0 0 400 176" className="w-full h-full opacity-40" preserveAspectRatio="xMidYMid slice">
-                <rect width="400" height="176" fill="#030C14"/>
-                <path d="M0 110 Q100 100 200 108 Q300 116 400 105 L400 176 L0 176 Z" fill="#0A2035"/>
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-10 h-10 rounded-full border-2 border-white/30 flex items-center justify-center cursor-pointer hover:border-white/60 transition-colors">
-                  <span className="text-white/60 text-lg">▶</span>
-                </div>
-              </div>
-              <div className="absolute top-2 right-2">
-                <ModalityChip modality={activeTab} size="sm" />
-              </div>
+            {/* Drone Video Player */}
+            <div className="relative h-56 bg-black overflow-hidden flex flex-col">
+              <DroneVideoPlayer
+                sceneName="vizhinjam_patrol"
+                initialModality={activeTab}
+                compactControls={true}
+                seekToTimeSec={seekTimeSec}
+                highlightContactId={alert.event.contact?.code}
+                className="w-full h-full"
+              />
             </div>
 
-            {/* Keyframe strip */}
-            <div className="flex gap-1 p-2 overflow-x-auto">
-              {alert.evidence.filter(e => e.kind === 'KEYFRAME').map((kf, i) => (
-                <div
-                  key={kf.id}
-                  className="flex-shrink-0 w-16 h-11 rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
-                  style={{ background: '#0a2233', borderColor: 'var(--sea-400)' }}
-                  title={`Keyframe ${i+1}`}
-                >
-                  <div className="w-full h-full flex items-center justify-center text-[10px] font-mono opacity-40">KF{i+1}</div>
-                </div>
-              ))}
+            {/* Cognitive Keyframe Extraction (CKFE) Evidence Strip */}
+            <div className="p-2 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="text-[10px] font-mono text-muted mb-1.5 flex items-center justify-between">
+                <span className="font-bold tracking-wider text-[var(--sea-accent)]">CKFE EVIDENCE KEYFRAMES</span>
+                <span className="opacity-60 text-[9px]">Click to inspect frame</span>
+              </div>
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                {alert.evidence.filter(e => e.kind === 'KEYFRAME').map((kf, i) => {
+                  const targetSec = [8, 18, 24, 32, 45][i % 5];
+                  const isSelected = seekTimeSec === targetSec;
+                  return (
+                    <button
+                      key={kf.id}
+                      onClick={() => setSeekTimeSec(targetSec)}
+                      className={cn(
+                        'flex-shrink-0 w-16 h-12 rounded border overflow-hidden cursor-pointer transition-all flex flex-col items-center justify-center p-1 text-left group',
+                        isSelected ? 'border-[var(--sea-accent)] ring-1 ring-[var(--sea-accent)]' : 'border-[var(--line)]'
+                      )}
+                      style={{ background: isSelected ? 'var(--sea-600)' : '#0a2233' }}
+                      title={`Jump to Cognitive Keyframe ${i + 1} (${targetSec}s)`}
+                    >
+                      <span className="text-[9px] font-mono font-bold text-white/90 group-hover:text-[var(--sea-accent)]">KF-{i + 1}</span>
+                      <span className="text-[8px] font-mono text-white/60">{targetSec}s · {targetSec === 24 ? 'CRIT' : 'WARN'}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
+import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 import { VehicleAnprRecord, MaritimeTrackRecord } from '@/types';
 
 // Mock initial ANPR data
@@ -402,43 +403,13 @@ export default function VehicleMaritimePage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Left: Raw Drone Video Feed */}
-              <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex flex-col justify-between p-3 select-none">
-                {/* Simulated Road Backdrop */}
-                <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 opacity-90 flex items-center justify-center">
-                  <svg className="w-full h-full opacity-30" viewBox="0 0 600 340">
-                    <defs>
-                      <pattern id={rawGridPatternId} width="40" height="40" patternUnits="userSpaceOnUse">
-                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-                      </pattern>
-                    </defs>
-                    <rect width="600" height="340" fill={`url(#${rawGridPatternId})`} />
-                    {/* Highway Road curves */}
-                    <path d="M 50 340 L 250 120 L 350 120 L 550 340 Z" fill="#1e293b" />
-                    <line x1="300" y1="120" x2="300" y2="340" stroke="#facc15" strokeWidth="2" strokeDasharray="10 10" />
-                  </svg>
-                </div>
-
-                {/* HUD Top Bar */}
-                <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-300">
-                  <span className="bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700">
-                    RAW FEED — SENSOR MODALITY: RGB DAY
-                  </span>
-                  <span className="bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700">
-                    ALT: 120M | CAM PITCH: -45°
-                  </span>
-                </div>
-
-                {/* Center watermark */}
-                <div className="relative z-10 text-center font-mono text-xs text-slate-500">
-                  UAV-KL-01 // OPTICAL TELEMETRY STREAM
-                </div>
-
-                {/* Bottom Status */}
-                <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-400">
-                  <span>LAT 8.3982° N, LON 76.9741° E</span>
-                  <span className="text-emerald-400">NO FILTER APPLIED</span>
-                </div>
+              {/* Left: Synchronised Drone Video Player */}
+              <div className="rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex flex-col">
+                <DroneVideoPlayer
+                  sceneName="vizhinjam_patrol"
+                  compactControls={true}
+                  className="w-full h-full"
+                />
               </div>
 
               {/* Right: AI-Annotated Stream (RTMDet-x + PaddleOCR) */}

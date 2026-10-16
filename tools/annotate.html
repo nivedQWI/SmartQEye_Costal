@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartQEye Coastal — Offline Video Annotation Tool</title>
+  <style>
+    :root {
+      --bg: #09121d;
+      --panel: #111d2c;
+      --border: #1f334d;
+      --sea: #0ea5e9;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); padding: 20px; font-size: 13px; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; }
+    h1 { font-size: 18px; color: var(--sea); }
+    .subtitle { font-size: 11px; color: var(--muted); }
+    .layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+    .video-container { position: relative; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+    video { width: 100%; display: block; }
+    canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+    button { background: var(--panel); color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    button:hover { background: #1c2e46; border-color: var(--sea); }
+    button.primary { background: var(--sea); color: #000; font-weight: bold; border: none; }
+    .sidebar { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-col; gap: 14px; }
+    .field { margin-bottom: 12px; }
+    label { display: block; font-size: 11px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    input, select { width: 100%; background: #09121d; border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: 6px; font-size: 12px; }
+    .badge { display: inline-block; padding: 2px 6px; background: rgba(14, 165, 233, 0.2); color: var(--sea); border-radius: 4px; font-size: 10px; font-weight: bold; }
+    .box-list { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>SmartQEye Coastal — Drone Video Annotator</h1>
+      <div class="subtitle">Offline 1 FPS Keyframe Annotation & Interpolation for Video Sidecars</div>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <input type="file" id="videoInput" accept="video/mp4,video/webm" style="display: none;">
+      <button onclick="document.getElementById('videoInput').click()">Open MP4 Video...</button>
+      <button class="primary" onclick="exportSidecarJson()">Export Sidecar JSON</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div>
+      <div class="video-container" id="vContainer">
+        <video id="vid" muted playsinline></video>
+        <canvas id="overlay"></canvas>
+      </div>
+
+      <div class="controls">
+        <button onclick="step(-1.0)">-1.0s (Keyframe)</button>
+        <button onclick="step(-0.04)">-1 Frame</button>
+        <button id="playBtn" onclick="togglePlay()">Play</button>
+        <button onclick="step(0.04)">+1 Frame</button>
+        <button onclick="step(1.0)">+1.0s (Keyframe)</button>
+        <span style="margin-left: 10px; font-family: monospace;" id="timecode">00:00.00 / 00:00.00</span>
+        <span class="badge" id="cfsBadge">CFS: FULL (25 FPS)</span>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <h3 style="font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Active Target Form</h3>
+
+      <div class="field">
+        <label>Contact Code</label>
+        <input type="text" id="contactId" value="C-1042">
+      </div>
+
+      <div class="field">
+        <label>Kerala Craft Classification</label>
+        <select id="craftClass">
+          <option value="SMALL_CRAFT">Small Craft</option>
+          <option value="MECHANISED_TRAWLER">Mechanised Trawler</option>
+          <option value="MOTORISED_COUNTRY_CRAFT">Motorised Country Craft</option>
+          <option value="TRADITIONAL_WOODEN_CRAFT">Traditional Wooden Craft</option>
+          <option value="CANOE_CATAMARAN">Canoe / Catamaran</option>
+          <option value="PERSON">Person</option>
+          <option value="VEHICLE">Vehicle</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Detector Confidence (0.50 - 0.99)</label>
+        <input type="number" id="conf" value="0.91" step="0.01" min="0.5" max="1.0">
+      </div>
+
+      <div class="field">
+        <label>Zone Perimeter Breach</label>
+        <select id="zoneBreach">
+          <option value="NONE">Clear (No Breach)</option>
+          <option value="Z-07">Z-07 Restricted Military Approach</option>
+          <option value="Z-01">Z-01 Vizhinjam Restricted Jetty</option>
+        </select>
+      </div>
+
+      <button style="width: 100%; margin-top: 6px;" onclick="saveCurrentBox()">Save Box to Current Second</button>
+
+      <div style="margin-top: 14px;">
+        <label>Annotations at Current Second</label>
+        <div class="box-list" id="boxList">No boxes drawn on this frame yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const vid = document.getElementById('vid');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+    const timecode = document.getElementById('timecode');
+
+    let annotations = {}; // key: second, value: array of boxes
+    let isDrawing = false;
+    let startX = 0, startY = 0, currentW = 0, currentH = 0;
+
+    document.getElementById('videoInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        vid.src = URL.createObjectURL(file);
+        vid.onloadedmetadata = () => {
+          canvas.width = vid.videoWidth || 1280;
+          canvas.height = vid.videoHeight || 720;
+          updateDisplay();
+        };
+      }
+    });
+
+    function togglePlay() {
+      if (vid.paused) { vid.play(); document.getElementById('playBtn').textContent = 'Pause'; }
+      else { vid.pause(); document.getElementById('playBtn').textContent = 'Play'; }
+    }
+
+    function step(deltaSec) {
+      vid.pause();
+      document.getElementById('playBtn').textContent = 'Play';
+      vid.currentTime = Math.max(0, Math.min(vid.duration || 100, vid.currentTime + deltaSec));
+      updateDisplay();
+    }
+
+    vid.ontimeupdate = updateDisplay;
+
+    function updateDisplay() {
+      const cur = vid.currentTime || 0;
+      const dur = vid.duration || 0;
+      timecode.textContent = `${cur.toFixed(2)}s / ${dur.toFixed(2)}s`;
+      drawCanvas();
+      refreshList();
+    }
+
+    canvas.onmousedown = (e) => {
+      const r = canvas.getBoundingClientRect();
+      startX = (e.clientX - r.left) * (canvas.width / r.width);
+      startY = (e.clientY - r.top) * (canvas.height / r.height);
+      isDrawing = true;
+    };
+
+    canvas.onmousemove = (e) => {
+      if (!isDrawing) return;
+      const r = canvas.getBoundingClientRect();
+      const x = (e.clientX - r.left) * (canvas.width / r.width);
+      const y = (e.clientY - r.top) * (canvas.height / r.height);
+      currentW = x - startX;
+      currentH = y - startY;
+      drawCanvas();
+      ctx.strokeStyle = '#0ea5e9';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(startX, startY, currentW, currentH);
+    };
+
+    canvas.onmouseup = () => { isDrawing = false; };
+
+    function drawCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const sec = Math.floor(vid.currentTime || 0);
+      const list = annotations[sec] || [];
+
+      list.forEach(b => {
+        const x1 = b.bbox[0] * canvas.width;
+        const y1 = b.bbox[1] * canvas.height;
+        const w = (b.bbox[2] - b.bbox[0]) * canvas.width;
+        const h = (b.bbox[3] - b.bbox[1]) * canvas.height;
+
+        ctx.strokeStyle = b.inZoneBreach ? '#ef4444' : '#0ea5e9';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x1, y1, w, h);
+
+        ctx.fillStyle = b.inZoneBreach ? '#ef4444' : '#0ea5e9';
+        ctx.fillRect(x1, y1 - 18, ctx.measureText(`${b.contactId} · ${b.label}`).width + 10, 18);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(`${b.contactId} · ${b.label}`, x1 + 4, y1 - 5);
+      });
+    }
+
+    function saveCurrentBox() {
+      if (Math.abs(currentW) < 5 || Math.abs(currentH) < 5) return;
+      const sec = Math.floor(vid.currentTime || 0);
+      if (!annotations[sec]) annotations[sec] = [];
+
+      const x1 = Math.min(startX, startX + currentW) / canvas.width;
+      const y1 = Math.min(startY, startY + currentH) / canvas.height;
+      const x2 = Math.max(startX, startX + currentW) / canvas.width;
+      const y2 = Math.max(startY, startY + currentH) / canvas.height;
+
+      const craftClass = document.getElementById('craftClass').value;
+      const zoneBreach = document.getElementById('zoneBreach').value;
+
+      annotations[sec].push({
+        id: `trk-${Date.now()}`,
+        trackId: 1,
+        contactId: document.getElementById('contactId').value,
+        class: craftClass,
+        label: document.getElementById('craftClass').selectedOptions[0].text,
+        conf: parseFloat(document.getElementById('conf').value),
+        bbox: [round4(x1), round4(y1), round4(x2), round4(y2)],
+        inZoneBreach: zoneBreach !== 'NONE',
+        zoneCode: zoneBreach !== 'NONE' ? zoneBreach : undefined
+      });
+
+      currentW = 0; currentH = 0;
+      updateDisplay();
+    }
+
+    function refreshList() {
+      const sec = Math.floor(vid.currentTime || 0);
+      const list = annotations[sec] || [];
+      const el = document.getElementById('boxList');
+      if (list.length === 0) {
+        el.innerHTML = '<em>No annotations at ' + sec + 's</em>';
+      } else {
+        el.innerHTML = list.map((b, idx) => `<div><strong>${b.contactId}</strong> (${b.label}) - [${b.bbox.join(', ')}]</div>`).join('');
+      }
+    }
+
+    function round4(n) { return Math.round(n * 10000) / 10000; }
+
+    function exportSidecarJson() {
+      const frames = [];
+      const dur = Math.ceil(vid.duration || 60);
+
+      for (let s = 0; s <= dur; s++) {
+        frames.push({
+          timeSec: s,
+          frameIndex: s * 25,
+          boxes: annotations[s] || [],
+          cfs: { status: 'FULL', rateFps: 25, reasonCode: 'Operator Annotated', vramSavingsPct: 0 }
+        });
+      }
+
+      const sidecar = {
+        version: "1.2.0-coastal",
+        sceneName: "annotated_clip",
+        durationSec: dur,
+        videoFps: 25.0,
+        videoWidth: canvas.width || 1280,
+        videoHeight: canvas.height || 720,
+        uavCode: "UAV-KL-03",
+        missionCode: "MSN-20261016-0830-01-VIZHINJAM",
+        detectorModel: "Operator Supervised Annotation",
+        trackerModel: "ByteTrack (MIT)",
+        frames: frames,
+        telemetryTrack: []
+      };
+
+      const blob = new Blob([JSON.stringify(sidecar, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "annotated_clip.detections.json";
+      a.click();
+    }
+  </script>
+</body>
+</html>

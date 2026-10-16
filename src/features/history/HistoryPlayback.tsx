@@ -4,16 +4,17 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Calendar, List, Map, Clock, Filter } from 'lucide-react';
+import { Search, Calendar, List, Map, Clock, Filter, Video } from 'lucide-react';
 import { eventsApi } from '@/lib/api';
 import type { EventFilters } from '@/lib/api';
 import { cn, formatIST, formatISTFull, eventTypeLabel, formatCoords } from '@/lib/utils';
 import { SeverityChip } from '@/components/SeverityChip';
 import { ModalityChip } from '@/components/FeedStateChip';
 import { CoastalMap } from '@/components/CoastalMap';
+import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 import type { CoastalEvent } from '@/types';
 
-type ViewMode = 'list' | 'map' | 'timeline';
+type ViewMode = 'list' | 'map' | 'timeline' | 'playback';
 
 // ─── Facet filters ────────────────────────────────────────────
 
@@ -221,6 +222,7 @@ export default function HistoryPlayback() {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [selectedEvent, setSelectedEvent] = useState<CoastalEvent | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['events', filters, page],
@@ -253,7 +255,12 @@ export default function HistoryPlayback() {
 
           {/* View mode */}
           <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: 'var(--line)' }}>
-            {([['list', <List className="w-3.5 h-3.5" />], ['map', <Map className="w-3.5 h-3.5" />], ['timeline', <Clock className="w-3.5 h-3.5" />]] as const).map(([mode, icon]) => (
+            {([
+              ['list', <List key="list" className="w-3.5 h-3.5" />],
+              ['playback', <Video key="playback" className="w-3.5 h-3.5" />],
+              ['map', <Map key="map" className="w-3.5 h-3.5" />],
+              ['timeline', <Clock key="timeline" className="w-3.5 h-3.5" />]
+            ] as const).map(([mode, icon]) => (
               <button
                 key={mode}
                 className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors', viewMode === mode ? 'text-white' : 'opacity-50')}
@@ -276,6 +283,60 @@ export default function HistoryPlayback() {
               <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
               Loading events…
             </div>
+          ) : viewMode === 'playback' ? (
+            <div className="flex h-full overflow-hidden">
+              <div className="flex-1 flex flex-col min-w-0 bg-black">
+                <DroneVideoPlayer
+                  sceneName="vizhinjam_patrol"
+                  initialModality={selectedEvent?.modality ?? 'RGB'}
+                  highlightContactId={selectedEvent?.contact?.code}
+                  className="flex-1 w-full h-full"
+                />
+              </div>
+              <div className="w-80 flex-shrink-0 border-l p-4 overflow-y-auto space-y-4" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+                <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--line)' }}>
+                  <h3 className="font-serif text-sm font-bold">Forensic Playback Record</h3>
+                  <span className="font-mono text-xs text-[var(--sea-accent)] font-bold">{selectedEvent?.id ?? 'HIST-REC-01'}</span>
+                </div>
+                {selectedEvent ? (
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <div className="font-medium opacity-60 uppercase tracking-wider mb-1">Event Type</div>
+                      <div className="font-semibold text-sm">{eventTypeLabel(selectedEvent.type)}</div>
+                    </div>
+                    <div>
+                      <div className="font-medium opacity-60 uppercase tracking-wider mb-1">Timestamp (IST)</div>
+                      <div className="font-mono">{formatISTFull(selectedEvent.occurredAt)}</div>
+                    </div>
+                    <div>
+                      <div className="font-medium opacity-60 uppercase tracking-wider mb-1">UAV &amp; Mission</div>
+                      <div className="font-mono">{selectedEvent.uav.code} · {selectedEvent.mission.code}</div>
+                    </div>
+                    {selectedEvent.contact && (
+                      <div>
+                        <div className="font-medium opacity-60 uppercase tracking-wider mb-1">Persistent Coastal Contact</div>
+                        <div className="font-mono font-bold text-[var(--sea-accent)]">{selectedEvent.contact.code}</div>
+                      </div>
+                    )}
+                    {selectedEvent.zone && (
+                      <div>
+                        <div className="font-medium opacity-60 uppercase tracking-wider mb-1">Zone Context</div>
+                        <div className="font-mono">{selectedEvent.zone.code} ({selectedEvent.zone.name})</div>
+                        <div className="opacity-60 text-[11px] mt-0.5">Profile: {selectedEvent.zone.profile}</div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-medium opacity-60 uppercase tracking-wider mb-1">GPS Coordinates</div>
+                      <div className="font-mono">{formatCoords(selectedEvent.location.lat, selectedEvent.location.lon)}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs opacity-60 text-center py-6">
+                    Select an event from the list to synchronize forensic playback with contact and zone overlays.
+                  </div>
+                )}
+              </div>
+            </div>
           ) : viewMode === 'timeline' ? (
             <TimelineView events={events} />
           ) : viewMode === 'map' ? (
@@ -296,7 +357,7 @@ export default function HistoryPlayback() {
                   </thead>
                   <tbody>
                     {events.map(ev => (
-                      <EventRow key={ev.id} event={ev} onClick={() => {}} />
+                      <EventRow key={ev.id} event={ev} onClick={() => { setSelectedEvent(ev); setViewMode('playback'); }} />
                     ))}
                   </tbody>
                 </table>

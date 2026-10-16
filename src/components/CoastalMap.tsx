@@ -10,6 +10,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Contact, Alert } from '@/types';
 import { useMapStore } from '@/lib/store';
 import { ZONES, CONTACTS, ALERTS } from '@/lib/mockData';
+import { telemetryBus } from '@/lib/telemetry';
 
 // OpenStreetMap (OSM) Tile Provider URL
 const DEFAULT_OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -157,6 +158,16 @@ export function CoastalMap({
       updateDroneMarker(feedId, pos.lat, pos.lon, pos.headingDeg);
     });
   }, [dronePositions, showDrones, layers.drones]);
+
+  // Synchronise telemetry bus for active drone (Phase 2 real-time drone track)
+  useEffect(() => {
+    const unsub = telemetryBus.subscribe(point => {
+      if (showDrones && layers.drones) {
+        updateDroneMarker('f-01', point.lat, point.lon, point.headingDeg);
+      }
+    });
+    return unsub;
+  }, [showDrones, layers.drones]);
 
   // Synchronize layer visibility from useMapStore
   useEffect(() => {

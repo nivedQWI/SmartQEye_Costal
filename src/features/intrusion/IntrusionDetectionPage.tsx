@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
+import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 import { IntrusionRecord } from '@/types';
 
 // Mock Geofence Zones
@@ -264,72 +265,15 @@ export default function IntrusionDetectionPage() {
               </div>
             </div>
 
-            {/* Video Canvas with Dynamic SVG Polygons */}
-            <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex flex-col justify-between p-3 select-none">
-              <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                <svg className="w-full h-full" viewBox="0 0 640 400">
-                  <defs>
-                    <pattern id="secGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-                      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                    </pattern>
-                  </defs>
-                  <rect width="640" height="400" fill="url(#secGrid)" />
-
-                  {/* Port Jetty Shoreline Outline */}
-                  <path d="M 0 280 L 180 260 L 320 180 L 480 180 L 640 240 L 640 400 L 0 400 Z" fill="#0f172a" stroke="#1e293b" strokeWidth="2" />
-                  <text x="30" y="320" fill="#475569" fontSize="12" fontFamily="serif" fontWeight="bold">VIZHINJAM SHORELINE</text>
-
-                  {/* Zone 1: Prohibited Naval Berth Polygon (Flashing Red) */}
-                  <polygon
-                    points="120,80 340,60 380,220 160,240"
-                    fill="rgba(239, 68, 68, 0.25)"
-                    stroke="#ef4444"
-                    strokeWidth="2.5"
-                    strokeDasharray="6 4"
-                    className="animate-pulse"
-                  />
-                  <rect x="130" y="90" width="160" height="20" fill="rgba(239, 68, 68, 0.9)" rx="3" />
-                  <text x="136" y="104" fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold">ZONE 1: NAVAL BERTH [BREACH]</text>
-
-                  {/* Target 9041 inside Zone 1 */}
-                  <g transform="translate(240, 150)">
-                    <circle cx="0" cy="0" r="16" fill="rgba(239, 68, 68, 0.4)" className="animate-ping" />
-                    <circle cx="0" cy="0" r="7" fill="#ef4444" />
-                    <rect x="10" y="-12" width="120" height="20" fill="#ef4444" rx="2" />
-                    <text x="14" y="2" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">TARGET-TRK-9041 (84s)</text>
-                    <line x1="0" y1="0" x2="-20" y2="15" stroke="#ef4444" strokeWidth="2" />
-                  </g>
-
-                  {/* Zone 2: Cliff Edge Safety Polygon (Yellow) */}
-                  <polygon
-                    points="420,120 600,100 620,250 440,240"
-                    fill="rgba(245, 158, 11, 0.15)"
-                    stroke="#f59e0b"
-                    strokeWidth="1.5"
-                    strokeDasharray="4 4"
-                  />
-                  <rect x="430" y="130" width="140" height="18" fill="rgba(245, 158, 11, 0.85)" rx="2" />
-                  <text x="436" y="143" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">ZONE 2: CLIFF EDGE BUFFER</text>
-                </svg>
-              </div>
-
-              {/* HUD Header */}
-              <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-300">
-                <span className="bg-slate-900/90 px-2.5 py-1 rounded border border-slate-700 flex items-center gap-1.5">
-                  <Radio className="w-3.5 h-3.5 text-emerald-400" />
-                  UAV-KL-01 · 30 FPS RTMP
-                </span>
-                <span className="bg-red-950/90 text-red-200 px-2.5 py-1 rounded border border-red-500/50 font-bold flex items-center gap-1.5 animate-pulse">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                  ALARM: INTRUSION ACTIVE IN ZONE 1
-                </span>
-              </div>
-
-              {/* HUD Footer */}
-              <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-300 bg-slate-950/85 p-2 rounded border border-slate-800">
-                <span className="text-emerald-400">GEOFENCE ENGINE: SHAPELY POLYGON INTERSECTION</span>
-                <span className="text-slate-400">LATENCY: 12MS | POLYGON EVAL: 60 HZ</span>
-              </div>
+            {/* Live Drone Video Player with Dynamic Zone Overlay & Detections */}
+            <div className="w-full aspect-video rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 flex flex-col">
+              <DroneVideoPlayer
+                sceneName="vizhinjam_patrol"
+                autoPlay={true}
+                loop={true}
+                showControls={true}
+                className="w-full h-full"
+              />
             </div>
           </div>
         </div>

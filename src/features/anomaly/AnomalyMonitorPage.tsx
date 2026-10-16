@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { AnomalyRecord, AnomalyType } from '@/types';
 import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
+import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 
 // Mock anomalies
 const INITIAL_ANOMALIES: AnomalyRecord[] = [
@@ -240,78 +241,19 @@ export default function AnomalyMonitorPage() {
               </span>
             </div>
 
-            {/* Video Replay Viewport */}
-            <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex flex-col justify-between p-3 select-none">
-              <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                <svg className="w-full h-full" viewBox="0 0 600 360">
-                  <rect width="600" height="360" fill="#0f172a" />
-                  {/* Grid Lines */}
-                  <line x1="0" y1="120" x2="600" y2="120" stroke="#1e293b" strokeWidth="1" />
-                  <line x1="0" y1="240" x2="600" y2="240" stroke="#1e293b" strokeWidth="1" />
-                  <line x1="200" y1="0" x2="200" y2="360" stroke="#1e293b" strokeWidth="1" />
-                  <line x1="400" y1="0" x2="400" y2="360" stroke="#1e293b" strokeWidth="1" />
-
-                  {/* Simulated Anomaly Visual Marker */}
-                  <g transform="translate(260, 140)">
-                    <circle cx="40" cy="40" r="45" fill="none" stroke="#ef4444" strokeWidth="2" strokeDasharray="6 3" className="animate-spin" />
-                    <rect x="0" y="0" width="80" height="80" fill="rgba(239, 68, 68, 0.2)" stroke="#ef4444" strokeWidth="2" rx="4" />
-                    <text x="40" y="-12" textAnchor="middle" fill="#f87171" fontSize="11" fontFamily="monospace" fontWeight="bold">
-                      {selectedAnomaly.anomalyType}
-                    </text>
-                    <text x="40" y="45" textAnchor="middle" fill="#ffffff" fontSize="12" fontFamily="monospace" fontWeight="bold">
-                      T+{playbackTime}s
-                    </text>
-                  </g>
-                </svg>
-              </div>
-
-              {/* HUD Bar Top */}
-              <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-300">
-                <span className="bg-slate-900/90 px-2 py-0.5 rounded border border-slate-700">
-                  {selectedAnomaly.droneCode} · FORENSIC CLIP BUFFER
-                </span>
-                <span className="bg-slate-900/90 px-2 py-0.5 rounded border border-slate-700 text-amber-400">
-                  {selectedAnomaly.timestamp}
-                </span>
-              </div>
-
-              {/* HUD Bar Bottom / Watermark */}
-              <div className="relative z-10 text-[10px] font-mono text-slate-400 bg-slate-950/80 p-1.5 rounded">
-                CATEGORY: {selectedAnomaly.category} · CLASSIFICATION CONFIDENCE: {selectedAnomaly.riskScore}%
-              </div>
+            {/* Drone Video Player with Built-in Scrubber & CFS State */}
+            <div className="w-full aspect-video rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 flex flex-col">
+              <DroneVideoPlayer
+                sceneName="vizhinjam_patrol"
+                autoPlay={isPlaying}
+                loop={true}
+                showControls={true}
+                className="w-full h-full"
+              />
             </div>
 
-            {/* Interactive Timeline Scrubber & Player Controls */}
+            {/* Description & Action Bar */}
             <div className="p-3 bg-[var(--surface-muted)] rounded border border-[var(--border)] flex flex-col gap-2">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="p-1.5 rounded bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--accent)]"
-                >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                </button>
-                <button
-                  onClick={() => setPlaybackTime(0)}
-                  className="p-1.5 rounded bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-slate-600"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                </button>
-
-                <div className="flex-1 flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-slate-600">00:00</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max={selectedAnomaly.clipReplaySec}
-                    value={playbackTime}
-                    onChange={(e) => setPlaybackTime(Number(e.target.value))}
-                    className="flex-1 h-1.5 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
-                  />
-                  <span className="text-[10px] font-mono font-bold text-slate-800">
-                    00:{playbackTime < 10 ? `0${playbackTime}` : playbackTime} / 00:{selectedAnomaly.clipReplaySec}
-                  </span>
-                </div>
-              </div>
 
               {/* Description & Action Bar */}
               <div className="text-xs text-slate-700 font-sans mt-1 p-2 bg-[var(--surface)] rounded border border-[var(--border)]">

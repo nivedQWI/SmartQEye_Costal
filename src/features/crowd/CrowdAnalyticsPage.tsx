@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
+import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 
 export default function CrowdAnalyticsPage() {
   const [selectedDrone, setSelectedDrone] = useState('UAV-KL-02');
@@ -248,12 +249,12 @@ export default function CrowdAnalyticsPage() {
             </button>
           </div>
 
-          {/* Video Placeholder Canvas with Heatmap Gradient */}
-          <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border" style={{ borderColor: 'var(--line)' }}>
-            <img
-              src="/coastal_harbor_bg.png"
-              alt="Live Drone View"
-              className="w-full h-full object-cover"
+          {/* Live Drone Video Player with Heatmap Layer */}
+          <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border flex flex-col" style={{ borderColor: 'var(--line)' }}>
+            <DroneVideoPlayer
+              sceneName="vizhinjam_patrol"
+              compactControls={true}
+              className="w-full h-full"
             />
 
             {/* Neural Heatmap Overlay Simulation */}
@@ -265,18 +266,6 @@ export default function CrowdAnalyticsPage() {
                 }}
               />
             )}
-
-            {/* Bounding box badges */}
-            <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-xs px-2.5 py-1 rounded-lg text-white font-mono text-[11px] flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>Model: {selectedModel}</span>
-              <span className="opacity-50">|</span>
-              <span>Inference: 18.4ms</span>
-            </div>
-
-            <div className="absolute bottom-3 right-3 bg-black/75 backdrop-blur-xs px-3 py-1 rounded-lg text-white font-mono text-xs">
-              Density Hotspot: <strong>3.42 p/m²</strong> (Alert Threshold Exceeded)
-            </div>
           </div>
         </div>
 
