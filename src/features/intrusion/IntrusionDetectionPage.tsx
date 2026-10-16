@@ -203,25 +203,25 @@ export default function IntrusionDetectionPage() {
             Active Virtual Geofences
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold" style={{ color: 'var(--accent)' }}>{zones.length}</span>
-            <Layers className="w-4 h-4 text-slate-400" />
+            <span className="font-mono text-2xl font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{zones.length}</span>
+            <Layers className="w-4 h-4" style={{ color: 'var(--sea-accent)' }} />
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">2 Prohibited · 1 Safety Buffer</div>
+          <div className="text-[10px] mt-1 font-medium" style={{ color: 'var(--text-muted)' }}>2 Prohibited · 1 Safety Buffer</div>
         </div>
 
         <div className="card-sand p-3.5 flex flex-col justify-between border-l-4 border-l-red-600">
-          <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-red-900">
+          <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-red-700 dark:text-red-400">
             Active Perimeter Breaches
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-red-700">
+            <span className="font-mono text-2xl font-bold text-red-600 dark:text-red-400">
               {intrusions.filter(i => i.status === 'ACTIVE').length}
             </span>
-            <span className="animate-pulse bg-red-100 text-red-800 px-1.5 py-0.5 rounded text-[10px] font-bold border border-red-300">
+            <span className="animate-pulse bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-red-300 dark:border-red-800">
               LIVE ALARM
             </span>
           </div>
-          <div className="text-[10px] text-red-800 font-semibold mt-1">Naval Jetty Sector</div>
+          <div className="text-[10px] text-red-700 dark:text-red-300 font-semibold mt-1">Naval Jetty Sector</div>
         </div>
 
         <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -229,12 +229,12 @@ export default function IntrusionDetectionPage() {
             Mean Response Time
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-slate-800">18.4s</span>
-            <span className="text-[10px] text-emerald-700 font-mono font-bold bg-emerald-50 px-1 py-0.5 rounded">
+            <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>18.4s</span>
+            <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-mono font-bold bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800">
               SLA &lt;30s
             </span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">From trigger to dispatch</div>
+          <div className="text-[10px] mt-1 font-medium" style={{ color: 'var(--text-muted)' }}>From trigger to dispatch</div>
         </div>
 
         <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -242,10 +242,10 @@ export default function IntrusionDetectionPage() {
             Total Breaches (24h)
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-slate-800">{intrusions.length}</span>
+            <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>{intrusions.length}</span>
             <CheckCircle className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">3 Neutralized / 1 Active</div>
+          <div className="text-[10px] mt-1 font-medium" style={{ color: 'var(--text-muted)' }}>3 Neutralized / 1 Active</div>
         </div>
       </div>
 
@@ -256,7 +256,7 @@ export default function IntrusionDetectionPage() {
           <div className="card-sand p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Video className="w-4 h-4 text-[var(--accent)]" />
+                <Video className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
                 <h2 className="font-serif text-sm font-bold text-[var(--text)]">
                   Live Drone Feed &amp; Geofence Polygons — UAV-KL-01
                 </h2>
@@ -352,38 +352,50 @@ export default function IntrusionDetectionPage() {
             </div>
 
             <div className="space-y-2.5">
-              {zones.map(z => (
-                <div
-                  key={z.id}
-                  onClick={() => setSelectedZone(z)}
-                  className={cn(
-                    "p-3 rounded-lg border transition-all cursor-pointer flex flex-col gap-1.5",
-                    z.activeBreaches > 0
-                      ? "bg-red-50/80 border-red-300 hover:border-red-500"
-                      : "bg-[var(--surface)] border-[var(--border)] hover:border-[var(--accent)]"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-serif text-xs font-bold text-slate-900">{z.name}</span>
-                    {z.activeBreaches > 0 ? (
-                      <span className="animate-pulse bg-red-100 text-red-800 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-300">
-                        {z.activeBreaches} BREACH
-                      </span>
-                    ) : (
-                      <span className="bg-emerald-50 text-emerald-800 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-emerald-200">
-                        CLEAR
-                      </span>
+              {zones.map(z => {
+                const isSelected = selectedZone?.id === z.id;
+                return (
+                  <div
+                    key={z.id}
+                    onClick={() => setSelectedZone(z)}
+                    className={cn(
+                      "p-3 rounded-lg border transition-all cursor-pointer flex flex-col gap-1.5",
+                      isSelected
+                        ? "border-[var(--sea-600)] ring-2 ring-[var(--sea-500)]/40 shadow-xs"
+                        : "hover:border-[var(--sea-400)]",
+                      z.activeBreaches > 0
+                        ? "bg-red-500/10 border-red-300 dark:border-red-800"
+                        : isSelected
+                        ? "bg-[var(--sea-100)] dark:bg-[var(--raised)]"
+                        : "bg-[var(--raised)] border-[var(--line)]"
                     )}
-                  </div>
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-serif text-xs font-bold" style={{ color: 'var(--text)' }}>
+                        {z.name}
+                      </span>
+                      {z.activeBreaches > 0 ? (
+                        <span className="animate-pulse bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-300 dark:border-red-800">
+                          {z.activeBreaches} BREACH
+                        </span>
+                      ) : (
+                        <span className="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800">
+                          CLEAR
+                        </span>
+                      )}
+                    </div>
 
-                  <p className="text-[11px] text-slate-600 line-clamp-2">{z.description}</p>
+                    <p className="text-[11px] line-clamp-2" style={{ color: 'var(--text-muted)' }}>
+                      {z.description}
+                    </p>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-[10px] font-mono text-slate-500">
-                    <span>Criteria: {z.targetCriteria.join(', ')}</span>
-                    <span>Max Dwell: {z.maxDwellSec}s</span>
+                    <div className="flex items-center justify-between pt-1 border-t text-[10px] font-mono" style={{ borderColor: 'var(--line)', color: 'var(--text-muted)' }}>
+                      <span>Criteria: <strong style={{ color: 'var(--text)' }}>{z.targetCriteria.join(', ')}</strong></span>
+                      <span>Max Dwell: <strong style={{ color: 'var(--text)' }}>{z.maxDwellSec}s</strong></span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -402,10 +414,10 @@ export default function IntrusionDetectionPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto border border-[var(--border)] rounded-md">
+        <div className="overflow-x-auto border rounded-xl" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-[var(--surface-muted)] text-[var(--text-muted)] border-b border-[var(--border)] font-mono text-[11px] uppercase">
+              <tr className="border-b font-mono text-[11px] uppercase tracking-wider font-semibold" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text-muted)' }}>
                 <th className="p-3">Time</th>
                 <th className="p-3">Snapshot</th>
                 <th className="p-3">Zone Breached</th>
@@ -417,38 +429,48 @@ export default function IntrusionDetectionPage() {
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border)]">
+            <tbody className="divide-y" style={{ borderColor: 'var(--line)' }}>
               {intrusions.map(item => (
-                <tr key={item.id} className={cn("hover:bg-[var(--surface-hover)] transition-colors", item.status === 'ACTIVE' ? "bg-red-50/50" : "")}>
-                  <td className="p-3 font-mono text-slate-600 whitespace-nowrap">{item.timestamp}</td>
+                <tr
+                  key={item.id}
+                  className={cn(
+                    "transition-colors",
+                    item.status === 'ACTIVE'
+                      ? "bg-red-500/10 hover:bg-red-500/15"
+                      : "hover:bg-[var(--surface-hover)]"
+                  )}
+                  style={{ borderColor: 'var(--line)' }}
+                >
+                  <td className="p-3 font-mono font-medium whitespace-nowrap" style={{ color: 'var(--text)' }}>{item.timestamp}</td>
                   <td className="p-3">
                     <img
                       src={item.snapshotUrl}
                       alt={item.targetCode}
-                      className="w-10 h-8 object-cover rounded border border-[var(--border)]"
+                      className="w-10 h-8 object-cover rounded border"
+                      style={{ borderColor: 'var(--line)' }}
                     />
                   </td>
-                  <td className="p-3 font-medium text-slate-800">{item.zoneName}</td>
-                  <td className="p-3 font-mono font-bold text-[var(--accent)]">{item.targetCode}</td>
-                  <td className="p-3 font-mono font-bold text-slate-700">{item.breachType}</td>
-                  <td className="p-3 font-mono text-slate-800">{item.dwellTimeSec}s</td>
+                  <td className="p-3 font-semibold" style={{ color: 'var(--text)' }}>{item.zoneName}</td>
+                  <td className="p-3 font-mono font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{item.targetCode}</td>
+                  <td className="p-3 font-mono font-bold" style={{ color: 'var(--text)' }}>{item.breachType}</td>
+                  <td className="p-3 font-mono font-semibold" style={{ color: 'var(--text)' }}>{item.dwellTimeSec}s</td>
                   <td className="p-3">
                     <span className={cn(
-                      "px-2 py-0.5 rounded text-[10px] font-bold font-mono",
-                      item.severity === 'CRITICAL' ? "bg-red-100 text-red-800 border border-red-300" :
-                      item.severity === 'HIGH' ? "bg-orange-100 text-orange-800 border border-orange-300" :
-                      "bg-amber-100 text-amber-800 border border-amber-300"
+                      "px-2.5 py-0.5 rounded text-[10px] font-bold font-mono border",
+                      item.severity === 'CRITICAL' ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border-red-300 dark:border-red-800" :
+                      item.severity === 'HIGH' ? "bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-800" :
+                      "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800"
                     )}>
                       {item.severity}
                     </span>
                   </td>
                   <td className="p-3">
                     <span className={cn(
-                      "px-2 py-0.5 rounded text-[10px] font-bold font-mono",
-                      item.status === 'ACTIVE' ? "bg-red-600 text-white animate-pulse" :
-                      item.status === 'DISPATCHED' ? "bg-sky-100 text-sky-800 border border-sky-300" :
-                      item.status === 'ACKNOWLEDGED' ? "bg-amber-100 text-amber-800 border border-amber-300" :
-                      "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                      "px-2.5 py-0.5 rounded text-[10px] font-bold font-mono border",
+                      item.status === 'ACTIVE' ? "bg-red-600 text-white animate-pulse border-red-600" :
+                      item.status === 'DISPATCHED' ? "bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800" :
+                      item.status === 'ACKNOWLEDGED' ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800" :
+                      "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800"
                     )}>
                       {item.status}
                     </span>
@@ -458,7 +480,7 @@ export default function IntrusionDetectionPage() {
                       {item.status === 'ACTIVE' && can(activeRole, 'DISPATCH_INTERCEPTOR') && (
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'DISPATCHED')}
-                          className="px-2 py-1 rounded bg-red-700 hover:bg-red-800 text-white font-mono text-[10px] font-bold"
+                          className="px-2.5 py-1 rounded bg-red-700 hover:bg-red-800 text-white font-mono text-[10px] font-bold shadow-xs cursor-pointer"
                         >
                           Dispatch
                         </button>
@@ -466,14 +488,19 @@ export default function IntrusionDetectionPage() {
                       {item.status === 'DISPATCHED' && can(activeRole, 'RESOLVE_ALERT') && (
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'RESOLVED')}
-                          className="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-[10px] font-bold"
+                          className="px-2.5 py-1 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-[10px] font-bold shadow-xs cursor-pointer"
                         >
                           Resolve
                         </button>
                       )}
                       <button
                         onClick={() => setInspectRecord(item)}
-                        className="px-2 py-1 rounded bg-[var(--surface-muted)] hover:bg-[var(--surface)] border border-[var(--border)] font-mono text-[10px] font-semibold text-[var(--accent)]"
+                        className="px-2.5 py-1 rounded border font-mono text-[10px] font-bold transition-colors cursor-pointer hover:bg-[var(--surface-hover)]"
+                        style={{
+                          background: 'var(--raised)',
+                          borderColor: 'var(--line)',
+                          color: 'var(--sea-600)',
+                        }}
                       >
                         Inspect
                       </button>
@@ -489,13 +516,13 @@ export default function IntrusionDetectionPage() {
       {/* ── Intrusion Inspection Modal ── */}
       {inspectRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="card-sand max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl border border-[var(--border)]">
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+          <div className="card-sand max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl border" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 text-red-600" />
-                <h3 className="font-serif text-base font-bold text-[var(--text)]">Perimeter Breach Record</h3>
+                <h3 className="font-serif text-base font-bold" style={{ color: 'var(--text)' }}>Perimeter Breach Record</h3>
               </div>
-              <button onClick={() => setInspectRecord(null)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">×</button>
+              <button onClick={() => setInspectRecord(null)} className="text-lg font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
             </div>
 
             <div className="flex justify-center">
@@ -507,29 +534,29 @@ export default function IntrusionDetectionPage() {
             </div>
 
             <div className="space-y-2 text-xs font-mono">
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Zone Breached:</span>
-                <span className="font-bold text-slate-900">{inspectRecord.zoneName}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Zone Breached:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectRecord.zoneName}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Target Code:</span>
-                <span className="font-bold text-red-700">{inspectRecord.targetCode}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Target Code:</span>
+                <span className="font-bold text-red-600 dark:text-red-400">{inspectRecord.targetCode}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Target Classification:</span>
-                <span className="font-bold text-slate-800">{inspectRecord.breachType}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Target Classification:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectRecord.breachType}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Dwell Duration:</span>
-                <span className="font-bold text-slate-800">{inspectRecord.dwellTimeSec} seconds</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Dwell Duration:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectRecord.dwellTimeSec} seconds</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Breach Timestamp:</span>
-                <span className="font-bold text-slate-800">{inspectRecord.timestamp}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Breach Timestamp:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectRecord.timestamp}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Response Status:</span>
-                <span className="font-bold text-[var(--accent)]">{inspectRecord.status}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Response Status:</span>
+                <span className="font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{inspectRecord.status}</span>
               </div>
             </div>
 

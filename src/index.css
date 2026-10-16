@@ -61,6 +61,10 @@
   --selected-row-border: #2B7FA6;
   --selected-row-text: #12303F;
   --hover-row-bg: #F5ECD3;
+  --surface: var(--white);
+  --surface-hover: var(--sand-200);
+  --surface-muted: var(--sand-100);
+  --border: var(--sand-300);
 
   /* Feed state colours */
   --feed-live: #2ECC71;
@@ -107,6 +111,10 @@
   --selected-row-border: #8FD0EC;
   --selected-row-text: #FFFFFF;
   --hover-row-bg: rgba(255, 255, 255, 0.05);
+  --surface: var(--raised);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-muted: var(--panel);
+  --border: var(--line);
 
   --shadow-sm: 0 0 0 1px rgba(143, 208, 236, 0.06);
   --shadow-md: 0 0 0 1px rgba(143, 208, 236, 0.08), 0 4px 16px rgba(0,0,0,0.4);
