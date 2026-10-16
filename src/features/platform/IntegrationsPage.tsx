@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { auditApi } from '@/lib/api';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface ApiEndpointDoc {
   id: string;
@@ -214,6 +215,7 @@ export default function IntegrationsPage() {
   const [showNewKeyModal, setShowNewKeyModal] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyScopes, setNewKeyScopes] = useState<string[]>(['read:incidents', 'read:alerts']);
+  const [revokeTargetKey, setRevokeTargetKey] = useState<ApiKeyItem | null>(null);
 
   // Webhook Tester State
   const [webhookEvent, setWebhookEvent] = useState('ZONE_INCURSION_SECURITY');
@@ -272,20 +274,7 @@ export default function IntegrationsPage() {
 
   // API Key Revoke Handler
   const handleRevokeKey = (key: ApiKeyItem) => {
-    if (!confirm(`Are you sure you want to permanently revoke API Key: ${key.name}?`)) return;
-
-    setApiKeys(prev => prev.map(k => k.id === key.id ? { ...k, status: 'REVOKED' } : k));
-
-    auditApi.append({
-      userId: 'admin-curr',
-      userName: 'Kurup V.',
-      userRole: 'SYS_ADMIN',
-      action: 'USER_ROLE_CHANGE',
-      targetType: 'SYSTEM',
-      targetId: key.id,
-      beforeAfterSummary: `Permanently REVOKED API Key "${key.name}" (${key.keyPrefix})`,
-      outcome: 'SUCCESS'
-    }).catch(console.error);
+    setRevokeTargetKey(key);
   };
 
   // Create API Key Handler
@@ -960,6 +949,37 @@ export default function IntegrationsPage() {
         )}
 
       </div>
+
+      {/* API Key Permanent Revocation Confirm Dialog */}
+      <ConfirmDialog
+        open={Boolean(revokeTargetKey)}
+        onOpenChange={(open) => !open && setRevokeTargetKey(null)}
+        title="Permanently Revoke Integration API Key"
+        description={`This will permanently revoke the credential token for "${revokeTargetKey?.name}". Any active external systems or CAD-112 dispatches using this key will immediately receive 401 Unauthorized.`}
+        confirmLabel="Permanently Revoke Key"
+        variant="danger"
+        requireReason={true}
+        reasonPlaceholder="Mandatory operational justification (e.g. key leakage, retired external integration partner)..."
+        auditActionName="REVOKE_API_KEY"
+        targetType="API_KEY"
+        targetId={revokeTargetKey?.id || ''}
+        onConfirm={async (_reason) => {
+          if (revokeTargetKey) {
+            setApiKeys(prev => prev.map(k => k.id === revokeTargetKey.id ? { ...k, status: 'REVOKED' } : k));
+            await auditApi.append({
+              userId: 'admin-curr',
+              userName: 'Kurup V.',
+              userRole: 'SYS_ADMIN',
+              action: 'REVOKE_API_KEY',
+              targetType: 'SYSTEM',
+              targetId: revokeTargetKey.id,
+              beforeAfterSummary: `Permanently REVOKED API Key "${revokeTargetKey.name}" (${revokeTargetKey.keyPrefix})`,
+              outcome: 'SUCCESS',
+            });
+            setRevokeTargetKey(null);
+          }
+        }}
+      />
     </div>
   );
 }

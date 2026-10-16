@@ -18,6 +18,7 @@ interface ThemeState {
   resolved: 'light' | 'dark';
   setMode: (mode: ThemeMode) => void;
   resolveTheme: () => void;
+  toggleTheme: () => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
@@ -28,6 +29,11 @@ export const useThemeStore = create<ThemeState>()(
       setMode: (mode) => {
         set({ mode });
         get().resolveTheme();
+      },
+      toggleTheme: () => {
+        const next = get().resolved === 'dark' ? 'light' : 'dark';
+        set({ mode: next, resolved: next });
+        document.documentElement.setAttribute('data-theme', next);
       },
       resolveTheme: () => {
         const { mode } = get();
@@ -153,6 +159,7 @@ interface AlertState {
   unreadCount: number;
   addAlert: (alert: Alert) => void;
   updateAlert: (alert: Alert) => void;
+  acknowledgeAlert: (id: string) => void;
   dismissBanner: () => void;
   markRead: (ids: string[]) => void;
 }
@@ -173,6 +180,13 @@ export const useAlertStore = create<AlertState>((set, get) => ({
   updateAlert: (alert) => {
     set(state => ({
       alerts: state.alerts.map(a => a.id === alert.id ? alert : a),
+    }));
+  },
+
+  acknowledgeAlert: (id) => {
+    set(state => ({
+      alerts: state.alerts.map(a => a.id === id ? { ...a, status: 'ACKNOWLEDGED' } : a),
+      unreadCount: Math.max(0, state.unreadCount - 1),
     }));
   },
 

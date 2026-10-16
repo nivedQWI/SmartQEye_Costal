@@ -630,8 +630,8 @@ export default function ContactDetailPage() {
           <div className="space-y-6">
             {/* CKFE Strip Component */}
             <CkfeKeyframeStrip
-              onSelectKeyframe={(sec: number) => {
-                console.log(`Jumping video player to offset ${sec}s`);
+              onSelectKeyframe={(_sec: number) => {
+                // Seek video player to selected keyframe offset
               }}
             />
 

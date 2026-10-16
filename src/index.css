@@ -239,7 +239,19 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+}
+
+/* ─── Accessibility & Focus Rings (WCAG 2.2 AA) ───────────── */
+:focus-visible {
+  outline: 2px solid var(--sea-600);
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] :focus-visible {
+  outline: 2px solid var(--sea-accent);
+  outline-offset: 2px;
 }
 
 /* ─── MapLibre overrides ──────────────────────────────────── */

@@ -16,6 +16,7 @@ import {
 import { adminApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 import { PERMISSION_LIST, ALL_ROLES, DEFAULT_ROLE_PERMISSIONS } from '@/lib/permissions';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { cn, formatISTFull } from '@/lib/utils';
 import type { UserRole, Permission, AdminUser, DataRetentionPolicy, BackupDrillRecord, ActiveSession } from '@/types';
 
@@ -27,6 +28,7 @@ export default function AdminPage() {
   const isSysAdmin = hasPermission('SYSTEM_ADMIN');
 
   const [selectedTab, setSelectedTab] = useState<AdminTab>('USERS');
+  const [killSessionTarget, setKillSessionTarget] = useState<string | null>(null);
 
   // Queries
   const { data: users = [], refetch: refetchUsers } = useQuery({
@@ -150,17 +152,8 @@ export default function AdminPage() {
     }
   }
 
-  async function handleKillSession(sessionId: string) {
-    if (!confirm('Are you sure you want to forcibly terminate this active session?')) return;
-    try {
-      await adminApi.killSession(sessionId, {
-        id: user?.id || 'u-curr',
-        name: user?.fullName || 'Current Admin',
-      });
-      refetchSessions();
-    } catch (err) {
-      alert(`Failed to kill session: ${String(err)}`);
-    }
+  function handleKillSession(sessionId: string) {
+    setKillSessionTarget(sessionId);
   }
 
   async function handleSaveUser() {
@@ -812,6 +805,31 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* Forcible Session Termination Audited Confirm Dialog */}
+      <ConfirmDialog
+        open={Boolean(killSessionTarget)}
+        onOpenChange={(open) => !open && setKillSessionTarget(null)}
+        title="Forcibly Terminate Active Station Session"
+        description="Terminating this session will immediately revoke the workstation bearer token and disconnect the remote terminal. An operational reason must be supplied for Kerala Police audit compliance."
+        confirmLabel="Forcibly Kill Session"
+        variant="danger"
+        requireReason={true}
+        reasonPlaceholder="Mandatory operational justification (e.g. unauthorized terminal relocation, suspected session hijacking)..."
+        auditActionName="KILL_SESSION"
+        targetType="SESSION"
+        targetId={killSessionTarget || ''}
+        onConfirm={async (_reason) => {
+          if (killSessionTarget) {
+            await adminApi.killSession(killSessionTarget, {
+              id: user?.id || 'u-curr',
+              name: user?.fullName || 'Current Admin',
+            });
+            refetchSessions();
+            setKillSessionTarget(null);
+          }
+        }}
+      />
     </div>
   );
 }

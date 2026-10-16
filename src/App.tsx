@@ -98,6 +98,7 @@ export default function App() {
               <Route path="alerts/:id" element={<AlertDetail />} />
               <Route path="map" element={<MapGIS />} />
               <Route path="missions" element={<MissionsPage />} />
+              <Route path="uavs" element={<MissionsPage />} />
 
               {/* Intelligence */}
               <Route path="contacts" element={<ContactsPage />} />

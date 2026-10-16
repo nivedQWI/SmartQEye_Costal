@@ -61,6 +61,9 @@ interface CoastalMapProps {
   onAlertClick?: (alertId: string) => void;
   onContactClick?: (contactId: string) => void;
   onZoneClick?: (zoneId: string) => void;
+  onDroneClick?: (feedId: string) => void;
+  onCursorMove?: (coords: { lat: number; lon: number }) => void;
+  onMapClick?: (coords: { lat: number; lon: number }) => void;
   followFeedId?: string;
 }
 
@@ -77,9 +80,18 @@ export function CoastalMap({
   onAlertClick,
   onContactClick,
   onZoneClick,
+  onDroneClick,
+  onCursorMove,
+  onMapClick,
 }: CoastalMapProps) {
   const mapRef = useRef<MLMap | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const onCursorMoveRef = useRef(onCursorMove);
+  onCursorMoveRef.current = onCursorMove;
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
+  const onDroneClickRef = useRef(onDroneClick);
+  onDroneClickRef.current = onDroneClick;
   const { layers, dronePositions } = useMapStore();
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const contactMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -128,6 +140,13 @@ export function CoastalMap({
       if (showAlerts) addAlertPins(map);
       if (showDrones) addDroneMarkers(map);
       setupInteractions(map);
+
+      map.on('mousemove', (e) => {
+        onCursorMoveRef.current?.({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+      });
+      map.on('click', (e) => {
+        onMapClickRef.current?.({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+      });
     });
 
     // Auto-resize observer to handle panel collapses and flexbox layout changes
@@ -231,6 +250,10 @@ export function CoastalMap({
         <text x="16" y="28" text-anchor="middle" font-size="6" font-weight="bold" fill="white" font-family="monospace">${feedId.replace('f-', 'U')}</text>
       </svg>
     `;
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onDroneClickRef.current?.(feedId);
+    });
     return el;
   }
 
