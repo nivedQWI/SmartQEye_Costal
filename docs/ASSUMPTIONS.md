@@ -1,13 +1,14 @@
-# SmartQEye Coastal — Platform Assumptions & Procurement Context
+# SmartQEye Coastal — Platform Assumptions & Decisions Log
+
 **Platform:** SmartQEye Coastal  
 **Developer:** Quantumweave Intelligence Pvt. Ltd., Thiruvananthapuram  
 **Customer:** Kerala Police Coastal Police / Cyber Division – Drone Forensic Lab  
 **Procurement Reference:** Kerala Startup Mission (KSUM) RFP — "Development, Deployment and Commissioning of AI-Based Coastal Drone Surveillance and Video Analytics Software"  
-**Date:** October 2026  
+**Last Updated:** October 2026  
 
 ---
 
-## 1. Tactical & Operational Context
+## 1. Tactical & Operational Assumptions
 
 1. **Human-in-the-Loop Authority**:
    - In compliance with Kerala Police doctrine and RFP §11, all AI inference outputs constitute decision support and observational data only.
@@ -46,3 +47,14 @@
    - The platform operates in fully air-gapped coastal operations command centers without public Internet dependency.
    - All fonts (@fontsource/manrope, @fontsource/fraunces, @fontsource/jetbrains-mono), icons, and fallback cartography (offline coastline canvas / GeoJSON) are bundled locally.
    - No external CDNs or external image hosts are utilized.
+
+---
+
+## 2. Phase-by-Phase Assumptions Log Template
+
+| Phase | Date | Component / Area | Decision / Assumption | Rationale | Approved By |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Phase 0 | Oct 2026 | System Audit | Establish baseline audit, green build, offline assets | KSUM RFP compliance baseline | Lead Architect |
+| Phase 1 | Oct 2026 | Licence & i18n | Eliminate Ultralytics YOLO; add Malayalam i18n; adopt RTMDet/RT-DETR | AGPL avoidance & bilingual Kerala Police UI | Lead Architect |
+| Phase 2 | [TBD] | [Component] | [Assumption / Decision] | [Rationale] | [Role] |
+| Phase 3 | [TBD] | [Component] | [Assumption / Decision] | [Rationale] | [Role] |
