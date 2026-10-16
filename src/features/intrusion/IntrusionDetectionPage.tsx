@@ -3,7 +3,7 @@
 // As specified in Costal Police .docx
 // ============================================================
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ShieldAlert, ShieldCheck, AlertOctagon, Download,
   Eye, Bell, MapPin, Radio, CheckCircle,
@@ -219,9 +219,26 @@ export default function IntrusionDetectionPage() {
   const [inspectRecord, setInspectRecord] = useState<IntrusionRecord | null>(null);
 
   // Video Stream Controls
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showPolygons, setShowPolygons] = useState(true);
+
+  // Auto-play recovery on mount
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.defaultMuted = true;
+    video.muted = true;
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          setIsPlaying(false);
+        });
+    }
+  }, []);
 
   function togglePlay() {
     if (!videoRef.current) return;
@@ -416,20 +433,47 @@ export default function IntrusionDetectionPage() {
             <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex flex-col justify-between p-3 select-none">
               <video
                 ref={videoRef}
+                key="/intrusion-media/Intrusion_video.mp4"
                 src="/intrusion-media/Intrusion_video.mp4"
                 autoPlay
                 muted={isMuted}
                 loop
                 playsInline
+                preload="auto"
                 className="absolute inset-0 w-full h-full object-cover"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onLoadedData={() => {
+                  if (videoRef.current) {
+                    videoRef.current.muted = true;
+                    videoRef.current.play().catch(() => {});
+                  }
+                }}
                 onError={(e) => {
                   // Fallback to /videos/Intrusion_video.mp4 if /intrusion-media path is not ready
                   const target = e.currentTarget;
                   if (!target.src.includes('/videos/Intrusion_video.mp4')) {
                     target.src = '/videos/Intrusion_video.mp4';
+                    target.load();
+                    target.play().catch(() => {});
                   }
                 }}
               />
+
+              {/* Autoplay Pause Overlay (Click to Play if browser blocked autoplay) */}
+              {!isPlaying && (
+                <div
+                  onClick={togglePlay}
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs cursor-pointer group transition-all"
+                >
+                  <div className="p-4 rounded-full bg-red-600/90 text-white shadow-xl group-hover:scale-110 transition-transform flex items-center justify-center">
+                    <Play className="w-8 h-8 ml-1" />
+                  </div>
+                  <span className="mt-2.5 text-xs font-mono font-bold text-white bg-black/70 px-3 py-1 rounded border border-white/20">
+                    CLICK TO START STREAM
+                  </span>
+                </div>
+              )}
 
               {/* Dynamic SVG Tripwire & Geofence Overlay */}
               {showPolygons && (
