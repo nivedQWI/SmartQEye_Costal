@@ -8,10 +8,13 @@
 import type {
   Alert, Contact, Zone, Mission, Feed, SystemHealth,
   CoastalEvent, User, AlertStatus, ZoneProfile,
+  ContextProfileDetail, AlertRuleConfig, AbandonedObjectRecord,
+  AttentionLevel,
 } from '@/types';
 import {
   ALERTS, CONTACTS, ZONES, MISSIONS, INITIAL_FEEDS,
   INITIAL_HEALTH, HISTORICAL_EVENTS, ZONE_PROFILES, UAVS,
+  CONTEXT_PROFILES, ALERT_RULES, ABANDONED_OBJECTS,
 } from './mockData';
 
 // ─── Pagination ──────────────────────────────────────────────
@@ -117,17 +120,55 @@ export const alertsApi = {
   },
 };
 
-// ─── Contacts ─────────────────────────────────────────────────
+export interface ContactFilters {
+  page?: number;
+  pageSize?: number;
+  class_?: string;
+  attentionLevel?: AttentionLevel[];
+  uavCode?: string;
+  modality?: 'RGB' | 'THERMAL' | 'BOTH';
+  search?: string;
+  sortBy?: 'lastSeen' | 'dwell' | 'attention' | 'continuity';
+  sortDir?: 'asc' | 'desc';
+}
 
 export const contactsApi = {
-  async list(params: { page?: number; pageSize?: number; class_?: string; search?: string } = {}): Promise<Page<Contact>> {
+  async list(params: ContactFilters = {}): Promise<Page<Contact>> {
     await delay();
     let items = [...CONTACTS];
-    if (params.class_) items = items.filter(c => c.class === params.class_);
+    if (params.class_ && params.class_ !== 'ALL') items = items.filter(c => c.class === params.class_);
+    if (params.attentionLevel?.length) items = items.filter(c => c.attentionLevel && params.attentionLevel!.includes(c.attentionLevel));
+    if (params.uavCode) items = items.filter(c => c.observedUavs?.includes(params.uavCode!));
+    if (params.modality) items = items.filter(c => c.modalitySeen === params.modality || c.modalitySeen === 'BOTH');
     if (params.search) {
       const q = params.search.toLowerCase();
-      items = items.filter(c => c.code.toLowerCase().includes(q) || c.classLabel.toLowerCase().includes(q));
+      items = items.filter(c =>
+        c.code.toLowerCase().includes(q) ||
+        c.classLabel.toLowerCase().includes(q) ||
+        c.fineGrainedType?.toLowerCase().includes(q)
+      );
     }
+
+    if (params.sortBy) {
+      items.sort((a, b) => {
+        if (params.sortBy === 'lastSeen') {
+          return new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime();
+        }
+        if (params.sortBy === 'dwell') {
+          return (b.dwellTotalSec ?? 0) - (a.dwellTotalSec ?? 0);
+        }
+        if (params.sortBy === 'continuity') {
+          return b.continuityConf - a.continuityConf;
+        }
+        if (params.sortBy === 'attention') {
+          const rank: Record<AttentionLevel, number> = { CRITICAL: 4, ATTENTION: 3, MONITOR: 2, RECORD_ONLY: 1 };
+          return (rank[b.attentionLevel ?? 'RECORD_ONLY'] ?? 0) - (rank[a.attentionLevel ?? 'RECORD_ONLY'] ?? 0);
+        }
+        return 0;
+      });
+      if (params.sortDir === 'asc') items.reverse();
+    }
+
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? 25;
     const start = (page - 1) * pageSize;
@@ -136,7 +177,7 @@ export const contactsApi = {
 
   async get(id: string): Promise<Contact | null> {
     await delay();
-    return CONTACTS.find(c => c.id === id || c.code === id) ?? null;
+    return CONTACTS.find(c => c.id === id || c.code.toLowerCase() === id.toLowerCase()) ?? null;
   },
 };
 
@@ -268,3 +309,143 @@ export const uavsApi = {
     return UAVS;
   },
 };
+
+// ─── Phase 3: Context Profiles ─────────────────────────────────────────────
+
+export const contextProfilesApi = {
+  async list(): Promise<ContextProfileDetail[]> {
+    await delay();
+    return CONTEXT_PROFILES;
+  },
+
+  async get(idOrCode: string): Promise<ContextProfileDetail | null> {
+    await delay();
+    return CONTEXT_PROFILES.find(p => p.id === idOrCode || p.code === idOrCode) ?? null;
+  },
+
+  async update(id: string, updates: Partial<ContextProfileDetail>): Promise<ContextProfileDetail> {
+    await delay();
+    const idx = CONTEXT_PROFILES.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('Context Profile not found');
+    const existing = CONTEXT_PROFILES[idx];
+    const updated: ContextProfileDetail = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+      history: [
+        {
+          version: updates.version ?? existing.version,
+          changedAt: new Date().toISOString(),
+          changedBy: 'Current Officer (Zone Admin)',
+          summary: 'Context profile thresholds / policy updated via console',
+        },
+        ...existing.history,
+      ],
+    };
+    CONTEXT_PROFILES[idx] = updated;
+    return updated;
+  },
+};
+
+// ─── Phase 3: Alert Rules ───────────────────────────────────────────────────
+
+export interface HistoricalReplayResult {
+  ruleCode: string;
+  periodHours: number;
+  rawEdgeDetections: number;
+  contextFilteredAlerts: number;
+  alertVolumeReductionPct: number;
+  falseAlarmSuppressionPct: number;
+  confirmedTruePositives: number;
+  operatorMinutesSaved: number;
+  evaluatedAt: string;
+}
+
+export const rulesApi = {
+  async list(): Promise<AlertRuleConfig[]> {
+    await delay();
+    return ALERT_RULES;
+  },
+
+  async get(idOrCode: string): Promise<AlertRuleConfig | null> {
+    await delay();
+    return ALERT_RULES.find(r => r.id === idOrCode || r.code === idOrCode) ?? null;
+  },
+
+  async toggle(id: string): Promise<AlertRuleConfig> {
+    await delay();
+    const rule = ALERT_RULES.find(r => r.id === id);
+    if (!rule) throw new Error('Alert rule not found');
+    rule.enabled = !rule.enabled;
+    rule.lastUpdated = new Date().toISOString();
+    return rule;
+  },
+
+  async update(id: string, updates: Partial<AlertRuleConfig>): Promise<AlertRuleConfig> {
+    await delay();
+    const idx = ALERT_RULES.findIndex(r => r.id === id);
+    if (idx === -1) throw new Error('Alert rule not found');
+    const existing = ALERT_RULES[idx];
+    const nextVersion = `v${(parseFloat(existing.version.replace('v', '')) + 0.1).toFixed(1)}`;
+    const updated: AlertRuleConfig = {
+      ...existing,
+      ...updates,
+      version: nextVersion,
+      lastUpdated: new Date().toISOString(),
+      updatedBy: 'CI Krishna N. (Zone Admin)',
+    };
+    ALERT_RULES[idx] = updated;
+    return updated;
+  },
+
+  async runReplayTest(ruleId: string): Promise<HistoricalReplayResult> {
+    await delay(350);
+    const rule = ALERT_RULES.find(r => r.id === ruleId) ?? ALERT_RULES[0];
+    return {
+      ruleCode: rule.code,
+      periodHours: 24,
+      rawEdgeDetections: 124500,
+      contextFilteredAlerts: 7470,
+      alertVolumeReductionPct: 94.0,
+      falseAlarmSuppressionPct: 97.4,
+      confirmedTruePositives: 142,
+      operatorMinutesSaved: 1950,
+      evaluatedAt: new Date().toISOString(),
+    };
+  },
+};
+
+// ─── Phase 3: Abandoned & Stationary Objects ────────────────────────────────
+
+export const abandonedObjectsApi = {
+  async list(): Promise<AbandonedObjectRecord[]> {
+    await delay();
+    return ABANDONED_OBJECTS;
+  },
+
+  async get(idOrCode: string): Promise<AbandonedObjectRecord | null> {
+    await delay();
+    return ABANDONED_OBJECTS.find(o => o.id === idOrCode || o.itemCode === idOrCode) ?? null;
+  },
+
+  async markCleared(id: string, reason: string, clearedBy = 'Current Officer'): Promise<AbandonedObjectRecord> {
+    await delay();
+    const item = ABANDONED_OBJECTS.find(o => o.id === id || o.itemCode === id);
+    if (!item) throw new Error('Abandoned object record not found');
+    item.status = 'CLEARED_BY_OPERATOR';
+    item.clearedReason = reason;
+    item.clearedBy = clearedBy;
+    item.statusUpdatedAgo = 'Just now';
+    return item;
+  },
+
+  async updateStatus(id: string, status: AbandonedObjectRecord['status']): Promise<AbandonedObjectRecord> {
+    await delay();
+    const item = ABANDONED_OBJECTS.find(o => o.id === id || o.itemCode === id);
+    if (!item) throw new Error('Abandoned object record not found');
+    item.status = status;
+    item.statusUpdatedAgo = 'Just now';
+    return item;
+  },
+};
+

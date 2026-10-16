@@ -181,12 +181,18 @@ export interface Contact {
   classLabel: string;
   classConf: number;
   continuityConf: number;
+  attentionLevel?: AttentionLevel;
+  attentionFactors?: RationaleFactor[];
   isBroadClass?: boolean;
   broadClassReason?: string;
   fineGrainedType?: string;
   classificationConf?: number;
   firstSeenAt: string;
   lastSeenAt: string;
+  dwellTotalSec?: number;
+  evidenceCount?: number;
+  modalitySeen?: 'RGB' | 'THERMAL' | 'BOTH';
+  observedUavs?: string[];
   lastLocation?: Location;
   lastHeadingDeg?: number;
   lastSpeedKnots?: number;
@@ -195,6 +201,31 @@ export interface Contact {
   zoneInteractions?: ZoneInteraction[];
   linkedAlertIds?: string[];
   notes?: string;
+  occlusionEvent?: {
+    occurredAt: string;
+    durationSec: number;
+    recoveryMethod: string;
+    confidenceDrop: number;
+  };
+  behaviourEvents?: Array<{
+    id: string;
+    type: string;
+    label: string;
+    occurredAt: string;
+    ruleId: string;
+    ruleName: string;
+    contextProfile: string;
+    attentionLevel: AttentionLevel;
+    details?: string;
+  }>;
+  pastMissions?: Array<{
+    missionId: string;
+    missionCode: string;
+    date: string;
+    craftClass: string;
+    peakAttention: AttentionLevel;
+    locationName: string;
+  }>;
 }
 
 export interface ZoneInteraction {
@@ -229,6 +260,8 @@ export interface RationaleFactor {
   threshold?: number | string;
   unit?: string;
   contribution: 'PRIMARY' | 'SUPPORTING' | 'CONTEXTUAL';
+  weight?: number;
+  detail?: string;
 }
 
 export interface EventRationale {
@@ -594,4 +627,138 @@ export interface PoliceReport {
   signOffOfficer: string;
   fileSizeMb: number;
   downloadUrl: string;
+}
+
+// ─── Phase 3: Kerala Coastal Context Intelligence & Alert Rules ─────────────
+
+export type CoastalSeason = 'STANDARD' | 'TRAWLING_BAN_MONSOON' | 'TOURIST_PEAK';
+export type ApprovalState = 'DRAFT' | 'APPROVED_BY_ZONE_ADMIN' | 'ACTIVE';
+
+export interface ContextProfileDetail {
+  id: string;
+  code: string;
+  name: string;
+  zoneType: ZoneType;
+  timeWindow: 'ALWAYS_24X7' | 'DAYTIME_06_18' | 'NIGHTTIME_18_06' | 'EVENING_PEAK_16_22';
+  season: CoastalSeason;
+  missionProfile: string;
+  thresholds: {
+    dwellMinutes: number;
+    maxSpeedKnots: number;
+    shorelineApproachCount: number;
+    proximitySeparationMetres: number;
+    crowdCount: number;
+  };
+  sensitivity: 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH';
+  defaultAttentionLevel: AttentionLevel;
+  version: string;
+  approvalState: ApprovalState;
+  owner: string;
+  updatedAt: string;
+  history: Array<{
+    version: string;
+    changedAt: string;
+    changedBy: string;
+    summary: string;
+  }>;
+}
+
+export interface AlertRuleConfig {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  alertType: EventType;
+  detectorEngine: 'RTMDet-L' | 'RTMDet-Thermal' | 'ByteTrack' | 'Density Estimator' | 'Temporal Engine' | 'Cognitive Frame Selector';
+  thresholds: {
+    minConfidence: number;
+    dwellSec?: number;
+    maxSpeedKnots?: number;
+    approachCount?: number;
+    crowdCount?: number;
+    separationMetres?: number;
+  };
+  zoneCodes: string[];
+  schedule: string;
+  season: CoastalSeason | 'ALL_SEASONS';
+  sensitivity: 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH';
+  priority: Severity;
+  notificationChannels: Array<'DASHBOARD' | 'SMS_GATEWAY' | 'EMAIL' | 'WEBHOOK'>;
+  escalationTiers: Array<{
+    tier: number;
+    role: string;
+    delayMinutes: number;
+  }>;
+  ckfeCapturePrePostSec: number;
+  version: string;
+  enabled: boolean;
+  lastUpdated: string;
+  updatedBy: string;
+}
+
+// ─── Phase 3: Abandoned & Stationary Objects (RFP Analytics #9) ─────────────
+
+export type AbandonedObjectStatus = 'WATCHING' | 'ALERT_RAISED' | 'CLEARED_BY_OPERATOR' | 'CONFIRMED_BY_POLICE';
+export type AbandonedObjectClass =
+  | 'UNATTENDED_CONTAINER'
+  | 'WATERPROOF_CANISTER'
+  | 'JETTISONED_DRUM'
+  | 'BEACH_LUGGAGE'
+  | 'STATIONARY_VEHICLE'
+  | 'UNIDENTIFIED_OBJECT';
+
+export interface AbandonedObjectRecord {
+  id: string;
+  itemCode: string;
+  label: string;
+  objectClass: AbandonedObjectClass;
+  zoneCode: string;
+  zoneName: string;
+  locationName: string;
+  lat: number;
+  lon: number;
+  firstSeenAt: string;
+  stationaryDurationSec: number;
+  thresholdMinutes: number;
+  confidence: number;
+  thermalSignature: 'COLD_MASS' | 'ELEVATED_HEAT' | 'AMBIENT';
+  modality: 'RGB' | 'THERMAL' | 'BOTH';
+  uavCode: string;
+  status: AbandonedObjectStatus;
+  statusUpdatedAgo: string;
+  clearedReason?: string;
+  clearedBy?: string;
+  elirId?: string;
+  thumbnailUrl: string;
+}
+
+// ─── Phase 3: CFS & CKFE Intelligence Flow ──────────────────────────────────
+
+export type CfsSliceState = 'FULL' | 'LIGHT' | 'SKIP';
+export type CfsReasonCode =
+  | 'NEW_OBJECT'
+  | 'SIGNIFICANT_MOTION'
+  | 'TRACK_UNCERTAINTY'
+  | 'ZONE_INTERACTION'
+  | 'SCENE_CHANGE'
+  | 'IDLE_SCENE';
+
+export interface CfsSlice {
+  secondOffset: number;
+  state: CfsSliceState;
+  reasonCode: CfsReasonCode;
+  reasonText: string;
+  fps: number;
+}
+
+export interface CkfeEvidenceKeyframe {
+  id: string;
+  timeSec: number;
+  timestampIso: string;
+  modality: 'RGB' | 'THERMAL';
+  reason: 'FIRST_APPEARANCE' | 'CLOSEST_APPROACH' | 'ZONE_ENTRY' | 'PEAK_CONFIDENCE' | 'STATE_TRANSITION';
+  reasonLabel: string;
+  confidence: number;
+  thumbnailUrl: string;
+  sha256: string;
 }

@@ -16,6 +16,7 @@ import { alertsApi } from '@/lib/api';
 import { useAlertStore } from '@/lib/store';
 import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
 import { TacticalActionDialog, type TacticalActionType } from '@/components/TacticalActionDialog';
+import { CkfeKeyframeStrip } from '@/components/CkfeKeyframeStrip';
 import type { EvidenceItem, AuditEntry } from '@/types';
 import { Anchor, BellRing } from 'lucide-react';
 
@@ -224,32 +225,8 @@ export default function AlertDetail() {
             </div>
 
             {/* Cognitive Keyframe Extraction (CKFE) Evidence Strip */}
-            <div className="p-2 border-b" style={{ borderColor: 'var(--line)' }}>
-              <div className="text-[10px] font-mono text-muted mb-1.5 flex items-center justify-between">
-                <span className="font-bold tracking-wider text-[var(--sea-accent)]">CKFE EVIDENCE KEYFRAMES</span>
-                <span className="opacity-60 text-[9px]">Click to inspect frame</span>
-              </div>
-              <div className="flex gap-1.5 overflow-x-auto pb-1">
-                {alert.evidence.filter(e => e.kind === 'KEYFRAME').map((kf, i) => {
-                  const targetSec = [8, 18, 24, 32, 45][i % 5];
-                  const isSelected = seekTimeSec === targetSec;
-                  return (
-                    <button
-                      key={kf.id}
-                      onClick={() => setSeekTimeSec(targetSec)}
-                      className={cn(
-                        'flex-shrink-0 w-16 h-12 rounded border overflow-hidden cursor-pointer transition-all flex flex-col items-center justify-center p-1 text-left group',
-                        isSelected ? 'border-[var(--sea-accent)] ring-1 ring-[var(--sea-accent)]' : 'border-[var(--line)]'
-                      )}
-                      style={{ background: isSelected ? 'var(--sea-600)' : '#0a2233' }}
-                      title={`Jump to Cognitive Keyframe ${i + 1} (${targetSec}s)`}
-                    >
-                      <span className="text-[9px] font-mono font-bold text-white/90 group-hover:text-[var(--sea-accent)]">KF-{i + 1}</span>
-                      <span className="text-[8px] font-mono text-white/60">{targetSec}s · {targetSec === 24 ? 'CRIT' : 'WARN'}</span>
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="p-3 border-b" style={{ borderColor: 'var(--line)' }}>
+              <CkfeKeyframeStrip onSelectKeyframe={(sec: number) => setSeekTimeSec(sec)} />
             </div>
           </div>
 

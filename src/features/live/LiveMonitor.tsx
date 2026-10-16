@@ -18,6 +18,7 @@ import { useFeedStore, useAlertStore } from '@/lib/store';
 import { simulator } from '@/lib/simulator';
 import { ALERTS, CONTACTS } from '@/lib/mockData';
 import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
+import { CfsStreamStrip } from '@/components/CfsStreamStrip';
 import type { Feed, TelemetrySample } from '@/types';
 
 // ─── Video tile with DroneVideoPlayer ──────────────────────────
@@ -137,6 +138,11 @@ function FocusMode({ feed, onExit }: { feed: Feed; onExit: () => void }) {
             initialModality={feed.modality}
             className="flex-1 w-full h-full"
           />
+        </div>
+
+        {/* Cognitive Frame Selection (CFS) Pre-inference strip */}
+        <div className="flex-shrink-0 border-t bg-[var(--panel)]" style={{ borderColor: 'var(--line)' }}>
+          <CfsStreamStrip feedId={feed.id} uavCode={feed.uavCode} />
         </div>
       </div>
 

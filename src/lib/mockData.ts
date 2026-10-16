@@ -7,7 +7,8 @@ import type {
   Alert, Contact, Zone, Mission, Uav, Feed, TelemetrySample,
   CoastalEvent, EvidenceItem, SystemHealth, EdgeNode, ServiceStatus,
   ContactClass, Severity, FeedState, ZoneType, ZoneProfile,
-  AttentionLevel, Modality,
+  AttentionLevel, Modality, ContextProfileDetail, AlertRuleConfig,
+  AbandonedObjectRecord,
 } from '@/types';
 import { formatMissionId, formatUavCode, formatAlertId } from '@/lib/idGenerator';
 
@@ -223,38 +224,212 @@ const CONTACT_LOCATIONS = [
   { lat: 8.360, lon: 76.973 }, { lat: 8.455, lon: 76.912 },
 ];
 
-export const CONTACTS: Contact[] = Array.from({ length: 40 }, (_, i) => {
-  const cls = CONTACT_CLASSES[i % CONTACT_CLASSES.length];
-  const loc = CONTACT_LOCATIONS[i % CONTACT_LOCATIONS.length];
-  const clsLabels: Record<ContactClass, string> = {
-    VESSEL: 'Vessel',
-    SMALL_CRAFT: 'Vessel › Small Craft',
-    FISHING_BOAT: 'Vessel › Fishing Boat',
-    UNKNOWN_VESSEL: 'Vessel › Unknown Vessel',
-    MECHANISED_TRAWLER: 'Vessel › Mechanised Trawler',
-    MOTORISED_COUNTRY_CRAFT: 'Vessel › Motorised Country Craft',
-    TRADITIONAL_WOODEN_CRAFT: 'Vessel › Traditional Wooden Craft',
-    CANOE_CATAMARAN: 'Vessel › Canoe / Catamaran',
-    RECREATIONAL_CRAFT: 'Vessel › Recreational Craft',
-    PERSON: 'Person',
-    VEHICLE: 'Vehicle',
-    UNKNOWN: 'Unknown',
-  };
-  return {
-    id: `c-${String(1030 + i).padStart(4, '0')}`,
-    code: `C-${1030 + i}`,
-    class: cls,
-    classLabel: clsLabels[cls],
-    classConf: 0.72 + Math.random() * 0.26,
-    continuityConf: 0.68 + Math.random() * 0.30,
-    firstSeenAt: minutesAgo(30 + i * 7),
-    lastSeenAt: minutesAgo(i < 10 ? 1 : i < 20 ? 5 : 15),
-    lastLocation: { lat: loc.lat + (Math.random() - 0.5) * 0.005, lon: loc.lon + (Math.random() - 0.5) * 0.005, method: 'DRONE_POSITION' },
-    lastHeadingDeg: Math.floor(Math.random() * 360),
-    lastSpeedKnots: cls === 'PERSON' || cls === 'VEHICLE' ? undefined : 1 + Math.random() * 6,
-    linkedAlertIds: i < 8 ? [`a-${String(i + 1).padStart(3, '0')}`] : [],
-  };
-});
+const CLS_LABELS: Record<ContactClass, string> = {
+  VESSEL: 'Vessel',
+  SMALL_CRAFT: 'Vessel › Small Craft',
+  FISHING_BOAT: 'Vessel › Fishing Boat',
+  UNKNOWN_VESSEL: 'Vessel › Unknown Vessel',
+  MECHANISED_TRAWLER: 'Vessel › Mechanised Trawler',
+  MOTORISED_COUNTRY_CRAFT: 'Vessel › Motorised Country Craft',
+  TRADITIONAL_WOODEN_CRAFT: 'Vessel › Traditional Wooden Craft',
+  CANOE_CATAMARAN: 'Vessel › Canoe / Catamaran',
+  RECREATIONAL_CRAFT: 'Vessel › Recreational Craft',
+  PERSON: 'Person',
+  VEHICLE: 'Vehicle',
+  UNKNOWN: 'Unknown',
+};
+
+const CONTACT_1042: Contact = {
+  id: 'c-1042',
+  code: 'C-1042',
+  class: 'SMALL_CRAFT',
+  classLabel: 'Vessel › Small Craft',
+  isBroadClass: true,
+  broadClassReason: 'Sensor standoff distance 140m; hull superstructure unresolved by RTMDet-Thermal.',
+  fineGrainedType: 'Motorised Country Craft (Hypothesis, 0.74 conf)',
+  classConf: 0.88,
+  continuityConf: 0.71,
+  attentionLevel: 'CRITICAL',
+  attentionFactors: [
+    { factorName: 'Restricted Jetty Boundary', value: 'Breach 45m past buoy', contribution: 'PRIMARY', weight: 0.40, detail: 'Incursion 45m past marked security buoy line' },
+    { factorName: 'Breakwater Loiter Duration', value: '384s loitering', contribution: 'PRIMARY', weight: 0.25, detail: 'Stationary loiter duration: 384s' },
+    { factorName: 'Monsoon Context Multiplier', value: 'Active trawling ban', contribution: 'CONTEXTUAL', weight: 0.15, detail: 'Trawling ban active; non-navigational hours' },
+    { factorName: 'Marine Convergence C-1048', value: '8.4m separation', contribution: 'SUPPORTING', weight: 0.20, detail: 'Closest approach: 8.4m at 08:52 IST' },
+  ],
+  firstSeenAt: minutesAgo(42),
+  lastSeenAt: minutesAgo(1),
+  dwellTotalSec: 1840,
+  evidenceCount: 7,
+  modalitySeen: 'BOTH',
+  observedUavs: ['UAV-KL-03', 'UAV-KL-01'],
+  lastLocation: { lat: 8.3782, lon: 76.9804, method: 'DRONE_POSITION' },
+  lastHeadingDeg: 48,
+  lastSpeedKnots: 2.3,
+  linkedAlertIds: ['a-001', 'a-003'],
+  occlusionEvent: {
+    occurredAt: minutesAgo(18),
+    durationSec: 48,
+    recoveryMethod: 'Course-speed kinematic extrapolation + thermal re-acquisition on breakwater exit',
+    confidenceDrop: 0.24,
+  },
+  behaviourEvents: [
+    {
+      id: 'be-01',
+      type: 'INITIAL_DETECTION',
+      label: 'Initial Detection & Transit',
+      occurredAt: minutesAgo(42),
+      ruleId: 'AR-HARBOUR-TRANSIT',
+      ruleName: 'Standard Harbour Transit',
+      contextProfile: 'CP-FISHING-DAYTIME',
+      attentionLevel: 'RECORD_ONLY',
+      details: 'Vessel entered sector Z-02 heading 042° at 5.2 kn.'
+    },
+    {
+      id: 'be-02',
+      type: 'COURSE_SPEED_CHANGE',
+      label: 'Sudden Course Alteration',
+      occurredAt: minutesAgo(31),
+      ruleId: 'AR-LOITERING-VESSEL',
+      ruleName: 'Anomalous Heading Deviation',
+      contextProfile: 'CP-HARBOUR-PATROL',
+      attentionLevel: 'MONITOR',
+      details: 'Speed reduced from 5.2 kn to 1.8 kn; bearing altered towards breakwater.'
+    },
+    {
+      id: 'be-03',
+      type: 'OCCLUSION_RECOVERY',
+      label: 'Breakwater Occlusion & Track Continuity',
+      occurredAt: minutesAgo(18),
+      ruleId: 'TRACK-PERSISTENCE',
+      ruleName: 'Kalman Course Extrapolation',
+      contextProfile: 'CP-RESTRICTED-JETTY',
+      attentionLevel: 'MONITOR',
+      details: 'Optical line-of-sight occluded for 48s behind rock armour. Re-acquired on exit with continuity drop to 71%.'
+    },
+    {
+      id: 'be-04',
+      type: 'ZONE_BREACH',
+      label: 'Restricted Jetty Boundary Breach',
+      occurredAt: minutesAgo(12),
+      ruleId: 'AR-INTRUSION-RESTRICTED',
+      ruleName: 'Unauthorised Perimeter Intrusion',
+      contextProfile: 'CP-RESTRICTED-JETTY',
+      attentionLevel: 'CRITICAL',
+      details: 'Crossed 100m security perimeter of Vizhinjam fuel berth without AIS transponder.'
+    },
+    {
+      id: 'be-05',
+      type: 'PROXIMITY_CONVERGENCE',
+      label: 'Prolonged Proximity & Rendezvous',
+      occurredAt: minutesAgo(4),
+      ruleId: 'AR-PROLONGED-PROXIMITY',
+      ruleName: 'Marine Convergence / Rendezvous',
+      contextProfile: 'CP-RESTRICTED-JETTY',
+      attentionLevel: 'CRITICAL',
+      details: 'Converged within 8.4m of stationary craft C-1048 for >180s in non-anchorage sector.'
+    }
+  ],
+  relationships: [
+    {
+      relatedContactId: 'c-1048',
+      relatedContactCode: 'C-1048',
+      type: 'convergence',
+      count: 3,
+      lastSeenAt: minutesAgo(4)
+    },
+    {
+      relatedContactId: 'c-1048',
+      relatedContactCode: 'C-1048',
+      type: 'prolonged_proximity',
+      count: 1,
+      lastSeenAt: minutesAgo(4)
+    },
+    {
+      relatedContactId: 'c-1035',
+      relatedContactCode: 'C-1035',
+      type: 'co_travel',
+      count: 2,
+      lastSeenAt: minutesAgo(28)
+    }
+  ],
+  pastMissions: [
+    {
+      missionId: 'm-01-prev',
+      missionCode: 'MSN-20261012-0830-01-ALPHA',
+      date: '12 Oct 2026',
+      craftClass: 'Recreational Craft',
+      peakAttention: 'MONITOR',
+      locationName: 'Vizhinjam Outer Anchorage'
+    },
+    {
+      missionId: 'm-02-prev',
+      missionCode: 'MSN-20261014-1600-02-BRAVO',
+      date: '14 Oct 2026',
+      craftClass: 'Motorised Country Craft',
+      peakAttention: 'ATTENTION',
+      locationName: 'Kovalam South Shoreline'
+    }
+  ]
+};
+
+export const CONTACTS: Contact[] = [
+  CONTACT_1042,
+  ...Array.from({ length: 39 }, (_, i) => {
+    const codeNum = i >= 12 ? 1031 + i : 1030 + i;
+    const cls = CONTACT_CLASSES[i % CONTACT_CLASSES.length];
+    const loc = CONTACT_LOCATIONS[i % CONTACT_LOCATIONS.length];
+    const isSpecialC1048 = codeNum === 1048;
+    const isSpecialC1035 = codeNum === 1035;
+
+    const attentionLevel: AttentionLevel = isSpecialC1048
+      ? 'ATTENTION'
+      : isSpecialC1035
+      ? 'MONITOR'
+      : i % 7 === 0
+      ? 'CRITICAL'
+      : i % 4 === 0
+      ? 'ATTENTION'
+      : i % 3 === 0
+      ? 'MONITOR'
+      : 'RECORD_ONLY';
+
+    const isBroad = i % 4 === 0;
+
+    return {
+      id: `c-${codeNum}`,
+      code: `C-${codeNum}`,
+      class: isSpecialC1048 ? 'MOTORISED_COUNTRY_CRAFT' : isSpecialC1035 ? 'CANOE_CATAMARAN' : cls,
+      classLabel: CLS_LABELS[isSpecialC1048 ? 'MOTORISED_COUNTRY_CRAFT' : isSpecialC1035 ? 'CANOE_CATAMARAN' : cls],
+      isBroadClass: isBroad,
+      broadClassReason: isBroad ? 'Sensor standoff >200m; silhouette unresolved by edge detector' : undefined,
+      classConf: isSpecialC1048 ? 0.84 : 0.74 + ((i * 3) % 23) * 0.01,
+      continuityConf: isSpecialC1048 ? 0.91 : 0.72 + ((i * 5) % 25) * 0.01,
+      attentionLevel,
+      attentionFactors: [
+        { factorName: 'Zone Context Sensitivity', value: 'High surveillance perimeter', contribution: 'PRIMARY' as const, weight: 0.35, detail: 'Operating in active surveillance perimeter' },
+        { factorName: 'Dwell & Course Stability', value: 'Consistent vector', contribution: 'SUPPORTING' as const, weight: 0.25, detail: 'Consistent tracking vector over observation window' },
+      ],
+      firstSeenAt: minutesAgo(20 + i * 5),
+      lastSeenAt: minutesAgo(i < 8 ? 1 : i < 16 ? 4 : 12),
+      dwellTotalSec: 400 + i * 90,
+      evidenceCount: 1 + (i % 5),
+      modalitySeen: (i % 3 === 0 ? 'BOTH' : i % 2 === 0 ? 'THERMAL' : 'RGB') as 'RGB' | 'THERMAL' | 'BOTH',
+      observedUavs: [formatUavCode((i % 6) + 1)],
+      lastLocation: isSpecialC1048
+        ? { lat: 8.3789, lon: 76.9809, method: 'DRONE_POSITION' as const }
+        : isSpecialC1035
+        ? { lat: 8.3775, lon: 76.9790, method: 'DRONE_POSITION' as const }
+        : { lat: loc.lat + ((i % 5) - 2) * 0.001, lon: loc.lon + ((i % 5) - 2) * 0.001, method: 'DRONE_POSITION' as const },
+      lastHeadingDeg: Math.floor((i * 47) % 360),
+      lastSpeedKnots: cls === 'PERSON' || cls === 'VEHICLE' ? undefined : Number((1.5 + (i % 7) * 0.8).toFixed(1)),
+      linkedAlertIds: i < 8 ? [`a-${String(i + 1).padStart(3, '0')}`] : [],
+      relationships: isSpecialC1048 ? [
+        { relatedContactId: 'c-1042', relatedContactCode: 'C-1042', type: 'convergence' as const, count: 3, lastSeenAt: minutesAgo(4) },
+        { relatedContactId: 'c-1042', relatedContactCode: 'C-1042', type: 'prolonged_proximity' as const, count: 1, lastSeenAt: minutesAgo(4) },
+      ] : undefined,
+    };
+  }),
+];
 
 // ─── Evidence items ──────────────────────────────────────────
 
@@ -557,3 +732,450 @@ export const DRONE_PATHS: Record<string, Array<[number, number]>> = {
     [76.888, 8.479], [76.892, 8.481], [76.893, 8.483], [76.890, 8.484], [76.887, 8.482],
   ],
 };
+
+// ─── Phase 3: Kerala Coastal Context Profiles (5.1.16, 5.1.10) ─────────────
+
+export const CONTEXT_PROFILES: ContextProfileDetail[] = [
+  {
+    id: 'cp-01',
+    code: 'CP-RESTRICTED-JETTY',
+    name: 'Vizhinjam Restricted Berth & Fuel Depot Profile',
+    zoneType: 'RESTRICTED',
+    timeWindow: 'ALWAYS_24X7',
+    season: 'TRAWLING_BAN_MONSOON',
+    missionProfile: 'Harbour Perimeter & Critical Infrastructure Protection',
+    thresholds: {
+      dwellMinutes: 0.5,
+      maxSpeedKnots: 4.0,
+      shorelineApproachCount: 1,
+      proximitySeparationMetres: 25,
+      crowdCount: 5,
+    },
+    sensitivity: 'VERY_HIGH',
+    defaultAttentionLevel: 'CRITICAL',
+    version: 'v2.4',
+    approvalState: 'ACTIVE',
+    owner: 'CI Krishna N. (Zone Admin)',
+    updatedAt: minutesAgo(240),
+    history: [
+      {
+        version: 'v2.4',
+        changedAt: minutesAgo(240),
+        changedBy: 'CI Krishna N.',
+        summary: 'Reduced dwell tolerance to 30s during active monsoon night ops (strict zero-tolerance perimeter).',
+      },
+      {
+        version: 'v2.3',
+        changedAt: minutesAgo(4320),
+        changedBy: 'SI Menon R.',
+        summary: 'Added Indian Coast Guard automated notification hook for breaches >50m inside sector.',
+      },
+    ],
+  },
+  {
+    id: 'cp-02',
+    code: 'CP-FISHING-DAYTIME',
+    name: 'Neendakara & Vizhinjam Artisanal Fishing Corridor',
+    zoneType: 'FISHING',
+    timeWindow: 'DAYTIME_06_18',
+    season: 'STANDARD',
+    missionProfile: 'Fisheries Compliance & Distress Monitoring',
+    thresholds: {
+      dwellMinutes: 20.0,
+      maxSpeedKnots: 12.0,
+      shorelineApproachCount: 5,
+      proximitySeparationMetres: 10,
+      crowdCount: 50,
+    },
+    sensitivity: 'LOW',
+    defaultAttentionLevel: 'RECORD_ONLY',
+    version: 'v1.8',
+    approvalState: 'ACTIVE',
+    owner: 'CI Krishna N. (Zone Admin)',
+    updatedAt: minutesAgo(1440),
+    history: [
+      {
+        version: 'v1.8',
+        changedAt: minutesAgo(1440),
+        changedBy: 'CI Krishna N.',
+        summary: 'Increased dwell threshold to 20m for traditional motorised canoes net-hauling.',
+      },
+    ],
+  },
+  {
+    id: 'cp-03',
+    code: 'CP-TOURISM-EVENING',
+    name: 'Kovalam & Lighthouse Beach Tourism Promenade',
+    zoneType: 'TOURISM',
+    timeWindow: 'EVENING_PEAK_16_22',
+    season: 'TOURIST_PEAK',
+    missionProfile: 'Bather Safety, Water-sports Boundary & Crowd Density',
+    thresholds: {
+      dwellMinutes: 8.0,
+      maxSpeedKnots: 6.0,
+      shorelineApproachCount: 4,
+      proximitySeparationMetres: 20,
+      crowdCount: 35,
+    },
+    sensitivity: 'MEDIUM',
+    defaultAttentionLevel: 'MONITOR',
+    version: 'v2.1',
+    approvalState: 'ACTIVE',
+    owner: 'ASI Priya V. (Analyst)',
+    updatedAt: minutesAgo(720),
+    history: [
+      {
+        version: 'v2.1',
+        changedAt: minutesAgo(720),
+        changedBy: 'ASI Priya V.',
+        summary: 'Added crowd surge threshold of 35 persons/sector for dusk rush.',
+      },
+    ],
+  },
+  {
+    id: 'cp-04',
+    code: 'CP-HARBOUR-PATROL',
+    name: 'Vizhinjam Outer Anchorage & Approach Channel',
+    zoneType: 'HARBOUR',
+    timeWindow: 'ALWAYS_24X7',
+    season: 'STANDARD',
+    missionProfile: 'Commercial Shipping Lane & Small Craft Incursion Monitoring',
+    thresholds: {
+      dwellMinutes: 5.0,
+      maxSpeedKnots: 8.0,
+      shorelineApproachCount: 2,
+      proximitySeparationMetres: 40,
+      crowdCount: 15,
+    },
+    sensitivity: 'HIGH',
+    defaultAttentionLevel: 'ATTENTION',
+    version: 'v3.0',
+    approvalState: 'ACTIVE',
+    owner: 'CI Krishna N. (Zone Admin)',
+    updatedAt: minutesAgo(2880),
+    history: [
+      {
+        version: 'v3.0',
+        changedAt: minutesAgo(2880),
+        changedBy: 'CI Krishna N.',
+        summary: 'Upgraded to v3.0 with ByteTrack separation metric integration.',
+      },
+    ],
+  },
+  {
+    id: 'cp-05',
+    code: 'CP-ESTUARY-ECOLOGICAL',
+    name: 'Poovar Sandbar & Mangrove Sanctuary Watch',
+    zoneType: 'ESTUARY',
+    timeWindow: 'NIGHTTIME_18_06',
+    season: 'STANDARD',
+    missionProfile: 'Eco-Protection & Unauthorised Night Landings',
+    thresholds: {
+      dwellMinutes: 3.0,
+      maxSpeedKnots: 3.0,
+      shorelineApproachCount: 1,
+      proximitySeparationMetres: 30,
+      crowdCount: 8,
+    },
+    sensitivity: 'HIGH',
+    defaultAttentionLevel: 'ATTENTION',
+    version: 'v1.2',
+    approvalState: 'APPROVED_BY_ZONE_ADMIN',
+    owner: 'SI Menon R. (Supervisor)',
+    updatedAt: minutesAgo(360),
+    history: [
+      {
+        version: 'v1.2',
+        changedAt: minutesAgo(360),
+        changedBy: 'SI Menon R.',
+        summary: 'Adjusted speed limit down to 3.0 kn to detect silent electric or paddled craft.',
+      },
+    ],
+  },
+];
+
+// ─── Phase 3: Alert Rules Configuration (RFP §7) ───────────────────────────
+
+export const ALERT_RULES: AlertRuleConfig[] = [
+  {
+    id: 'ar-01',
+    code: 'AR-INTRUSION-RESTRICTED',
+    name: 'Unauthorised Perimeter Intrusion',
+    description: 'Triggered when any marine craft or unidentified target crosses designated restricted zone boundary without verified transponder.',
+    alertType: 'intrusion',
+    detectorEngine: 'RTMDet-L',
+    thresholds: {
+      minConfidence: 0.70,
+      dwellSec: 15,
+    },
+    zoneCodes: ['Z-01', 'Z-07'],
+    schedule: 'Always (24×7)',
+    season: 'ALL_SEASONS',
+    sensitivity: 'VERY_HIGH',
+    priority: 'CRITICAL',
+    notificationChannels: ['DASHBOARD', 'SMS_GATEWAY', 'WEBHOOK'],
+    escalationTiers: [
+      { tier: 1, role: 'Operator Console', delayMinutes: 0 },
+      { tier: 2, role: 'Coastal Duty Officer / SHO', delayMinutes: 5 },
+      { tier: 3, role: 'Superintendent of Police / Coast Guard Liaison', delayMinutes: 15 },
+    ],
+    ckfeCapturePrePostSec: 90,
+    version: 'v2.6',
+    enabled: true,
+    lastUpdated: minutesAgo(360),
+    updatedBy: 'CI Krishna N.',
+  },
+  {
+    id: 'ar-02',
+    code: 'AR-SHORELINE-APPROACH',
+    name: 'Repeated Shoreline Approach Pattern',
+    description: 'Target vessel repeatedly approaches coastal shore within defined observation window, indicating beach landing or drop-off.',
+    alertType: 'repeated_shoreline_approach',
+    detectorEngine: 'ByteTrack',
+    thresholds: {
+      minConfidence: 0.75,
+      approachCount: 3,
+    },
+    zoneCodes: ['Z-04', 'Z-05', 'Z-06'],
+    schedule: 'Always (24×7)',
+    season: 'ALL_SEASONS',
+    sensitivity: 'HIGH',
+    priority: 'HIGH',
+    notificationChannels: ['DASHBOARD', 'SMS_GATEWAY'],
+    escalationTiers: [
+      { tier: 1, role: 'Operator Console', delayMinutes: 0 },
+      { tier: 2, role: 'Coastal Patrol Boat Commander', delayMinutes: 8 },
+    ],
+    ckfeCapturePrePostSec: 60,
+    version: 'v1.4',
+    enabled: true,
+    lastUpdated: minutesAgo(1200),
+    updatedBy: 'ASI Priya V.',
+  },
+  {
+    id: 'ar-03',
+    code: 'AR-PROLONGED-PROXIMITY',
+    name: 'High-Speed Marine Convergence / Rendezvous',
+    description: 'Two or more tracked vessels converging at relative speed or maintaining close proximity in non-anchorage sector.',
+    alertType: 'convergence',
+    detectorEngine: 'Temporal Engine',
+    thresholds: {
+      minConfidence: 0.70,
+      maxSpeedKnots: 2.5,
+      separationMetres: 20,
+    },
+    zoneCodes: ['Z-01', 'Z-02', 'Z-07'],
+    schedule: 'Always (24×7)',
+    season: 'ALL_SEASONS',
+    sensitivity: 'HIGH',
+    priority: 'HIGH',
+    notificationChannels: ['DASHBOARD', 'SMS_GATEWAY'],
+    escalationTiers: [
+      { tier: 1, role: 'Operator Console', delayMinutes: 0 },
+      { tier: 2, role: 'Harbour Security Patrol', delayMinutes: 10 },
+    ],
+    ckfeCapturePrePostSec: 90,
+    version: 'v2.0',
+    enabled: true,
+    lastUpdated: minutesAgo(2400),
+    updatedBy: 'SI Menon R.',
+  },
+  {
+    id: 'ar-04',
+    code: 'AR-LOITERING-VESSEL',
+    name: 'Anomalous Vessel Loitering',
+    description: 'Vessel maintaining stationary drift or slow rotational pattern outside designated anchorage.',
+    alertType: 'loitering',
+    detectorEngine: 'Temporal Engine',
+    thresholds: {
+      minConfidence: 0.65,
+      dwellSec: 300,
+      maxSpeedKnots: 1.0,
+    },
+    zoneCodes: ['Z-02', 'Z-04', 'Z-10'],
+    schedule: '18:00 - 06:00 IST',
+    season: 'ALL_SEASONS',
+    sensitivity: 'MEDIUM',
+    priority: 'MEDIUM',
+    notificationChannels: ['DASHBOARD'],
+    escalationTiers: [
+      { tier: 1, role: 'Operator Console', delayMinutes: 0 },
+    ],
+    ckfeCapturePrePostSec: 45,
+    version: 'v1.2',
+    enabled: true,
+    lastUpdated: minutesAgo(4320),
+    updatedBy: 'ASI Priya V.',
+  },
+  {
+    id: 'ar-05',
+    code: 'AR-ABANDONED-OBJECT',
+    name: 'Unattended Shoreline Cargo / Baggage',
+    description: 'Stationary object isolated on sandbar or splash zone with no associated tracked person nearby.',
+    alertType: 'abandoned_object',
+    detectorEngine: 'RTMDet-Thermal',
+    thresholds: {
+      minConfidence: 0.80,
+      dwellSec: 600,
+      separationMetres: 25,
+    },
+    zoneCodes: ['Z-01', 'Z-04', 'Z-05', 'Z-06', 'Z-08'],
+    schedule: 'Always (24×7)',
+    season: 'ALL_SEASONS',
+    sensitivity: 'HIGH',
+    priority: 'MEDIUM',
+    notificationChannels: ['DASHBOARD', 'SMS_GATEWAY', 'EMAIL'],
+    escalationTiers: [
+      { tier: 1, role: 'Operator Console', delayMinutes: 0 },
+      { tier: 2, role: 'Beach Police Post / SI', delayMinutes: 15 },
+    ],
+    ckfeCapturePrePostSec: 60,
+    version: 'v1.7',
+    enabled: true,
+    lastUpdated: minutesAgo(1800),
+    updatedBy: 'CI Krishna N.',
+  },
+  {
+    id: 'ar-06',
+    code: 'AR-CROWD-SURGE',
+    name: 'Crowd Density Threshold Exceeded',
+    description: 'Rapid congregation of persons along beach promenade or coastal landing strip.',
+    alertType: 'crowd_threshold_exceeded',
+    detectorEngine: 'Density Estimator',
+    thresholds: {
+      minConfidence: 0.85,
+      crowdCount: 40,
+    },
+    zoneCodes: ['Z-03', 'Z-04', 'Z-06'],
+    schedule: '16:00 - 22:00 IST',
+    season: 'TOURIST_PEAK',
+    sensitivity: 'MEDIUM',
+    priority: 'MEDIUM',
+    notificationChannels: ['DASHBOARD'],
+    escalationTiers: [
+      { tier: 1, role: 'Operator Console', delayMinutes: 0 },
+      { tier: 2, role: 'Tourism Police Wing', delayMinutes: 10 },
+    ],
+    ckfeCapturePrePostSec: 30,
+    version: 'v1.1',
+    enabled: true,
+    lastUpdated: minutesAgo(5000),
+    updatedBy: 'ASI Priya V.',
+  },
+];
+
+// ─── Phase 3: Abandoned & Stationary Objects (RFP Analytics #9) ─────────────
+
+export const ABANDONED_OBJECTS: AbandonedObjectRecord[] = [
+  {
+    id: 'abo-01',
+    itemCode: 'ABO-20261016-01',
+    label: 'Unattended Heavy Crate / Waterproof Canister',
+    objectClass: 'WATERPROOF_CANISTER',
+    zoneCode: 'Z-08',
+    zoneName: 'Shanghumugham Beach',
+    locationName: 'Shanghumugham Waterline Rocks',
+    lat: 8.4842,
+    lon: 76.9214,
+    firstSeenAt: minutesAgo(18),
+    stationaryDurationSec: 1080,
+    thresholdMinutes: 10,
+    confidence: 0.92,
+    thermalSignature: 'ELEVATED_HEAT',
+    modality: 'BOTH',
+    uavCode: 'UAV-KL-04',
+    status: 'ALERT_RAISED',
+    statusUpdatedAgo: '8m ago',
+    elirId: 'ELIR-20261016-0042',
+    thumbnailUrl: '/mock/kf1.jpg',
+  },
+  {
+    id: 'abo-02',
+    itemCode: 'ABO-20261016-02',
+    label: 'Jettisoned Blue Polymer Drum',
+    objectClass: 'JETTISONED_DRUM',
+    zoneCode: 'Z-01',
+    zoneName: 'Vizhinjam Restricted Jetty',
+    locationName: 'Vizhinjam Outer Breakwater South',
+    lat: 8.3735,
+    lon: 76.9748,
+    firstSeenAt: minutesAgo(45),
+    stationaryDurationSec: 2700,
+    thresholdMinutes: 15,
+    confidence: 0.95,
+    thermalSignature: 'COLD_MASS',
+    modality: 'THERMAL',
+    uavCode: 'UAV-KL-03',
+    status: 'CONFIRMED_BY_POLICE',
+    statusUpdatedAgo: '12m ago',
+    elirId: 'ELIR-20261016-0038',
+    thumbnailUrl: '/mock/kf3.jpg',
+  },
+  {
+    id: 'abo-03',
+    itemCode: 'ABO-20261016-03',
+    label: 'Stationary Utility Pickup at Jetty Gate',
+    objectClass: 'STATIONARY_VEHICLE',
+    zoneCode: 'Z-07',
+    zoneName: 'Vizhinjam Naval Approach',
+    locationName: 'Valiyathura Access Gate 2',
+    lat: 8.4820,
+    lon: 76.9180,
+    firstSeenAt: minutesAgo(6),
+    stationaryDurationSec: 360,
+    thresholdMinutes: 12,
+    confidence: 0.89,
+    thermalSignature: 'AMBIENT',
+    modality: 'RGB',
+    uavCode: 'UAV-KL-04',
+    status: 'WATCHING',
+    statusUpdatedAgo: '1m ago',
+    thumbnailUrl: '/mock/kf2.jpg',
+  },
+  {
+    id: 'abo-04',
+    itemCode: 'ABO-20261016-04',
+    label: 'Beach Luggage Near Rocky Promontory',
+    objectClass: 'BEACH_LUGGAGE',
+    zoneCode: 'Z-04',
+    zoneName: 'Lighthouse Beach',
+    locationName: 'Kovalam South Promontory',
+    lat: 8.3971,
+    lon: 76.9925,
+    firstSeenAt: minutesAgo(24),
+    stationaryDurationSec: 1440,
+    thresholdMinutes: 20,
+    confidence: 0.86,
+    thermalSignature: 'AMBIENT',
+    modality: 'RGB',
+    uavCode: 'UAV-KL-01',
+    status: 'ALERT_RAISED',
+    statusUpdatedAgo: '4m ago',
+    elirId: 'ELIR-20261016-0045',
+    thumbnailUrl: '/mock/kf1.jpg',
+  },
+  {
+    id: 'abo-05',
+    itemCode: 'ABO-20261016-05',
+    label: 'Discarded Coastal Buoy Fuel Canister',
+    objectClass: 'WATERPROOF_CANISTER',
+    zoneCode: 'Z-05',
+    zoneName: 'Poovar Estuary Sandbar',
+    locationName: 'Poovar Sandbar Tip',
+    lat: 8.3210,
+    lon: 76.9630,
+    firstSeenAt: minutesAgo(90),
+    stationaryDurationSec: 5400,
+    thresholdMinutes: 15,
+    confidence: 0.91,
+    thermalSignature: 'COLD_MASS',
+    modality: 'BOTH',
+    uavCode: 'UAV-KL-05',
+    status: 'CLEARED_BY_OPERATOR',
+    statusUpdatedAgo: '22m ago',
+    clearedReason: 'Inspected on-site by beach patrol / SI; identified as non-hazardous empty navigational buoy canister.',
+    clearedBy: 'SI Menon R.',
+    thumbnailUrl: '/mock/kf3.jpg',
+  },
+];
+
