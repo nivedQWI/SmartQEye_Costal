@@ -23,16 +23,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
     {
-      name: 'serve-coastal-videos',
+      name: 'serve-coastal-and-intrusion-media',
       configureServer(server) {
-        server.middlewares.use('/videos', (req, res, next) => {
-          const videoDir = path.resolve(__dirname, '../SmartQEye_Costal_Videos')
-          const fileName = decodeURIComponent((req.url || '').replace(/^\//, '').split('?')[0])
-          const filePath = path.join(videoDir, fileName)
+        const streamFile = (filePath: string, contentType: string, req: any, res: any, next: any) => {
           if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
             const stat = fs.statSync(filePath)
             const range = req.headers.range
-            res.setHeader('Content-Type', 'video/mp4')
+            res.setHeader('Content-Type', contentType)
             res.setHeader('Accept-Ranges', 'bytes')
 
             if (range) {
@@ -43,7 +40,7 @@ export default defineConfig({
               res.writeHead(206, {
                 'Content-Range': `bytes ${start}-${end}/${stat.size}`,
                 'Content-Length': chunkSize,
-                'Content-Type': 'video/mp4',
+                'Content-Type': contentType,
               })
               fs.createReadStream(filePath, { start, end }).pipe(res)
             } else {
@@ -53,6 +50,29 @@ export default defineConfig({
           } else {
             next()
           }
+        }
+
+        server.middlewares.use('/videos', (req, res, next) => {
+          const videoDir = path.resolve(__dirname, '../SmartQEye_Costal_Videos')
+          const fileName = decodeURIComponent((req.url || '').replace(/^\//, '').split('?')[0])
+          let filePath = path.join(videoDir, fileName)
+          if (!fs.existsSync(filePath)) {
+            // Check intrusion detection directory as well
+            const altPath = path.join(path.resolve(__dirname, '../Intrusion_detection'), fileName)
+            if (fs.existsSync(altPath)) filePath = altPath
+          }
+          const ext = path.extname(filePath).toLowerCase()
+          const mime = ext === '.png' ? 'image/png' : 'video/mp4'
+          streamFile(filePath, mime, req, res, next)
+        })
+
+        server.middlewares.use('/intrusion-media', (req, res, next) => {
+          const intrusionDir = path.resolve(__dirname, '../Intrusion_detection')
+          const fileName = decodeURIComponent((req.url || '').replace(/^\//, '').split('?')[0])
+          const filePath = path.join(intrusionDir, fileName)
+          const ext = path.extname(filePath).toLowerCase()
+          const mime = ext === '.png' ? 'image/png' : 'video/mp4'
+          streamFile(filePath, mime, req, res, next)
         })
       },
     },

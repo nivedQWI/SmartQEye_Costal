@@ -14,6 +14,7 @@ services:
       - "80:8080"
     volumes:
       - ../SmartQEye_Costal_Videos:/usr/share/nginx/html/videos:ro
+      - ../Intrusion_detection:/usr/share/nginx/html/intrusion-media:ro
     environment:
       - NODE_ENV=production
 

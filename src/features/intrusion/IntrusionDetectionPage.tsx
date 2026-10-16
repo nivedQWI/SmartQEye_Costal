@@ -3,16 +3,100 @@
 // As specified in Costal Police .docx
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   ShieldAlert, ShieldCheck, AlertOctagon, Download,
   Eye, Bell, MapPin, Radio, CheckCircle,
-  Plus, Trash2, Video, Layers, AlertTriangle
+  Plus, Trash2, Video, Layers, AlertTriangle,
+  Play, Pause, Volume2, VolumeX, Maximize2, RotateCcw, ImageIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
 import { can } from '@/lib/roleConfig';
 import { IntrusionRecord } from '@/types';
+
+// Real Intrusion Detection Snapshots from D:\SmartQEye_Costal\Intrusion_detection
+export interface IntrusionSnapshotItem {
+  id: string;
+  url: string;
+  fileName: string;
+  tag: string;
+  targetCode: string;
+  label: string;
+  confidence: number;
+  status: 'DWELLING' | 'ALERT' | 'EXITED' | 'TRACKING';
+  zoneName: string;
+  timestamp: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+}
+
+export const INTRUSION_SNAPSHOTS: IntrusionSnapshotItem[] = [
+  {
+    id: 'snap-5',
+    url: '/intrusion/snapshot_5.png',
+    fileName: 'snapshot (5).png',
+    tag: '#13 SHIP 80% [DWELLING] / #20 SWIMMER 20%',
+    targetCode: 'TARGET-SHIP-13',
+    label: 'Motor Vessel with Swimmer Alert',
+    confidence: 80,
+    status: 'DWELLING',
+    zoneName: 'Vizhinjam Naval Jetty & Fuel Wharf',
+    timestamp: '19:42:10 IST',
+    severity: 'CRITICAL',
+  },
+  {
+    id: 'snap-4',
+    url: '/intrusion/snapshot_4.png',
+    fileName: 'snapshot (4).png',
+    tag: '#1 YACHT 81% [DWELLING]',
+    targetCode: 'TARGET-YACHT-01',
+    label: 'High-Speed Yacht Incursion',
+    confidence: 81,
+    status: 'DWELLING',
+    zoneName: 'Vizhinjam Naval Jetty & Fuel Wharf',
+    timestamp: '19:35:18 IST',
+    severity: 'HIGH',
+  },
+  {
+    id: 'snap-3',
+    url: '/intrusion/snapshot_3.png',
+    fileName: 'snapshot (3).png',
+    tag: '#1 YACHT 86% [EXITED]',
+    targetCode: 'TARGET-YACHT-01',
+    label: 'Yacht Exited Tripwire Perimeter',
+    confidence: 86,
+    status: 'EXITED',
+    zoneName: 'Vizhinjam Naval Jetty & Fuel Wharf',
+    timestamp: '19:15:32 IST',
+    severity: 'MEDIUM',
+  },
+  {
+    id: 'snap-2',
+    url: '/intrusion/snapshot_2.png',
+    fileName: 'snapshot (2).png',
+    tag: '#5 SPEEDBOAT 81%',
+    targetCode: 'TARGET-BOAT-05',
+    label: 'Unregistered Fast Speedboat',
+    confidence: 81,
+    status: 'TRACKING',
+    zoneName: 'Kovalam Lighthouse Cliff Edge Barrier',
+    timestamp: '18:50:18 IST',
+    severity: 'HIGH',
+  },
+  {
+    id: 'snap-1',
+    url: '/intrusion/snapshot_1.png',
+    fileName: 'snapshot (1).png',
+    tag: '#6 BOAT 70%',
+    targetCode: 'TARGET-BOAT-06',
+    label: 'Small Coastal Fishing Craft',
+    confidence: 70,
+    status: 'TRACKING',
+    zoneName: 'Coastal Police Fast Interceptor Berth',
+    timestamp: '18:22:04 IST',
+    severity: 'MEDIUM',
+  },
+];
 
 // Mock Geofence Zones
 interface VirtualZone {
@@ -42,7 +126,7 @@ const INITIAL_ZONES: VirtualZone[] = [
     name: 'Kovalam Lighthouse Cliff Edge Barrier',
     type: 'YELLOW_WARNING',
     description: 'Hazardous high cliff safety perimeter. Tourist fall prevention buffer.',
-    targetCriteria: ['PERSON'],
+    targetCriteria: ['PERSON', 'VESSEL'],
     maxDwellSec: 15,
     activeBreaches: 0,
     polygonPoints: '420,120 580,110 590,260 440,240'
@@ -59,18 +143,18 @@ const INITIAL_ZONES: VirtualZone[] = [
   }
 ];
 
-// Mock Intrusion Records
+// Intrusion Records with Real Snapshots from D:\SmartQEye_Costal\Intrusion_detection
 const INITIAL_INTRUSIONS: IntrusionRecord[] = [
   {
     id: 'intr-01',
     zoneId: 'zone-1',
     zoneName: 'Vizhinjam Naval Jetty & Fuel Wharf',
-    breachType: 'PERSON',
-    targetCode: 'TARGET-TRK-9041',
+    breachType: 'VESSEL',
+    targetCode: 'TARGET-SHIP-13 (#13 SHIP 80%)',
     severity: 'CRITICAL',
     dwellTimeSec: 84,
     timestamp: '19:42:10 IST',
-    snapshotUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    snapshotUrl: '/intrusion/snapshot_5.png',
     status: 'ACTIVE'
   },
   {
@@ -78,61 +162,119 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
     zoneId: 'zone-1',
     zoneName: 'Vizhinjam Naval Jetty & Fuel Wharf',
     breachType: 'VESSEL',
-    targetCode: 'VESSEL-DHOW-09',
+    targetCode: 'TARGET-YACHT-01 (#1 YACHT 81%)',
     severity: 'HIGH',
-    dwellTimeSec: 210,
-    timestamp: '19:15:32 IST',
-    snapshotUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=150&q=80',
+    dwellTimeSec: 62,
+    timestamp: '19:35:18 IST',
+    snapshotUrl: '/intrusion/snapshot_4.png',
     status: 'DISPATCHED'
   },
   {
     id: 'intr-03',
-    zoneId: 'zone-2',
-    zoneName: 'Kovalam Lighthouse Cliff Edge Barrier',
-    breachType: 'PERSON',
-    targetCode: 'TARGET-TRK-8812',
+    zoneId: 'zone-1',
+    zoneName: 'Vizhinjam Naval Jetty & Fuel Wharf',
+    breachType: 'VESSEL',
+    targetCode: 'TARGET-YACHT-01 (#1 YACHT 86%)',
     severity: 'MEDIUM',
     dwellTimeSec: 45,
-    timestamp: '18:50:18 IST',
-    snapshotUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    timestamp: '19:15:32 IST',
+    snapshotUrl: '/intrusion/snapshot_3.png',
     status: 'RESOLVED'
   },
   {
     id: 'intr-04',
+    zoneId: 'zone-2',
+    zoneName: 'Kovalam Lighthouse Cliff Edge Barrier',
+    breachType: 'VESSEL',
+    targetCode: 'TARGET-BOAT-05 (#5 SPEEDBOAT 81%)',
+    severity: 'HIGH',
+    dwellTimeSec: 38,
+    timestamp: '18:50:18 IST',
+    snapshotUrl: '/intrusion/snapshot_2.png',
+    status: 'ACKNOWLEDGED'
+  },
+  {
+    id: 'intr-05',
     zoneId: 'zone-3',
     zoneName: 'Coastal Police Fast Interceptor Berth',
     breachType: 'VESSEL',
-    targetCode: 'VESSEL-KERALA-33',
-    severity: 'HIGH',
-    dwellTimeSec: 12,
-    timestamp: '17:30:45 IST',
-    snapshotUrl: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=150&q=80',
-    status: 'ACKNOWLEDGED'
+    targetCode: 'TARGET-BOAT-06 (#6 BOAT 70%)',
+    severity: 'MEDIUM',
+    dwellTimeSec: 19,
+    timestamp: '18:22:04 IST',
+    snapshotUrl: '/intrusion/snapshot_1.png',
+    status: 'RESOLVED'
   }
 ];
 
 export default function IntrusionDetectionPage() {
   const { user, devRole } = useAuthStore();
   const activeRole = user?.role ?? devRole ?? 'OPERATOR';
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const [zones, setZones] = useState<VirtualZone[]>(INITIAL_ZONES);
   const [intrusions, setIntrusions] = useState<IntrusionRecord[]>(INITIAL_INTRUSIONS);
   const [selectedZone, setSelectedZone] = useState<VirtualZone | null>(INITIAL_ZONES[0]);
   const [isSimulatingBreach, setIsSimulatingBreach] = useState(false);
   const [inspectRecord, setInspectRecord] = useState<IntrusionRecord | null>(null);
 
-  // Trigger simulated breach
+  // Video Stream Controls
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const [showPolygons, setShowPolygons] = useState(true);
+
+  function togglePlay() {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }
+
+  function toggleMute() {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsMuted(videoRef.current.muted);
+  }
+
+  function toggleFullscreen() {
+    if (!videoRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      videoRef.current.requestFullscreen().catch(() => {});
+    }
+  }
+
+  function restartVideo() {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = 0;
+    videoRef.current.play().catch(() => {});
+    setIsPlaying(true);
+  }
+
+  // Trigger simulated breach with real detection snapshots
   function handleSimulateBreach() {
     setIsSimulatingBreach(true);
+    const sampleSnaps = [
+      { url: '/intrusion/snapshot_5.png', code: 'TARGET-SHIP-13 (#13 SHIP 80%)', type: 'VESSEL' as const, sev: 'CRITICAL' as const, dwell: 88, zone: 'Vizhinjam Naval Jetty & Fuel Wharf' },
+      { url: '/intrusion/snapshot_4.png', code: 'TARGET-YACHT-01 (#1 YACHT 81%)', type: 'VESSEL' as const, sev: 'HIGH' as const, dwell: 32, zone: 'Vizhinjam Naval Jetty & Fuel Wharf' },
+      { url: '/intrusion/snapshot_2.png', code: 'TARGET-BOAT-05 (#5 SPEEDBOAT 81%)', type: 'VESSEL' as const, sev: 'HIGH' as const, dwell: 15, zone: 'Kovalam Lighthouse Cliff Edge Barrier' },
+    ];
+    const picked = sampleSnaps[Math.floor(Math.random() * sampleSnaps.length)];
     const newBreach: IntrusionRecord = {
       id: `intr-${Date.now().toString().slice(-4)}`,
       zoneId: 'zone-1',
-      zoneName: 'Vizhinjam Naval Jetty & Fuel Wharf',
-      breachType: 'PERSON',
-      targetCode: `TARGET-TRK-${Math.floor(1000 + Math.random() * 9000)}`,
-      severity: 'CRITICAL',
-      dwellTimeSec: 8,
+      zoneName: picked.zone,
+      breachType: picked.type,
+      targetCode: picked.code,
+      severity: picked.sev,
+      dwellTimeSec: picked.dwell,
       timestamp: new Date().toLocaleTimeString('en-IN', { hour12: false }) + ' IST',
-      snapshotUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
+      snapshotUrl: picked.url,
       status: 'ACTIVE'
     };
     setIntrusions(prev => [newBreach, ...prev]);
@@ -270,70 +412,200 @@ export default function IntrusionDetectionPage() {
             </div>
 
             {/* Video Canvas with Dynamic SVG Polygons */}
+            {/* Real-time Coastal Drone Intrusion Video Stream */}
             <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex flex-col justify-between p-3 select-none">
-              <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                <svg className="w-full h-full" viewBox="0 0 640 400">
-                  <defs>
-                    <pattern id="secGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-                      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                    </pattern>
-                  </defs>
-                  <rect width="640" height="400" fill="url(#secGrid)" />
+              <video
+                ref={videoRef}
+                src="/intrusion-media/Intrusion_video.mp4"
+                autoPlay
+                muted={isMuted}
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to /videos/Intrusion_video.mp4 if /intrusion-media path is not ready
+                  const target = e.currentTarget;
+                  if (!target.src.includes('/videos/Intrusion_video.mp4')) {
+                    target.src = '/videos/Intrusion_video.mp4';
+                  }
+                }}
+              />
 
-                  {/* Port Jetty Shoreline Outline */}
-                  <path d="M 0 280 L 180 260 L 320 180 L 480 180 L 640 240 L 640 400 L 0 400 Z" fill="#0f172a" stroke="#1e293b" strokeWidth="2" />
-                  <text x="30" y="320" fill="#475569" fontSize="12" fontFamily="serif" fontWeight="bold">VIZHINJAM SHORELINE</text>
+              {/* Dynamic SVG Tripwire & Geofence Overlay */}
+              {showPolygons && (
+                <div className="absolute inset-0 pointer-events-none">
+                  <svg className="w-full h-full" viewBox="0 0 640 400" preserveAspectRatio="none">
+                    <defs>
+                      <pattern id="secGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                      </pattern>
+                    </defs>
+                    <rect width="640" height="400" fill="url(#secGrid)" />
 
-                  {/* Zone 1: Prohibited Naval Berth Polygon (Flashing Red) */}
-                  <polygon
-                    points="120,80 340,60 380,220 160,240"
-                    fill="rgba(239, 68, 68, 0.25)"
-                    stroke="#ef4444"
-                    strokeWidth="2.5"
-                    strokeDasharray="6 4"
-                    className="animate-pulse"
-                  />
-                  <rect x="130" y="90" width="160" height="20" fill="rgba(239, 68, 68, 0.9)" rx="3" />
-                  <text x="136" y="104" fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold">ZONE 1: NAVAL BERTH [BREACH]</text>
+                    {/* Zone 1: Prohibited Naval Berth Polygon (Flashing Red) */}
+                    <polygon
+                      points="100,90 380,70 430,280 140,300"
+                      fill="rgba(239, 68, 68, 0.16)"
+                      stroke="#ef4444"
+                      strokeWidth="2"
+                      strokeDasharray="6 4"
+                      className="animate-pulse"
+                    />
+                    <rect x="110" y="100" width="180" height="20" fill="rgba(239, 68, 68, 0.9)" rx="3" />
+                    <text x="116" y="114" fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold">ZONE 1: NAVAL BERTH [BREACH]</text>
 
-                  {/* Target 9041 inside Zone 1 */}
-                  <g transform="translate(240, 150)">
-                    <circle cx="0" cy="0" r="16" fill="rgba(239, 68, 68, 0.4)" className="animate-ping" />
-                    <circle cx="0" cy="0" r="7" fill="#ef4444" />
-                    <rect x="10" y="-12" width="120" height="20" fill="#ef4444" rx="2" />
-                    <text x="14" y="2" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">TARGET-TRK-9041 (84s)</text>
-                    <line x1="0" y1="0" x2="-20" y2="15" stroke="#ef4444" strokeWidth="2" />
-                  </g>
+                    {/* Target Tracking Bounding Box corresponding to real detection snapshot */}
+                    <g transform="translate(260, 175)">
+                      <circle cx="0" cy="0" r="16" fill="rgba(239, 68, 68, 0.35)" className="animate-ping" />
+                      <circle cx="0" cy="0" r="6" fill="#ef4444" />
+                      <rect x="10" y="-12" width="150" height="20" fill="#ef4444" rx="2" />
+                      <text x="14" y="2" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">#13 SHIP 80% [DWELL 84s]</text>
+                      <line x1="0" y1="0" x2="-20" y2="15" stroke="#ef4444" strokeWidth="2" />
+                    </g>
 
-                  {/* Zone 2: Cliff Edge Safety Polygon (Yellow) */}
-                  <polygon
-                    points="420,120 600,100 620,250 440,240"
-                    fill="rgba(245, 158, 11, 0.15)"
-                    stroke="#f59e0b"
-                    strokeWidth="1.5"
-                    strokeDasharray="4 4"
-                  />
-                  <rect x="430" y="130" width="140" height="18" fill="rgba(245, 158, 11, 0.85)" rx="2" />
-                  <text x="436" y="143" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">ZONE 2: CLIFF EDGE BUFFER</text>
-                </svg>
-              </div>
+                    {/* Zone 2: Cliff Edge Safety Polygon (Yellow) */}
+                    <polygon
+                      points="440,90 620,75 635,260 455,250"
+                      fill="rgba(245, 158, 11, 0.12)"
+                      stroke="#f59e0b"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                    />
+                    <rect x="450" y="100" width="155" height="18" fill="rgba(245, 158, 11, 0.85)" rx="2" />
+                    <text x="456" y="113" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">ZONE 2: CLIFF EDGE BUFFER</text>
+                  </svg>
+                </div>
+              )}
 
               {/* HUD Header */}
-              <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-300">
-                <span className="bg-slate-900/90 px-2.5 py-1 rounded border border-slate-700 flex items-center gap-1.5">
-                  <Radio className="w-3.5 h-3.5 text-emerald-400" />
-                  UAV-KL-01 · 30 FPS RTMP
+              <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-200">
+                <span className="bg-slate-900/85 backdrop-blur-xs px-2.5 py-1 rounded border border-slate-700/80 flex items-center gap-1.5 shadow-xs">
+                  <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                  UAV-KL-01 · 30 FPS RTMP RECON STREAM
                 </span>
-                <span className="bg-red-950/90 text-red-200 px-2.5 py-1 rounded border border-red-500/50 font-bold flex items-center gap-1.5 animate-pulse">
+                <span className="bg-red-950/90 text-red-200 px-2.5 py-1 rounded border border-red-500/60 font-bold flex items-center gap-1.5 animate-pulse shadow-xs">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                  ALARM: INTRUSION ACTIVE IN ZONE 1
+                  ALARM: VESSEL INTRUSION DETECTED IN ZONE 1
                 </span>
               </div>
 
-              {/* HUD Footer */}
-              <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-300 bg-slate-950/85 p-2 rounded border border-slate-800">
-                <span className="text-emerald-400">GEOFENCE ENGINE: SHAPELY POLYGON INTERSECTION</span>
-                <span className="text-slate-400">LATENCY: 12MS | POLYGON EVAL: 60 HZ</span>
+              {/* HUD Controls & Metrics Footer */}
+              <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-200 bg-slate-950/85 backdrop-blur-xs p-2 rounded border border-slate-800">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={togglePlay}
+                    className="p-1 rounded hover:bg-white/10 text-slate-200 transition-colors cursor-pointer"
+                    title={isPlaying ? 'Pause' : 'Play'}
+                  >
+                    {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={toggleMute}
+                    className="p-1 rounded hover:bg-white/10 text-slate-200 transition-colors cursor-pointer"
+                    title={isMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={restartVideo}
+                    className="p-1 rounded hover:bg-white/10 text-slate-200 transition-colors cursor-pointer"
+                    title="Restart Video"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setShowPolygons(p => !p)}
+                    className={cn(
+                      'ml-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer',
+                      showPolygons
+                        ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    )}
+                  >
+                    {showPolygons ? 'Tripwires: ON' : 'Tripwires: OFF'}
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-emerald-400 hidden sm:inline">GEOFENCE ENGINE: SHAPELY EVAL (60 HZ)</span>
+                  <span className="text-slate-400">LATENCY: 14MS</span>
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-1 rounded hover:bg-white/10 text-slate-200 transition-colors cursor-pointer"
+                    title="Fullscreen"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Real Intrusion Detection Snapshots Gallery ── */}
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-[var(--accent)]" />
+                  <h3 className="font-serif text-xs font-bold text-[var(--text)]">
+                    Target Detection Snapshots ({INTRUSION_SNAPSHOTS.length})
+                  </h3>
+                </div>
+                <span className="text-[10px] font-mono text-slate-500">
+                  Real AI Bounding-Box Crops · Click to inspect
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {INTRUSION_SNAPSHOTS.map(snap => (
+                  <div
+                    key={snap.id}
+                    onClick={() => {
+                      const matched = intrusions.find(i => i.snapshotUrl === snap.url) || {
+                        id: snap.id,
+                        zoneId: 'zone-1',
+                        zoneName: snap.zoneName,
+                        breachType: 'VESSEL' as const,
+                        targetCode: snap.targetCode,
+                        severity: snap.severity,
+                        dwellTimeSec: 84,
+                        timestamp: snap.timestamp,
+                        snapshotUrl: snap.url,
+                        status: 'ACTIVE' as const,
+                      };
+                      setInspectRecord(matched);
+                    }}
+                    className="group rounded-md border border-[var(--border)] bg-[var(--surface)] p-2 hover:border-red-500 hover:shadow-md transition-all cursor-pointer flex flex-col gap-1.5"
+                  >
+                    <div className="relative aspect-video bg-black rounded overflow-hidden flex items-center justify-center border border-black/40">
+                      <img
+                        src={snap.url}
+                        alt={snap.tag}
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (!target.src.includes('snapshot_')) {
+                            target.src = `/intrusion/${snap.fileName}`;
+                          }
+                        }}
+                      />
+                      <span className={cn(
+                        "absolute top-1 left-1 px-1 py-0.2 rounded font-mono text-[8px] font-bold",
+                        snap.status === 'DWELLING' ? "bg-red-950/90 text-red-300 border border-red-500/50" :
+                        snap.status === 'EXITED' ? "bg-emerald-950/90 text-emerald-300 border border-emerald-500/50" :
+                        "bg-amber-950/90 text-amber-300 border border-amber-500/50"
+                      )}>
+                        {snap.status}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="font-mono text-[10px] font-bold text-slate-900 truncate" title={snap.tag}>
+                        {snap.tag}
+                      </span>
+                      <span className="text-[9px] text-slate-500 truncate">
+                        {snap.label}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -443,12 +715,13 @@ export default function IntrusionDetectionPage() {
                 >
                   <td className="p-3 font-mono font-medium whitespace-nowrap" style={{ color: 'var(--text)' }}>{item.timestamp}</td>
                   <td className="p-3">
-                    <img
-                      src={item.snapshotUrl}
-                      alt={item.targetCode}
-                      className="w-10 h-8 object-cover rounded border"
-                      style={{ borderColor: 'var(--line)' }}
-                    />
+                    <div className="w-14 h-10 bg-slate-950 rounded overflow-hidden border flex items-center justify-center p-0.5" style={{ borderColor: 'var(--line)' }}>
+                      <img
+                        src={item.snapshotUrl}
+                        alt={item.targetCode}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                   </td>
                   <td className="p-3 font-semibold" style={{ color: 'var(--text)' }}>{item.zoneName}</td>
                   <td className="p-3 font-mono font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{item.targetCode}</td>
@@ -525,11 +798,11 @@ export default function IntrusionDetectionPage() {
               <button onClick={() => setInspectRecord(null)} className="text-lg font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center p-3 bg-slate-950 rounded-lg border border-slate-800">
               <img
                 src={inspectRecord.snapshotUrl}
                 alt={inspectRecord.targetCode}
-                className="w-40 h-32 object-cover rounded-md border-2 border-red-500 shadow-md"
+                className="max-h-52 max-w-full object-contain rounded border-2 border-red-500 shadow-md"
               />
             </div>
 
