@@ -212,10 +212,10 @@ export default function PersonReidPage() {
             Persons Tracked
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold" style={{ color: 'var(--accent)' }}>84</span>
-            <Users className="w-4 h-4 text-slate-400" />
+            <span className="font-mono text-2xl font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">84</span>
+            <Users className="w-4 h-4 opacity-60" style={{ color: 'var(--text-muted)' }} />
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">Active in field</div>
+          <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Active in field</div>
         </div>
 
         <div className="card-sand p-3 flex flex-col justify-between">
@@ -223,10 +223,10 @@ export default function PersonReidPage() {
             Unique Identities
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-slate-800">312</span>
-            <span className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-1 py-0.5 rounded">24h</span>
+            <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>312</span>
+            <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20">24h</span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">Cross-drone deduplicated</div>
+          <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Cross-drone deduplicated</div>
         </div>
 
         <div className="card-sand p-3 flex flex-col justify-between">
@@ -234,10 +234,10 @@ export default function PersonReidPage() {
             Faces Extracted
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-emerald-700">294</span>
+            <span className="font-mono text-2xl font-bold text-emerald-700 dark:text-emerald-400">294</span>
             <ScanFace className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">Stored in MinIO object store</div>
+          <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Stored in MinIO object store</div>
         </div>
 
         <div className="card-sand p-3 flex flex-col justify-between border-l-4 border-l-red-600">
@@ -258,10 +258,10 @@ export default function PersonReidPage() {
             Multi-Cam Hops
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-slate-800">48</span>
-            <span className="text-[10px] text-sky-700 font-mono font-bold bg-sky-50 px-1 py-0.5 rounded">Handoffs</span>
+            <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>48</span>
+            <span className="text-[10px] text-sky-700 dark:text-sky-400 font-mono font-bold bg-sky-500/10 px-1 py-0.5 rounded border border-sky-500/20">Handoffs</span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">Continuity rate 94.2%</div>
+          <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Continuity rate 94.2%</div>
         </div>
 
         <div className="card-sand p-3 flex flex-col justify-between">
@@ -272,7 +272,7 @@ export default function PersonReidPage() {
             <span className="font-mono text-lg font-bold text-emerald-700">OSNet-IBN</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">28.4 FPS on GPU-1</div>
+          <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>28.4 FPS on GPU-1</div>
         </div>
       </div>
 
@@ -352,7 +352,7 @@ export default function PersonReidPage() {
 
             {/* Quick Actions */}
             <div className="p-3 bg-[var(--surface-muted)] rounded border border-[var(--border)] flex items-center justify-between text-xs">
-              <span className="text-slate-600 font-medium">Flagged contact in current view: <strong className="text-red-700">Rajan (Meen Rajan)</strong></span>
+              <span className="font-medium" style={{ color: 'var(--text-muted)' }}>Flagged contact in current view: <strong className="text-red-700 dark:text-red-400">Rajan (Meen Rajan)</strong></span>
               <button
                 onClick={() => handleDispatchPatrol('TRK-9041')}
                 disabled={dispatchedAlerts.includes('TRK-9041')}
@@ -391,14 +391,14 @@ export default function PersonReidPage() {
                     placeholder="Search Track ID or contact..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                    className="pl-8 pr-3 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--sea-500)]"
                   />
                 </div>
 
                 <button
                   onClick={() => setWatchlistOnly(!watchlistOnly)}
                   className={cn(
-                    "px-2.5 py-1.5 text-xs rounded font-mono font-semibold flex items-center gap-1 border transition-colors",
+                    "px-2.5 py-1.5 text-xs rounded font-mono font-semibold flex items-center gap-1 border transition-colors cursor-pointer",
                     watchlistOnly
                       ? "bg-red-100 text-red-800 border-red-300"
                       : "bg-[var(--surface-muted)] text-[var(--text)] border-[var(--border)]"
@@ -411,7 +411,7 @@ export default function PersonReidPage() {
                 <button
                   onClick={() => setHasBagFilter(!hasBagFilter)}
                   className={cn(
-                    "px-2.5 py-1.5 text-xs rounded font-mono font-semibold border transition-colors",
+                    "px-2.5 py-1.5 text-xs rounded font-mono font-semibold border transition-colors cursor-pointer",
                     hasBagFilter
                       ? "bg-amber-100 text-amber-800 border-amber-300"
                       : "bg-[var(--surface-muted)] text-[var(--text)] border-[var(--border)]"
@@ -431,8 +431,8 @@ export default function PersonReidPage() {
                   className={cn(
                     "p-3 rounded-lg border transition-all cursor-pointer flex flex-col justify-between gap-2.5 hover:shadow-md",
                     record.isWatchlistMatch
-                      ? "bg-red-50/70 border-red-300 hover:border-red-500"
-                      : "bg-[var(--surface)] border-[var(--border)] hover:border-[var(--accent)]"
+                      ? "bg-red-500/10 border-red-500/40 hover:border-red-500"
+                      : "bg-[var(--surface)] border-[var(--border)] hover:border-[var(--sea-500)]"
                   )}
                 >
                   {/* Top crop and badge */}
@@ -443,7 +443,7 @@ export default function PersonReidPage() {
                         alt={record.trackId}
                         className={cn(
                           "w-14 h-14 object-cover rounded-md border",
-                          record.isWatchlistMatch ? "border-red-500 ring-2 ring-red-400" : "border-slate-300"
+                          record.isWatchlistMatch ? "border-red-500 ring-2 ring-red-400" : "border-slate-300 dark:border-slate-700"
                         )}
                       />
                       {record.isWatchlistMatch && (
@@ -456,23 +456,23 @@ export default function PersonReidPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold text-slate-800">{record.trackId}</span>
-                        <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                        <span className="font-mono text-xs font-bold" style={{ color: 'var(--text)' }}>{record.trackId}</span>
+                        <span className="font-mono text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                           {(record.confidence * 100).toFixed(1)}%
                         </span>
                       </div>
 
                       {record.isWatchlistMatch ? (
-                        <div className="text-[11px] font-bold text-red-800 line-clamp-1 mt-0.5">
+                        <div className="text-[11px] font-bold text-red-800 dark:text-red-300 line-clamp-1 mt-0.5">
                           {record.watchlistIdentity}
                         </div>
                       ) : (
-                        <div className="text-[11px] text-slate-500 mt-0.5">
+                        <div className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
                           Non-Watchlist Subject
                         </div>
                       )}
 
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                      <div className="text-[10px] font-mono mt-0.5" style={{ color: 'var(--text-muted)' }}>
                         {record.cameraHops.length} drone camera {record.cameraHops.length === 1 ? 'hop' : 'hops'}
                       </div>
                     </div>
@@ -480,23 +480,23 @@ export default function PersonReidPage() {
 
                   {/* Garment / Feature tags */}
                   <div className="flex flex-wrap gap-1 text-[10px] font-mono">
-                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                    <span className="px-1.5 py-0.5 rounded bg-[var(--surface-muted)] border border-[var(--line)]" style={{ color: 'var(--text)' }}>
                       {record.appearanceFeatures.upperColor}
                     </span>
-                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                    <span className="px-1.5 py-0.5 rounded bg-[var(--surface-muted)] border border-[var(--line)]" style={{ color: 'var(--text)' }}>
                       {record.appearanceFeatures.lowerColor}
                     </span>
                     {record.appearanceFeatures.bag && (
-                      <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+                      <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 font-bold">
                         Bag
                       </span>
                     )}
                   </div>
 
                   {/* Footer status */}
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/80 text-[10px] font-mono text-slate-500">
+                  <div className="flex items-center justify-between pt-1 border-t border-[var(--line)] text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
                     <span>Last: {record.lastSeenAt}</span>
-                    <span className="text-[var(--accent)] font-semibold hover:underline flex items-center gap-0.5">
+                    <span className="text-[var(--sea-600)] dark:text-[var(--sea-accent)] font-bold hover:underline flex items-center gap-0.5">
                       Inspect Dossier →
                     </span>
                   </div>
@@ -505,7 +505,7 @@ export default function PersonReidPage() {
             </div>
 
             {filteredRecords.length === 0 && (
-              <div className="p-8 text-center text-slate-500 font-mono text-xs border border-dashed border-[var(--border)] rounded">
+              <div className="p-8 text-center font-mono text-xs border border-dashed border-[var(--border)] rounded" style={{ color: 'var(--text-muted)' }}>
                 No Re-ID records match current filter criteria.
               </div>
             )}
@@ -518,16 +518,17 @@ export default function PersonReidPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="card-sand max-w-xl w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--border)] max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
-                <ScanFace className="w-5 h-5 text-[var(--accent)]" />
+                <ScanFace className="w-5 h-5 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
                 <h3 className="font-serif text-lg font-bold text-[var(--text)]">
                   Subject Dossier &amp; Cross-Camera Trajectory
                 </h3>
               </div>
               <button
                 onClick={() => setSelectedRecord(null)}
-                className="text-slate-400 hover:text-slate-700 text-xl font-bold p-1"
+                className="text-lg font-bold p-1 hover:opacity-80 cursor-pointer"
+                style={{ color: 'var(--text-muted)' }}
               >
                 ×
               </button>
@@ -540,12 +541,12 @@ export default function PersonReidPage() {
                 alt={selectedRecord.trackId}
                 className={cn(
                   "w-24 h-24 object-cover rounded-md border-2",
-                  selectedRecord.isWatchlistMatch ? "border-red-500 shadow-md" : "border-slate-300"
+                  selectedRecord.isWatchlistMatch ? "border-red-500 shadow-md" : "border-slate-300 dark:border-slate-700"
                 )}
               />
               <div className="flex-1 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm font-bold text-slate-900">{selectedRecord.trackId}</span>
+                  <span className="font-mono text-sm font-bold" style={{ color: 'var(--text)' }}>{selectedRecord.trackId}</span>
                   <span className="badge-navy text-[10px] px-2 py-0.5 rounded font-mono font-bold">
                     CONFIDENCE: {(selectedRecord.confidence * 100).toFixed(1)}%
                   </span>
@@ -553,22 +554,22 @@ export default function PersonReidPage() {
 
                 {selectedRecord.isWatchlistMatch ? (
                   <div>
-                    <div className="text-red-700 font-bold font-sans text-sm flex items-center gap-1.5">
+                    <div className="text-red-700 dark:text-red-400 font-bold font-sans text-sm flex items-center gap-1.5">
                       <ShieldAlert className="w-4 h-4" />
                       {selectedRecord.watchlistIdentity}
                     </div>
-                    <div className="text-slate-600 mt-1 italic text-[11px] bg-red-50 p-2 rounded border border-red-200">
+                    <div className="mt-1 italic text-[11px] bg-red-500/10 text-red-900 dark:text-red-200 p-2 rounded border border-red-500/30">
                       {selectedRecord.watchlistNotes}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-emerald-700 font-semibold flex items-center gap-1">
+                  <div className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
                     <CheckCircle className="w-4 h-4" />
                     No Active Lookout Circular or Watchlist Matches
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px] text-slate-600">
+                <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>
                   <span>First Seen: {selectedRecord.firstSeenAt}</span>
                   <span>·</span>
                   <span>Last Seen: {selectedRecord.lastSeenAt}</span>
@@ -579,21 +580,21 @@ export default function PersonReidPage() {
             {/* Spatio-temporal Camera Hops Timeline */}
             <div>
               <h4 className="font-serif text-xs font-bold uppercase tracking-wider text-[var(--text)] mb-3 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                <Clock className="w-3.5 h-3.5 opacity-60" style={{ color: 'var(--text-muted)' }} />
                 Cross-Camera Journey &amp; Spatial Progression
               </h4>
 
-              <div className="space-y-3 relative before:absolute before:inset-0 before:left-3 before:w-0.5 before:bg-slate-200">
+              <div className="space-y-3 relative before:absolute before:inset-0 before:left-3 before:w-0.5 before:bg-slate-300 dark:before:bg-slate-700">
                 {selectedRecord.cameraHops.map((hop, idx) => (
                   <div key={idx} className="relative flex items-center gap-4 pl-8 text-xs font-mono">
-                    <div className="absolute left-1.5 w-3 h-3 rounded-full bg-[var(--accent)] border-2 border-white ring-2 ring-slate-200"></div>
+                    <div className="absolute left-1.5 w-3 h-3 rounded-full bg-[var(--sea-600)] dark:bg-[var(--sea-accent)] border-2 border-[var(--raised)] ring-2 ring-[var(--line)]"></div>
                     <div className="flex-1 p-2.5 rounded bg-[var(--surface)] border border-[var(--border)] flex items-center justify-between">
                       <div>
-                        <span className="font-bold text-slate-800">{hop.droneCode}</span>
-                        <span className="mx-2 text-slate-400">·</span>
-                        <span className="text-slate-600 font-sans">{hop.location}</span>
+                        <span className="font-bold" style={{ color: 'var(--text)' }}>{hop.droneCode}</span>
+                        <span className="mx-2 opacity-50" style={{ color: 'var(--text-muted)' }}>·</span>
+                        <span className="font-sans" style={{ color: 'var(--text-muted)' }}>{hop.location}</span>
                       </div>
-                      <span className="text-slate-500 font-bold">{hop.time}</span>
+                      <span className="font-bold" style={{ color: 'var(--text-muted)' }}>{hop.time}</span>
                     </div>
                   </div>
                 ))}
@@ -608,7 +609,7 @@ export default function PersonReidPage() {
                     onClick={() => handleDispatchPatrol(selectedRecord.trackId)}
                     disabled={dispatchedAlerts.includes(selectedRecord.trackId)}
                     className={cn(
-                      "px-3 py-1.5 rounded text-xs font-mono font-bold transition-all",
+                      "px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer",
                       dispatchedAlerts.includes(selectedRecord.trackId)
                         ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                         : "bg-red-700 hover:bg-red-800 text-white shadow-sm"
@@ -624,7 +625,8 @@ export default function PersonReidPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedRecord(null)}
-                  className="px-3 py-1.5 rounded text-xs font-mono font-medium text-slate-700 hover:bg-slate-100"
+                  className="px-3 py-1.5 rounded text-xs font-mono font-bold border hover:bg-[var(--surface-hover)] cursor-pointer"
+                  style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
                 >
                   Close
                 </button>

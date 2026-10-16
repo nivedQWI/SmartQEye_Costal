@@ -270,9 +270,9 @@ export default function VehicleMaritimePage() {
           <button
             onClick={() => setActiveTab('VEHICLE_ANPR')}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold uppercase tracking-wider transition-all",
+              "flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold uppercase tracking-wider transition-all cursor-pointer",
               activeTab === 'VEHICLE_ANPR'
-                ? "bg-[var(--surface)] text-[var(--accent)] shadow-sm border border-[var(--border)]"
+                ? "bg-[var(--surface)] text-[var(--sea-600)] dark:text-[var(--sea-accent)] shadow-xs border border-[var(--border)]"
                 : "text-[var(--text-muted)] hover:text-[var(--text)]"
             )}
           >
@@ -282,9 +282,9 @@ export default function VehicleMaritimePage() {
           <button
             onClick={() => setActiveTab('MARITIME_VESSEL')}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold uppercase tracking-wider transition-all",
+              "flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold uppercase tracking-wider transition-all cursor-pointer",
               activeTab === 'MARITIME_VESSEL'
-                ? "bg-[var(--surface)] text-[var(--accent)] shadow-sm border border-[var(--border)]"
+                ? "bg-[var(--surface)] text-[var(--sea-600)] dark:text-[var(--sea-accent)] shadow-xs border border-[var(--border)]"
                 : "text-[var(--text-muted)] hover:text-[var(--text)]"
             )}
           >
@@ -326,12 +326,12 @@ export default function VehicleMaritimePage() {
                 Vehicles In Track
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-2xl font-bold" style={{ color: 'var(--accent)' }}>142</span>
-                <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                <span className="font-mono text-2xl font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">142</span>
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                   +18 / 10m
                 </span>
               </div>
-              <div className="text-[10px] text-slate-500 mt-1">Multi-camera continuity</div>
+              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Multi-camera continuity</div>
             </div>
 
             <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -340,9 +340,9 @@ export default function VehicleMaritimePage() {
               </span>
               <div className="flex items-baseline justify-between mt-2">
                 <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>108 / 34</span>
-                <span className="text-[10px] text-slate-600 font-mono font-bold">76% flow</span>
+                <span className="text-[10px] font-mono font-bold" style={{ color: 'var(--text-muted)' }}>76% flow</span>
               </div>
-              <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
+              <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-1">
                 <div className="bg-emerald-600 h-full" style={{ width: '76%' }}></div>
               </div>
             </div>
@@ -352,10 +352,10 @@ export default function VehicleMaritimePage() {
                 Avg Road Speed
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-2xl font-bold text-slate-800">42 <span className="text-xs font-normal">km/h</span></span>
-                <Gauge className="w-4 h-4 text-slate-400" />
+                <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>42 <span className="text-xs font-normal">km/h</span></span>
+                <Gauge className="w-4 h-4 opacity-60" style={{ color: 'var(--text-muted)' }} />
               </div>
-              <div className="text-[10px] text-slate-500 mt-1">Limit: 50 km/h (Kovalam)</div>
+              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Limit: 50 km/h (Kovalam)</div>
             </div>
 
             <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -363,12 +363,12 @@ export default function VehicleMaritimePage() {
                 Plates OCR&apos;d
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-2xl font-bold text-emerald-700">138</span>
-                <span className="text-[10px] font-mono text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded font-bold">
+                <span className="font-mono text-2xl font-bold text-emerald-700 dark:text-emerald-400">138</span>
+                <span className="text-[10px] font-mono text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold border border-emerald-500/20">
                   97.2%
                 </span>
               </div>
-              <div className="text-[10px] text-slate-500 mt-1">PaddleOCR + LPRNet</div>
+              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>PaddleOCR + LPRNet</div>
             </div>
 
             <div className="card-sand p-3.5 flex flex-col justify-between border-l-4 border-l-amber-600">
@@ -389,7 +389,7 @@ export default function VehicleMaritimePage() {
           <div className="card-sand p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Video className="w-4 h-4 text-[var(--accent)]" />
+                <Video className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
                 <h2 className="font-serif text-base font-bold text-[var(--text)]">
                   Live Feed Comparison — UAV-KL-01 (Kovalam Bypass Sector)
                 </h2>
@@ -497,7 +497,7 @@ export default function VehicleMaritimePage() {
                     placeholder="Search plate number..."
                     value={plateSearch}
                     onChange={(e) => setPlateSearch(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                    className="pl-8 pr-3 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--sea-500)]"
                   />
                 </div>
 
@@ -517,7 +517,7 @@ export default function VehicleMaritimePage() {
                 <button
                   onClick={() => setShowWatchlistOnly(!showWatchlistOnly)}
                   className={cn(
-                    "px-2.5 py-1.5 text-xs rounded font-mono font-semibold flex items-center gap-1 border transition-colors",
+                    "px-2.5 py-1.5 text-xs rounded font-mono font-semibold flex items-center gap-1 border transition-colors cursor-pointer",
                     showWatchlistOnly
                       ? "bg-red-100 text-red-800 border-red-300"
                       : "bg-[var(--surface-muted)] text-[var(--text)] border-[var(--border)]"
@@ -529,7 +529,7 @@ export default function VehicleMaritimePage() {
 
                 <button
                   onClick={handleExportVehicleCsv}
-                  className="btn-navy text-xs flex items-center gap-1.5 px-3 py-1.5 rounded"
+                  className="btn-navy text-xs flex items-center gap-1.5 px-3 py-1.5 rounded cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Export CSV
@@ -555,8 +555,8 @@ export default function VehicleMaritimePage() {
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
                   {filteredVehicles.map(veh => (
-                    <tr key={veh.id} className={cn("hover:bg-[var(--surface-hover)] transition-colors", veh.isWatchlistMatch ? "bg-red-50/40" : "")}>
-                      <td className="p-3 font-mono text-slate-600 whitespace-nowrap">{veh.timestamp}</td>
+                    <tr key={veh.id} className={cn("hover:bg-[var(--surface-hover)] transition-colors", veh.isWatchlistMatch ? "bg-red-500/10 border-l-2 border-l-red-500" : "")}>
+                      <td className="p-3 font-mono whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{veh.timestamp}</td>
                       <td className="p-3">
                         <img
                           src={veh.thumbnailUrl}
@@ -571,18 +571,18 @@ export default function VehicleMaritimePage() {
                           <span>{veh.plate}</span>
                         </div>
                       </td>
-                      <td className="p-3 font-mono font-bold text-slate-700">{veh.vehicleType}</td>
+                      <td className="p-3 font-mono font-bold" style={{ color: 'var(--text)' }}>{veh.vehicleType}</td>
                       <td className="p-3 font-mono">
-                        <span className={cn("font-bold", veh.speedKmh > 50 ? "text-amber-700" : "text-slate-700")}>
+                        <span className={cn("font-bold", veh.speedKmh > 50 ? "text-amber-700 dark:text-amber-400" : "")} style={veh.speedKmh <= 50 ? { color: 'var(--text)' } : undefined}>
                           {veh.speedKmh} km/h
                         </span>
                       </td>
                       <td className="p-3 font-mono">
-                        <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                           {(veh.confidence * 100).toFixed(1)}%
                         </span>
                       </td>
-                      <td className="p-3 font-mono text-slate-600">{veh.droneCode}</td>
+                      <td className="p-3 font-mono" style={{ color: 'var(--text-muted)' }}>{veh.droneCode}</td>
                       <td className="p-3">
                         {veh.isWatchlistMatch ? (
                           <div className="flex items-center gap-1.5 text-red-700 font-bold bg-red-100/80 px-2 py-0.5 rounded border border-red-300 w-fit">
@@ -599,7 +599,12 @@ export default function VehicleMaritimePage() {
                       <td className="p-3 text-right">
                         <button
                           onClick={() => setInspectVehicle(veh)}
-                          className="px-2 py-1 rounded bg-[var(--surface-muted)] hover:bg-[var(--surface)] border border-[var(--border)] font-mono text-[11px] font-semibold text-[var(--accent)] hover:underline"
+                          className="px-2.5 py-1 rounded border font-mono text-[11px] font-bold transition-colors cursor-pointer hover:bg-[var(--surface-hover)]"
+                          style={{
+                            background: 'var(--raised)',
+                            borderColor: 'var(--line)',
+                            color: 'var(--sea-600)',
+                          }}
                         >
                           Inspect
                         </button>
@@ -608,7 +613,7 @@ export default function VehicleMaritimePage() {
                   ))}
                   {filteredVehicles.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="p-6 text-center text-slate-500 font-mono">
+                      <td colSpan={9} className="p-6 text-center font-mono" style={{ color: 'var(--text-muted)' }}>
                         No ANPR vehicle records match filter criteria.
                       </td>
                     </tr>
@@ -632,12 +637,12 @@ export default function VehicleMaritimePage() {
                 Live In Frame (Sector 4)
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-2xl font-bold text-sky-800">28</span>
-                <span className="text-[10px] text-sky-700 font-semibold bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200">
+                <span className="font-mono text-2xl font-bold text-sky-800 dark:text-sky-300">28</span>
+                <span className="text-[10px] text-sky-700 dark:text-sky-400 font-semibold bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">
                   Vizhinjam Outer
                 </span>
               </div>
-              <div className="text-[10px] text-slate-500 mt-1">Radar &amp; Drone Synchronized</div>
+              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Radar &amp; Drone Synchronized</div>
             </div>
 
             <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -646,9 +651,9 @@ export default function VehicleMaritimePage() {
               </span>
               <div className="flex items-baseline justify-between mt-2">
                 <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>114</span>
-                <span className="text-[10px] font-mono text-slate-600 font-bold">24h Log</span>
+                <span className="text-[10px] font-mono font-bold" style={{ color: 'var(--text-muted)' }}>24h Log</span>
               </div>
-              <div className="text-[10px] text-slate-500 mt-1">78 Trawlers / 14 Cargo / 22 Crafts</div>
+              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>78 Trawlers / 14 Cargo / 22 Crafts</div>
             </div>
 
             <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -656,10 +661,10 @@ export default function VehicleMaritimePage() {
                 Motion State Breakdown
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-lg font-bold text-slate-800">19 / 6 / 3</span>
-                <span className="text-[10px] text-slate-500 font-mono font-semibold">C / A / D</span>
+                <span className="font-mono text-lg font-bold" style={{ color: 'var(--text)' }}>19 / 6 / 3</span>
+                <span className="text-[10px] font-mono font-semibold" style={{ color: 'var(--text-muted)' }}>C / A / D</span>
               </div>
-              <div className="text-[10px] text-slate-600 mt-1">
+              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
                 Cruising (19) · Anchored (6) · Drifting (3)
               </div>
             </div>
@@ -773,7 +778,7 @@ export default function VehicleMaritimePage() {
               <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-300 bg-slate-950/80 p-2 rounded border border-slate-800">
                 <div className="flex items-center gap-3">
                   <span className="text-sky-400 font-bold">KINEMATICS: BEARING VECTOR ESTIMATOR</span>
-                  <span className="text-slate-500">|</span>
+                  <span className="opacity-50">|</span>
                   <span>TTA TO CLOSEST POINT: 42 SECONDS</span>
                 </div>
                 <div className="text-amber-400 font-bold">
@@ -800,20 +805,20 @@ export default function VehicleMaritimePage() {
                 <div className="flex items-center p-0.5 bg-[var(--surface-muted)] border border-[var(--border)] rounded text-xs font-mono">
                   <button
                     onClick={() => setVesselFilter('ALL')}
-                    className={cn("px-2.5 py-1 rounded", vesselFilter === 'ALL' ? "bg-[var(--surface)] text-[var(--accent)] font-bold" : "text-slate-600")}
+                    className={cn("px-2.5 py-1 rounded transition-colors cursor-pointer", vesselFilter === 'ALL' ? "bg-[var(--surface)] text-[var(--sea-600)] dark:text-[var(--sea-accent)] font-bold shadow-xs" : "text-[var(--text-muted)] hover:text-[var(--text)]")}
                   >
                     All ({vessels.length})
                   </button>
                   <button
                     onClick={() => setVesselFilter('ALERTS')}
-                    className={cn("px-2.5 py-1 rounded flex items-center gap-1", vesselFilter === 'ALERTS' ? "bg-red-100 text-red-800 font-bold" : "text-slate-600")}
+                    className={cn("px-2.5 py-1 rounded flex items-center gap-1 transition-colors cursor-pointer", vesselFilter === 'ALERTS' ? "bg-red-100 text-red-800 font-bold" : "text-[var(--text-muted)] hover:text-[var(--text)]")}
                   >
                     <AlertTriangle className="w-3 h-3 text-red-600" />
                     Alerts Only
                   </button>
                   <button
                     onClick={() => setVesselFilter('ANCHORED')}
-                    className={cn("px-2.5 py-1 rounded", vesselFilter === 'ANCHORED' ? "bg-[var(--surface)] text-[var(--accent)] font-bold" : "text-slate-600")}
+                    className={cn("px-2.5 py-1 rounded transition-colors cursor-pointer", vesselFilter === 'ANCHORED' ? "bg-[var(--surface)] text-[var(--sea-600)] dark:text-[var(--sea-accent)] font-bold shadow-xs" : "text-[var(--text-muted)] hover:text-[var(--text)]")}
                   >
                     Anchored
                   </button>
@@ -821,7 +826,7 @@ export default function VehicleMaritimePage() {
 
                 <button
                   onClick={handleExportVesselCsv}
-                  className="btn-navy text-xs flex items-center gap-1.5 px-3 py-1.5 rounded"
+                  className="btn-navy text-xs flex items-center gap-1.5 px-3 py-1.5 rounded cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Export Ledger
@@ -847,16 +852,16 @@ export default function VehicleMaritimePage() {
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
                   {filteredVessels.map(vsl => (
-                    <tr key={vsl.id} className={cn("hover:bg-[var(--surface-hover)] transition-colors", vsl.proximityWarning ? "bg-red-50/40" : "")}>
-                      <td className="p-3 font-mono font-bold text-sky-900">{vsl.vesselCode}</td>
-                      <td className="p-3 font-sans text-slate-700 font-medium">{vsl.vesselClass.replace('_', ' ')}</td>
+                    <tr key={vsl.id} className={cn("hover:bg-[var(--surface-hover)] transition-colors", vsl.proximityWarning ? "bg-red-500/10 border-l-2 border-l-red-500" : "")}>
+                      <td className="p-3 font-mono font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{vsl.vesselCode}</td>
+                      <td className="p-3 font-sans font-medium" style={{ color: 'var(--text)' }}>{vsl.vesselClass.replace('_', ' ')}</td>
                       <td className="p-3 font-mono font-bold">
-                        <span className={vsl.speedKnots > 20 ? "text-amber-700" : "text-slate-800"}>
+                        <span className={vsl.speedKnots > 20 ? "text-amber-700 dark:text-amber-400" : ""} style={vsl.speedKnots <= 20 ? { color: 'var(--text)' } : undefined}>
                           {vsl.speedKnots.toFixed(1)} kt
                         </span>
                       </td>
-                      <td className="p-3 font-mono text-slate-700 flex items-center gap-1">
-                        <ArrowUpRight className="w-3 h-3 text-slate-400" style={{ transform: `rotate(${vsl.headingDeg}deg)` }} />
+                      <td className="p-3 font-mono flex items-center gap-1" style={{ color: 'var(--text)' }}>
+                        <ArrowUpRight className="w-3 h-3 opacity-60" style={{ transform: `rotate(${vsl.headingDeg}deg)`, color: 'var(--text-muted)' }} />
                         {vsl.headingDeg}°
                       </td>
                       <td className="p-3 font-mono">
@@ -864,7 +869,7 @@ export default function VehicleMaritimePage() {
                           "px-2 py-0.5 rounded text-[10px] font-bold",
                           vsl.motionState === 'CRUISING' ? "bg-sky-50 text-sky-800 border border-sky-200" :
                           vsl.motionState === 'ANCHORED' ? "bg-amber-50 text-amber-800 border border-amber-200" :
-                          "bg-slate-100 text-slate-700 border border-slate-300"
+                          "bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/30"
                         )}>
                           {vsl.motionState}
                         </span>
@@ -876,17 +881,22 @@ export default function VehicleMaritimePage() {
                             <span>{vsl.closestSeparationPx}px HAZARD</span>
                           </div>
                         ) : (
-                          <span className="text-slate-500 font-semibold">{vsl.closestSeparationPx}px (Clear)</span>
+                          <span className="font-semibold" style={{ color: 'var(--text-muted)' }}>{vsl.closestSeparationPx}px (Clear)</span>
                         )}
                       </td>
-                      <td className="p-3 font-mono text-slate-600">
+                      <td className="p-3 font-mono" style={{ color: 'var(--text-muted)' }}>
                         {vsl.lat.toFixed(4)}°N, {vsl.lon.toFixed(4)}°E
                       </td>
-                      <td className="p-3 font-mono text-slate-500 whitespace-nowrap">{vsl.lastSeenAt}</td>
+                      <td className="p-3 font-mono whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{vsl.lastSeenAt}</td>
                       <td className="p-3 text-right">
                         <button
                           onClick={() => setInspectVessel(vsl)}
-                          className="px-2 py-1 rounded bg-[var(--surface-muted)] hover:bg-[var(--surface)] border border-[var(--border)] font-mono text-[11px] font-semibold text-[var(--accent)] hover:underline"
+                          className="px-2.5 py-1 rounded border font-mono text-[11px] font-bold transition-colors cursor-pointer hover:bg-[var(--surface-hover)]"
+                          style={{
+                            background: 'var(--raised)',
+                            borderColor: 'var(--line)',
+                            color: 'var(--sea-600)',
+                          }}
                         >
                           Details
                         </button>
@@ -895,7 +905,7 @@ export default function VehicleMaritimePage() {
                   ))}
                   {filteredVessels.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="p-6 text-center text-slate-500 font-mono">
+                      <td colSpan={9} className="p-6 text-center font-mono" style={{ color: 'var(--text-muted)' }}>
                         No maritime tracks match criteria.
                       </td>
                     </tr>
@@ -911,12 +921,12 @@ export default function VehicleMaritimePage() {
       {inspectVehicle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="card-sand max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl border border-[var(--border)]">
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <Car className="w-4 h-4 text-emerald-700" />
                 <h3 className="font-serif text-base font-bold text-[var(--text)]">Vehicle Inspection Record</h3>
               </div>
-              <button onClick={() => setInspectVehicle(null)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">×</button>
+              <button onClick={() => setInspectVehicle(null)} className="text-lg font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
             </div>
 
             <div className="flex items-center justify-center py-2">
@@ -927,25 +937,25 @@ export default function VehicleMaritimePage() {
             </div>
 
             <div className="space-y-2 text-xs font-mono">
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Vehicle Type:</span>
-                <span className="font-bold text-slate-800">{inspectVehicle.vehicleType}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Vehicle Type:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVehicle.vehicleType}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Speed Detected:</span>
-                <span className="font-bold text-slate-800">{inspectVehicle.speedKmh} km/h</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Speed Detected:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVehicle.speedKmh} km/h</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">OCR Confidence:</span>
-                <span className="font-bold text-emerald-700">{(inspectVehicle.confidence * 100).toFixed(2)}%</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>OCR Confidence:</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">{(inspectVehicle.confidence * 100).toFixed(2)}%</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Drone Source:</span>
-                <span className="font-bold text-slate-800">{inspectVehicle.droneCode}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Drone Source:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVehicle.droneCode}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Location:</span>
-                <span className="font-bold text-slate-800">{inspectVehicle.locationName}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Location:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVehicle.locationName}</span>
               </div>
               {inspectVehicle.isWatchlistMatch && (
                 <div className="p-3 bg-red-100 border border-red-300 rounded text-red-900 font-sans text-xs mt-2">
@@ -972,39 +982,39 @@ export default function VehicleMaritimePage() {
       {/* ── Vessel Inspection Modal ── */}
       {inspectVessel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="card-sand max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl border border-[var(--border)]">
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+          <div className="card-sand max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl border" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <Ship className="w-4 h-4 text-sky-700" />
                 <h3 className="font-serif text-base font-bold text-[var(--text)]">Maritime Kinematics Dossier</h3>
               </div>
-              <button onClick={() => setInspectVessel(null)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">×</button>
+              <button onClick={() => setInspectVessel(null)} className="text-lg font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
             </div>
 
             <div className="space-y-2 text-xs font-mono">
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Vessel Code:</span>
-                <span className="font-bold text-sky-900">{inspectVessel.vesselCode}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Vessel Code:</span>
+                <span className="font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{inspectVessel.vesselCode}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Classification:</span>
-                <span className="font-bold text-slate-800">{inspectVessel.vesselClass}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Classification:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.vesselClass}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Speed (Knots):</span>
-                <span className="font-bold text-slate-800">{inspectVessel.speedKnots} kt</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Speed (Knots):</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.speedKnots} kt</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Heading:</span>
-                <span className="font-bold text-slate-800">{inspectVessel.headingDeg}°</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Heading:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.headingDeg}°</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Motion State:</span>
-                <span className="font-bold text-slate-800">{inspectVessel.motionState}</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Motion State:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.motionState}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200">
-                <span className="text-slate-500">Coordinates:</span>
-                <span className="font-bold text-slate-800">{inspectVessel.lat}°N, {inspectVessel.lon}°E</span>
+              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Coordinates:</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.lat}°N, {inspectVessel.lon}°E</span>
               </div>
               {inspectVessel.proximityWarning && (
                 <div className="p-3 bg-red-100 border border-red-300 rounded text-red-900 font-sans text-xs mt-2">

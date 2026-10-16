@@ -438,7 +438,7 @@ export default function ZonesConfigPage() {
                       <span>Operator Alert Raised:</span>
                       <strong>NO (0 alerts)</strong>
                     </div>
-                    <div className="flex items-center justify-between text-slate-500">
+                    <div className="flex items-center justify-between" style={{ color: 'var(--text-muted)' }}>
                       <span>Action Recommended:</span>
                       <span>Passive observation ledger</span>
                     </div>

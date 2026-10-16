@@ -188,7 +188,7 @@ export function CkfeKeyframeStrip({
               <span
                 className={cn(
                   'text-[8px] font-mono font-bold px-1 py-0.5 rounded border truncate block w-full text-center',
-                  REASON_COLORS[kf.reason] ?? 'bg-slate-500/10 text-slate-700'
+                  REASON_COLORS[kf.reason] ?? 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30'
                 )}
               >
                 {kf.reason.replace(/_/g, ' ')}

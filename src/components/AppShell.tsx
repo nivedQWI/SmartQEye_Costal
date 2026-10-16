@@ -282,7 +282,7 @@ export function AppShell() {
                   <div className="font-serif text-base font-bold leading-tight truncate" style={{ color: 'var(--text)' }}>
                     SmartQEye
                   </div>
-                  <div className="text-[11px] font-semibold tracking-wide truncate text-[var(--accent)]">
+                  <div className="text-[11px] font-semibold tracking-wide truncate" style={{ color: 'var(--text-muted)' }}>
                     Coastal Surveillance · QW
                   </div>
                 </div>

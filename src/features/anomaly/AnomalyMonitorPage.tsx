@@ -190,10 +190,10 @@ export default function AnomalyMonitorPage() {
             Total Anomalies Today
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold" style={{ color: 'var(--accent)' }}>48</span>
-            <TrendingUp className="w-4 h-4 text-slate-400" />
+            <span className="font-mono text-2xl font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">48</span>
+            <TrendingUp className="w-4 h-4 opacity-60" style={{ color: 'var(--text-muted)' }} />
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">28 Person · 14 Traffic · 6 Marine</div>
+          <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>28 Person · 14 Traffic · 6 Marine</div>
         </div>
 
         <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -201,12 +201,12 @@ export default function AnomalyMonitorPage() {
             False Positive Rate
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-emerald-700">3.8%</span>
-            <span className="text-[10px] text-emerald-800 font-mono font-bold bg-emerald-50 px-1 py-0.5 rounded">
+            <span className="font-mono text-2xl font-bold text-emerald-700 dark:text-emerald-400">3.8%</span>
+            <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-mono font-bold bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20">
               High Precision
             </span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">SlowFast + ST-GCN Ensembles</div>
+          <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>SlowFast + ST-GCN Ensembles</div>
         </div>
 
         <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -214,10 +214,10 @@ export default function AnomalyMonitorPage() {
             Avg Clip Replay Size
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-slate-800">22.5s</span>
-            <Video className="w-4 h-4 text-slate-400" />
+            <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>22.5s</span>
+            <Video className="w-4 h-4 opacity-60" style={{ color: 'var(--text-muted)' }} />
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">Buffered in GPU ring memory</div>
+          <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Buffered in GPU ring memory</div>
         </div>
       </div>
 
@@ -228,7 +228,7 @@ export default function AnomalyMonitorPage() {
           <div className="card-sand p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Video className="w-4 h-4 text-[var(--accent)]" />
+                <Video className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
                 <h2 className="font-serif text-sm font-bold text-[var(--text)]">
                   Instant Clip Replay — {selectedAnomaly.id} ({selectedAnomaly.anomalyType.replace('_', ' ')})
                 </h2>
@@ -256,8 +256,8 @@ export default function AnomalyMonitorPage() {
             <div className="p-3 bg-[var(--surface-muted)] rounded border border-[var(--border)] flex flex-col gap-2">
 
               {/* Description & Action Bar */}
-              <div className="text-xs text-slate-700 font-sans mt-1 p-2 bg-[var(--surface)] rounded border border-[var(--border)]">
-                <span className="font-bold text-slate-900">Incident Narrative: </span>
+              <div className="text-xs font-sans mt-1 p-2 bg-[var(--surface)] rounded border border-[var(--border)]" style={{ color: 'var(--text)' }}>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>Incident Narrative: </span>
                 {selectedAnomaly.description}
               </div>
 
@@ -265,13 +265,18 @@ export default function AnomalyMonitorPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleUpdateStatus(selectedAnomaly.id, 'ESCALATED')}
-                    className="px-2.5 py-1 rounded bg-red-700 hover:bg-red-800 text-white font-mono text-[11px] font-bold"
+                    className="px-2.5 py-1 rounded bg-red-700 hover:bg-red-800 text-white font-mono text-[11px] font-bold shadow-xs cursor-pointer"
                   >
                     Escalate to Police Control
                   </button>
                   <button
                     onClick={() => handleUpdateStatus(selectedAnomaly.id, 'FALSE_POSITIVE')}
-                    className="px-2.5 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-mono text-[11px] font-bold"
+                    className="px-2.5 py-1 rounded border font-mono text-[11px] font-bold transition-colors cursor-pointer hover:bg-[var(--surface-hover)]"
+                    style={{
+                      background: 'var(--raised)',
+                      borderColor: 'var(--line)',
+                      color: 'var(--text)',
+                    }}
                   >
                     Mark False Positive
                   </button>
@@ -279,7 +284,7 @@ export default function AnomalyMonitorPage() {
 
                 <button
                   onClick={() => handleUpdateStatus(selectedAnomaly.id, 'REVIEWED')}
-                  className="px-2.5 py-1 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-[11px] font-bold"
+                  className="px-2.5 py-1 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-[11px] font-bold shadow-xs cursor-pointer"
                 >
                   Mark Reviewed
                 </button>
@@ -336,16 +341,16 @@ export default function AnomalyMonitorPage() {
 
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)] text-center text-xs font-mono">
               <div className="p-2 bg-[var(--surface-muted)] rounded">
-                <div className="text-slate-500 text-[10px]">PERSON</div>
-                <div className="font-bold text-slate-800 text-sm">28</div>
+                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>PERSON</div>
+                <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>28</div>
               </div>
               <div className="p-2 bg-[var(--surface-muted)] rounded">
-                <div className="text-slate-500 text-[10px]">TRAFFIC</div>
-                <div className="font-bold text-slate-800 text-sm">14</div>
+                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>TRAFFIC</div>
+                <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>14</div>
               </div>
               <div className="p-2 bg-[var(--surface-muted)] rounded">
-                <div className="text-slate-500 text-[10px]">MARINE</div>
-                <div className="font-bold text-slate-800 text-sm">6</div>
+                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>MARINE</div>
+                <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>6</div>
               </div>
             </div>
           </div>
@@ -368,25 +373,25 @@ export default function AnomalyMonitorPage() {
             <div className="flex items-center p-0.5 bg-[var(--surface-muted)] border border-[var(--border)] rounded text-xs font-mono">
               <button
                 onClick={() => setCategoryFilter('ALL')}
-                className={cn("px-2.5 py-1 rounded", categoryFilter === 'ALL' ? "bg-[var(--surface)] text-[var(--accent)] font-bold" : "text-slate-600")}
+                className={cn("px-2.5 py-1 rounded transition-colors cursor-pointer", categoryFilter === 'ALL' ? "bg-[var(--surface)] text-[var(--sea-600)] dark:text-[var(--sea-accent)] font-bold shadow-xs" : "text-[var(--text-muted)] hover:text-[var(--text)]")}
               >
                 All
               </button>
               <button
                 onClick={() => setCategoryFilter('PERSON')}
-                className={cn("px-2.5 py-1 rounded", categoryFilter === 'PERSON' ? "bg-[var(--surface)] text-[var(--accent)] font-bold" : "text-slate-600")}
+                className={cn("px-2.5 py-1 rounded transition-colors cursor-pointer", categoryFilter === 'PERSON' ? "bg-[var(--surface)] text-[var(--sea-600)] dark:text-[var(--sea-accent)] font-bold shadow-xs" : "text-[var(--text-muted)] hover:text-[var(--text)]")}
               >
                 Person
               </button>
               <button
                 onClick={() => setCategoryFilter('TRAFFIC')}
-                className={cn("px-2.5 py-1 rounded", categoryFilter === 'TRAFFIC' ? "bg-[var(--surface)] text-[var(--accent)] font-bold" : "text-slate-600")}
+                className={cn("px-2.5 py-1 rounded transition-colors cursor-pointer", categoryFilter === 'TRAFFIC' ? "bg-[var(--surface)] text-[var(--sea-600)] dark:text-[var(--sea-accent)] font-bold shadow-xs" : "text-[var(--text-muted)] hover:text-[var(--text)]")}
               >
                 Traffic
               </button>
               <button
                 onClick={() => setCategoryFilter('MARINE')}
-                className={cn("px-2.5 py-1 rounded", categoryFilter === 'MARINE' ? "bg-[var(--surface)] text-[var(--accent)] font-bold" : "text-slate-600")}
+                className={cn("px-2.5 py-1 rounded transition-colors cursor-pointer", categoryFilter === 'MARINE' ? "bg-[var(--surface)] text-[var(--sea-600)] dark:text-[var(--sea-accent)] font-bold shadow-xs" : "text-[var(--text-muted)] hover:text-[var(--text)]")}
               >
                 Marine
               </button>
@@ -416,13 +421,13 @@ export default function AnomalyMonitorPage() {
                   onClick={() => setSelectedAnomaly(item)}
                   className={cn(
                     "hover:bg-[var(--surface-hover)] transition-colors cursor-pointer",
-                    selectedAnomaly.id === item.id ? "bg-amber-50/60 font-medium" : ""
+                    selectedAnomaly.id === item.id ? "bg-[var(--selected-row-bg)] border-l-2 border-l-[var(--selected-row-border)] font-medium" : ""
                   )}
                 >
-                  <td className="p-3 font-mono text-slate-600 whitespace-nowrap">{item.timestamp}</td>
-                  <td className="p-3 font-mono font-bold text-[var(--accent)]">{item.id}</td>
-                  <td className="p-3 font-mono font-semibold text-slate-700">{item.category}</td>
-                  <td className="p-3 font-sans font-bold text-slate-900">{item.anomalyType.replace('_', ' ')}</td>
+                  <td className="p-3 font-mono whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{item.timestamp}</td>
+                  <td className="p-3 font-mono font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{item.id}</td>
+                  <td className="p-3 font-mono font-semibold" style={{ color: 'var(--text)' }}>{item.category}</td>
+                  <td className="p-3 font-sans font-bold" style={{ color: 'var(--text)' }}>{item.anomalyType.replace('_', ' ')}</td>
                   <td className="p-3 font-mono">
                     <span className={cn(
                       "px-2 py-0.5 rounded text-[10px] font-bold",
@@ -433,26 +438,31 @@ export default function AnomalyMonitorPage() {
                       {item.riskScore} / 100
                     </span>
                   </td>
-                  <td className="p-3 font-mono text-slate-600">{item.droneCode}</td>
+                  <td className="p-3 font-mono" style={{ color: 'var(--text-muted)' }}>{item.droneCode}</td>
                   <td className="p-3 font-mono">
                     <span className={cn(
                       "px-2 py-0.5 rounded text-[10px] font-bold",
                       item.status === 'NEW' ? "bg-red-600 text-white animate-pulse" :
                       item.status === 'ESCALATED' ? "bg-amber-100 text-amber-800 border border-amber-300" :
                       item.status === 'REVIEWED' ? "bg-emerald-100 text-emerald-800 border border-emerald-300" :
-                      "bg-slate-100 text-slate-600 border border-slate-300"
+                      "bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/30"
                     )}>
                       {item.status}
                     </span>
                   </td>
-                  <td className="p-3 text-slate-700 max-w-xs truncate">{item.description}</td>
+                  <td className="p-3 max-w-xs truncate" style={{ color: 'var(--text)' }}>{item.description}</td>
                   <td className="p-3 text-right">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedAnomaly(item);
                       }}
-                      className="px-2 py-1 rounded bg-[var(--surface-muted)] hover:bg-[var(--surface)] border border-[var(--border)] font-mono text-[10px] font-semibold text-[var(--accent)] hover:underline"
+                      className="px-2.5 py-1 rounded border font-mono text-[10px] font-bold transition-colors cursor-pointer hover:bg-[var(--surface-hover)]"
+                      style={{
+                        background: 'var(--raised)',
+                        borderColor: 'var(--line)',
+                        color: 'var(--sea-600)',
+                      }}
                     >
                       Replay
                     </button>

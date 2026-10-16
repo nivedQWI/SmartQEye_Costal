@@ -41,7 +41,7 @@ function DrawTools({ tool, onSelect }: { tool: DrawTool; onSelect: (t: DrawTool)
       className="flex flex-col gap-1 p-2 rounded-xl border shadow-lg backdrop-blur-md"
       style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
     >
-      <div className="text-[10px] uppercase font-mono font-bold tracking-widest text-[var(--accent)] px-1 mb-1">
+      <div className="text-[10px] uppercase font-mono font-bold tracking-widest text-[var(--sea-600)] dark:text-[var(--sea-accent)] px-1 mb-1">
         Geofence Tools
       </div>
       {tools.map(t => (
@@ -123,7 +123,7 @@ function DigitalCompass({ headingDeg = 195 }: { headingDeg?: number }) {
 
       <div className="text-center">
         <span className="font-mono text-sm font-bold text-[var(--text)]">{headingDeg}°</span>
-        <span className="ml-1 text-xs font-mono font-bold text-[var(--accent)]">{getCardinal(headingDeg)}</span>
+        <span className="ml-1 text-xs font-mono font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{getCardinal(headingDeg)}</span>
       </div>
     </div>
   );
@@ -150,7 +150,7 @@ function TelemetryHUD({
         </div>
         <button
           onClick={onFocus}
-          className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--surface-muted)] hover:bg-[var(--sand-200)] text-[var(--accent)] border border-[var(--line)] flex items-center gap-1"
+          className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--surface-muted)] hover:bg-[var(--surface-hover)] text-[var(--sea-600)] dark:text-[var(--sea-accent)] border border-[var(--line)] flex items-center gap-1 cursor-pointer transition-colors"
           title="Track camera on this UAV"
         >
           <Crosshair className="w-3 h-3" /> Focus
@@ -159,28 +159,28 @@ function TelemetryHUD({
 
       <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
         <div>
-          <span className="text-[9px] uppercase text-slate-500 block">Altitude</span>
+          <span className="text-[9px] uppercase block" style={{ color: 'var(--text-muted)' }}>Altitude</span>
           <span className="font-bold text-slate-800 dark:text-slate-200">124m AGL</span>
         </div>
         <div>
-          <span className="text-[9px] uppercase text-slate-500 block">Airspeed</span>
+          <span className="text-[9px] uppercase block" style={{ color: 'var(--text-muted)' }}>Airspeed</span>
           <span className="font-bold text-slate-800 dark:text-slate-200">38 km/h</span>
         </div>
         <div>
-          <span className="text-[9px] uppercase text-slate-500 block">Battery</span>
+          <span className="text-[9px] uppercase block" style={{ color: 'var(--text-muted)' }}>Battery</span>
           <span className="font-bold text-emerald-600 flex items-center gap-1">
             <Battery className="w-3 h-3" /> 86% (28m)
           </span>
         </div>
         <div>
-          <span className="text-[9px] uppercase text-slate-500 block">Wind Vector</span>
+          <span className="text-[9px] uppercase block" style={{ color: 'var(--text-muted)' }}>Wind Vector</span>
           <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
             <Wind className="w-3 h-3" /> 14kt WNW
           </span>
         </div>
       </div>
 
-      <div className="pt-2 border-t border-[var(--line)] flex items-center justify-between text-[10px] font-mono text-slate-500">
+      <div className="pt-2 border-t border-[var(--line)] flex items-center justify-between text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
         <span>LAT: 8.3842° N</span>
         <span>LON: 76.9781° E</span>
       </div>
@@ -401,7 +401,7 @@ export default function MapGIS() {
         {drawTool !== 'none' && (
           <div
             className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-xl text-xs font-mono font-bold shadow-2xl border flex items-center gap-3 z-20"
-            style={{ background: 'var(--ink-900)', color: 'var(--sand-200)', borderColor: 'var(--accent)' }}
+            style={{ background: 'var(--ink-900)', color: 'var(--sand-200)', borderColor: 'var(--line)' }}
           >
             <span>
               {drawTool === 'polygon' && 'GEOFENCE POLYGON MODE: Click map to place vertices · Double-click to close boundary'}

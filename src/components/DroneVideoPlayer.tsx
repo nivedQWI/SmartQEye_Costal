@@ -527,7 +527,7 @@ export function DroneVideoPlayer({
                     'px-2 py-0.5 rounded text-[10px] font-bold border transition-colors flex items-center gap-1',
                     isLiveMode
                       ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'
                   )}
                 >
                   <span className={cn('w-1.5 h-1.5 rounded-full', isLiveMode ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400')} />

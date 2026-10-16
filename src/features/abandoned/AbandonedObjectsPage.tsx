@@ -184,7 +184,7 @@ export default function AbandonedObjectsPage() {
                           ? 'bg-red-500/10 text-red-600 border-red-500/20'
                           : item.thermalSignature === 'COLD_MASS'
                           ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                          : 'bg-slate-500/10 text-slate-600 border-slate-500/20'
+                          : 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20'
                       )}>
                         THERMAL: {item.thermalSignature}
                       </span>
@@ -202,7 +202,7 @@ export default function AbandonedObjectsPage() {
             <div className="flex items-start justify-between border-b pb-4" style={{ borderColor: 'var(--line)' }}>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-[var(--sea-600)]">{selectedItem.itemCode}</span>
+                  <span className="font-mono text-xs font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{selectedItem.itemCode}</span>
                   <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600">
                     {selectedItem.objectClass.replace(/_/g, ' ')}
                   </span>

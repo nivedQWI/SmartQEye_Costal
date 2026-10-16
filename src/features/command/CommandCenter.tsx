@@ -118,7 +118,7 @@ function LayerToggles() {
         style={{ color: 'var(--text)' }}
         onClick={() => setOpen(!open)}
       >
-        <Layers className="w-3.5 h-3.5 text-[var(--accent)]" />
+        <Layers className="w-3.5 h-3.5 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
         Map Layers
         {open ? <ChevronDown className="w-3.5 h-3.5 ml-auto" /> : <ChevronUp className="w-3.5 h-3.5 ml-auto" />}
       </button>
