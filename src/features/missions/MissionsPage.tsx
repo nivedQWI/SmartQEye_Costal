@@ -1,15 +1,14 @@
 // ============================================================
-// SmartQEye Coastal — Missions & Sorties Page (/missions)
-// As specified in Costal Police .docx
+// SmartQEye Coastal — Mission Control Page (/missions)
+// Standardized Drone Mission Management & Video Ingestion
 // ============================================================
 
 import { useState, useEffect } from 'react';
 import {
   Anchor, Play, Square, RefreshCw, Upload, Video,
-  Radio, Shield, HardDrive, Cpu, Trash2, CheckCircle2,
-  Clock, AlertCircle, FileText, ChevronRight
+  Radio, Shield, Trash2, Clock, AlertCircle, FileText
 } from 'lucide-react';
-import { cn, formatIST } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
 import type { MissionSortie, Squadron, VideoSourceType } from '@/types';
 
@@ -26,46 +25,28 @@ function generateMissionId(squadron: Squadron): string {
 
 export default function MissionsPage() {
   const [squadron, setSquadron] = useState<Squadron>('ALPHA');
-  const [missionName, setMissionName] = useState('Vizhinjam Harbor Dawn Patrol');
+  const [missionName, setMissionName] = useState('');
   const [missionId, setMissionId] = useState(generateMissionId('ALPHA'));
   const [selectedDroneId, setSelectedDroneId] = useState(UAVS[0].id);
   const [videoSourceType, setVideoSourceType] = useState<VideoSourceType>('RTMP');
-  const [videoSourceUrl, setVideoSourceUrl] = useState('rtmp://192.168.1.120:1935/live/uav_kl01');
+  const [videoSourceUrl, setVideoSourceUrl] = useState('');
   const [uploadedVideoFile, setUploadedVideoFile] = useState<string | null>(null);
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
   const [srtFile, setSrtFile] = useState<string | null>(null);
-  const [pilotName, setPilotName] = useState('SI Ramesh Kumar (KP-8842)');
-  const [location, setLocation] = useState('Vizhinjam Coastal Police Station');
+  const [pilotName, setPilotName] = useState('');
+  const [location, setLocation] = useState('');
 
   // Transmission controls
   const [serverIngestion, setServerIngestion] = useState(true);
   const [cognitiveBypass, setCognitiveBypass] = useState(false);
 
-  // Active mission state
-  const [activeSortie, setActiveSortie] = useState<MissionSortie | null>({
-    id: 'sort-active-1',
-    missionId: 'MSN-20261013-0940-12-ALPHA',
-    name: 'Sector Charlie Shoreline Surveillance',
-    droneId: UAVS[0].id,
-    droneCode: UAVS[0].droneCode,
-    squadron: 'ALPHA',
-    videoSourceType: 'RTMP',
-    videoSourceUrl: 'rtmp://10.12.0.4/live/uav_kl01',
-    pilotName: 'Insp. Anoop Nair',
-    location: 'Vizhinjam Deepwater Harbor',
-    status: 'ACTIVE',
-    serverIngestion: true,
-    cognitiveBypass: false,
-    bitrateMbps: 8.4,
-    fps: 29.8,
-    packetLossPct: 0.04,
-    startedAt: new Date(Date.now() - 42 * 60 * 1000).toISOString(),
-    durationMin: 42,
-  });
+  // Active mission state (blank initially, user enters details and starts mission)
+  const [activeMission, setActiveMission] = useState<MissionSortie | null>(null);
 
-  // Historical Sorties
-  const [historySorties, setHistorySorties] = useState<MissionSortie[]>([
+  // Historical Missions
+  const [historyMissions, setHistoryMissions] = useState<MissionSortie[]>([
     {
-      id: 'sort-h-1',
+      id: 'msn-h-1',
       missionId: 'MSN-20261012-1430-00-BRAVO',
       name: 'Kovalam Tourist Beach Perimeter Scan',
       droneId: UAVS[1].id,
@@ -82,7 +63,7 @@ export default function MissionsPage() {
       durationMin: 58,
     },
     {
-      id: 'sort-h-2',
+      id: 'msn-h-2',
       missionId: 'MSN-20261012-0915-00-ALPHA',
       name: 'Poovar Estuary Joint Maritime Patrol',
       droneId: UAVS[2].id,
@@ -99,9 +80,9 @@ export default function MissionsPage() {
       durationMin: 74,
     },
     {
-      id: 'sort-h-3',
+      id: 'msn-h-3',
       missionId: 'MSN-20261011-1820-00-CHARLIE',
-      name: 'Vizhinjam International Terminal Basin Night Sortie',
+      name: 'Vizhinjam International Terminal Basin Night Patrol',
       droneId: UAVS[3].id,
       droneCode: UAVS[3].droneCode,
       squadron: 'CHARLIE',
@@ -118,6 +99,15 @@ export default function MissionsPage() {
     },
   ]);
 
+  // Clean up object URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (uploadedVideoUrl) {
+        URL.revokeObjectURL(uploadedVideoUrl);
+      }
+    };
+  }, [uploadedVideoUrl]);
+
   function handleRegenerateId(sq = squadron) {
     setMissionId(generateMissionId(sq));
   }
@@ -130,18 +120,18 @@ export default function MissionsPage() {
   function handleStartMission(e: React.FormEvent) {
     e.preventDefault();
     const drone = UAVS.find(u => u.id === selectedDroneId) ?? UAVS[0];
-    const newSortie: MissionSortie = {
-      id: `sort-${Date.now()}`,
+    const newMission: MissionSortie = {
+      id: `msn-${Date.now()}`,
       missionId,
-      name: missionName,
+      name: missionName.trim() || 'Coastal Surveillance Mission',
       droneId: drone.id,
       droneCode: drone.droneCode,
       squadron,
       videoSourceType,
       videoSourceUrl: videoSourceType === 'UPLOAD' ? undefined : videoSourceUrl,
       srtFileName: srtFile ?? undefined,
-      pilotName,
-      location,
+      pilotName: pilotName.trim() || 'Officer In-Charge',
+      location: location.trim() || 'Kerala Coastal Sector',
       status: 'ACTIVE',
       serverIngestion,
       cognitiveBypass,
@@ -151,23 +141,23 @@ export default function MissionsPage() {
       startedAt: new Date().toISOString(),
       durationMin: 1,
     };
-    setActiveSortie(newSortie);
+    setActiveMission(newMission);
     handleRegenerateId();
   }
 
   function handleStopMission() {
-    if (!activeSortie) return;
+    if (!activeMission) return;
     const completed: MissionSortie = {
-      ...activeSortie,
+      ...activeMission,
       status: 'COMPLETED',
       endedAt: new Date().toISOString(),
     };
-    setHistorySorties([completed, ...historySorties]);
-    setActiveSortie(null);
+    setHistoryMissions([completed, ...historyMissions]);
+    setActiveMission(null);
   }
 
-  function handleDeleteSortie(id: string) {
-    setHistorySorties(historySorties.filter(s => s.id !== id));
+  function handleDeleteMission(id: string) {
+    setHistoryMissions(historyMissions.filter(s => s.id !== id));
   }
 
   const selectedDrone = UAVS.find(u => u.id === selectedDroneId) ?? UAVS[0];
@@ -178,24 +168,18 @@ export default function MissionsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-serif text-2xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>
-            Missions &amp; Sorties
+            Mission Control
           </h1>
           <p className="text-xs opacity-70" style={{ color: 'var(--text-muted)' }}>
-            Start and terminate drone surveillance sorties, configure ingestion, and manage mission flight logs
+            Start and terminate drone surveillance missions, configure ingestion, and manage mission flight logs
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs px-3 py-1 rounded-full font-mono font-medium border"
-            style={{ background: 'var(--sand-200)', borderColor: 'var(--sand-300)', color: 'var(--ink-900)' }}>
-            Station: Vizhinjam Coastal Police
-          </span>
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════
           TOP: ACTIVE MISSION STATUS BANNER
          ══════════════════════════════════════════════════ */}
-      {activeSortie ? (
+      {activeMission ? (
         <div
           className="rounded-2xl p-4 border flex items-center justify-between flex-wrap gap-4 shadow-md"
           style={{
@@ -210,22 +194,22 @@ export default function MissionsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-500 text-white">
-                  LIVE SORTIE ACTIVE
+                  LIVE MISSION ACTIVE
                 </span>
-                <span className="font-mono text-xs font-semibold opacity-75">{activeSortie.missionId}</span>
+                <span className="font-mono text-xs font-semibold opacity-75">{activeMission.missionId}</span>
                 <span className="text-xs px-2 py-0.5 rounded font-mono font-bold"
                   style={{ background: 'var(--sand-200)', color: 'var(--ink-900)' }}>
-                  SQUADRON {activeSortie.squadron}
+                  SQUADRON {activeMission.squadron}
                 </span>
               </div>
               <h2 className="font-serif text-lg font-bold mt-0.5" style={{ color: 'var(--text)' }}>
-                {activeSortie.name}
+                {activeMission.name}
               </h2>
               <div className="flex items-center gap-4 text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                <span>Drone: <strong className="font-mono">{activeSortie.droneCode}</strong></span>
-                <span>Pilot: <strong>{activeSortie.pilotName}</strong></span>
-                <span>Location: <strong>{activeSortie.location}</strong></span>
-                <span>Stream: <strong>{activeSortie.bitrateMbps} Mbps @ {activeSortie.fps} FPS</strong></span>
+                <span>Drone: <strong className="font-mono">{activeMission.droneCode}</strong></span>
+                <span>Pilot: <strong>{activeMission.pilotName}</strong></span>
+                <span>Location: <strong>{activeMission.location}</strong></span>
+                <span>Stream: <strong>{activeMission.bitrateMbps} Mbps @ {activeMission.fps} FPS</strong></span>
               </div>
             </div>
           </div>
@@ -233,7 +217,7 @@ export default function MissionsPage() {
           <div className="flex items-center gap-3 ml-auto">
             <button
               onClick={handleStopMission}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
             >
               <Square className="w-4 h-4 fill-white" />
               Stop Mission
@@ -247,7 +231,7 @@ export default function MissionsPage() {
         >
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-500" />
-            <span>No drone sortie currently active. Configure and launch a sortie below.</span>
+            <span>No drone mission currently active. Configure and launch a mission below.</span>
           </div>
         </div>
       )}
@@ -256,7 +240,7 @@ export default function MissionsPage() {
           MAIN CENTER: SPLIT 2 COLUMNS
          ══════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* ── LEFT FORM: SORTIE SETUP (2 Columns Span) ── */}
+        {/* ── LEFT FORM: NEW MISSION (2 Columns Span) ── */}
         <div
           className="lg:col-span-2 rounded-2xl p-5 border shadow-sm flex flex-col justify-between"
           style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
@@ -265,7 +249,7 @@ export default function MissionsPage() {
             <div className="flex items-center justify-between pb-3 border-b mb-4" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <Anchor className="w-5 h-5" style={{ color: 'var(--sea-600)' }} />
-                <h2 className="font-serif text-base font-bold">New Mission Sortie Setup</h2>
+                <h2 className="font-serif text-base font-bold">New Mission</h2>
               </div>
               <span className="text-xs opacity-60 font-mono">Standardized Protocol v2.4</span>
             </div>
@@ -282,7 +266,7 @@ export default function MissionsPage() {
                     required
                     value={missionName}
                     onChange={e => setMissionName(e.target.value)}
-                    placeholder="e.g. Poovar Estuary Shoreline Patrol"
+                    placeholder="Enter mission title (e.g. Cochin Coastal Sector Patrol)..."
                     className="w-full px-3 py-2 rounded-xl text-sm border outline-none focus:ring-2 focus:ring-[var(--sea-400)] font-medium"
                     style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                   />
@@ -297,7 +281,7 @@ export default function MissionsPage() {
                     <button
                       type="button"
                       onClick={() => handleRegenerateId()}
-                      className="text-xs flex items-center gap-1 opacity-70 hover:opacity-100"
+                      className="text-xs flex items-center gap-1 opacity-70 hover:opacity-100 cursor-pointer"
                       style={{ color: 'var(--sea-600)' }}
                     >
                       <RefreshCw className="w-3 h-3" /> Regenerate
@@ -325,7 +309,7 @@ export default function MissionsPage() {
                         type="button"
                         onClick={() => handleSquadronChange(sq)}
                         className={cn(
-                          'py-1.5 px-2 rounded-xl text-xs font-mono font-bold border transition-all text-center',
+                          'py-1.5 px-2 rounded-xl text-xs font-mono font-bold border transition-all text-center cursor-pointer',
                           squadron === sq
                             ? 'bg-[var(--sea-600)] text-white border-[var(--sea-600)] shadow-xs'
                             : 'bg-[var(--panel)] border-[var(--line)] opacity-70 hover:opacity-100'
@@ -372,7 +356,7 @@ export default function MissionsPage() {
                         type="button"
                         onClick={() => setVideoSourceType(st.type)}
                         className={cn(
-                          'flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold border transition-all',
+                          'flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer',
                           videoSourceType === st.type
                             ? 'bg-[var(--sand-200)] text-[var(--ink-900)] border-[var(--sand-300)] shadow-xs'
                             : 'bg-[var(--panel)] border-[var(--line)] opacity-60 hover:opacity-100'
@@ -396,7 +380,7 @@ export default function MissionsPage() {
                       required
                       value={videoSourceUrl}
                       onChange={e => setVideoSourceUrl(e.target.value)}
-                      placeholder={videoSourceType === 'RTMP' ? 'rtmp://server:1935/live/feed' : 'rtsp://user:pass@camera/stream'}
+                      placeholder={videoSourceType === 'RTMP' ? 'Enter RTMP URL (e.g. rtmp://server:1935/live/feed)' : 'Enter RTSP URL (e.g. rtsp://user:pass@camera/stream)'}
                       className="w-full px-3 py-2 rounded-xl text-sm border font-mono outline-none"
                       style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                     />
@@ -408,9 +392,18 @@ export default function MissionsPage() {
                       <div className="text-xs font-semibold">Raw Video (MP4 / TS / MKV)</div>
                       <input
                         type="file"
-                        accept=".mp4,.ts,.mkv"
-                        onChange={e => setUploadedVideoFile(e.target.files?.[0]?.name ?? null)}
-                        className="mt-1 text-xs"
+                        accept="video/*,.mp4,.ts,.mkv"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setUploadedVideoFile(file.name);
+                            if (uploadedVideoUrl) {
+                              URL.revokeObjectURL(uploadedVideoUrl);
+                            }
+                            setUploadedVideoUrl(URL.createObjectURL(file));
+                          }
+                        }}
+                        className="mt-1 text-xs cursor-pointer"
                       />
                       {uploadedVideoFile && <p className="text-[11px] font-mono text-emerald-600 mt-1">✓ {uploadedVideoFile}</p>}
                     </div>
@@ -422,7 +415,7 @@ export default function MissionsPage() {
                         type="file"
                         accept=".srt"
                         onChange={e => setSrtFile(e.target.files?.[0]?.name ?? null)}
-                        className="mt-1 text-xs"
+                        className="mt-1 text-xs cursor-pointer"
                       />
                       {srtFile && <p className="text-[11px] font-mono text-emerald-600 mt-1">✓ {srtFile}</p>}
                     </div>
@@ -439,6 +432,7 @@ export default function MissionsPage() {
                     required
                     value={pilotName}
                     onChange={e => setPilotName(e.target.value)}
+                    placeholder="Enter pilot / operator name..."
                     className="w-full px-3 py-2 rounded-xl text-sm border outline-none"
                     style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                   />
@@ -454,6 +448,7 @@ export default function MissionsPage() {
                     required
                     value={location}
                     onChange={e => setLocation(e.target.value)}
+                    placeholder="Enter coastal deployment location (e.g. Alappuzha Beach)..."
                     className="w-full px-3 py-2 rounded-xl text-sm border outline-none"
                     style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                   />
@@ -463,17 +458,17 @@ export default function MissionsPage() {
               <div className="pt-3 flex justify-end">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity shadow-md"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
                 >
                   <Play className="w-4 h-4 fill-white" />
-                  Start Mission Sortie
+                  Start Mission
                 </button>
               </div>
             </form>
           </div>
         </div>
 
-        {/* ── RIGHT PANEL: TRANSMISSION & COGNITIVE CONTROLS ── */}
+        {/* ── RIGHT PANEL: TRANSMISSION CONTROLS & UPLOADED VIDEO PLAYER ── */}
         <div className="space-y-4 flex flex-col">
           {/* Transmission Controls Card */}
           <div
@@ -496,7 +491,7 @@ export default function MissionsPage() {
                   type="button"
                   onClick={() => setServerIngestion(!serverIngestion)}
                   className={cn(
-                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0',
+                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0 cursor-pointer',
                     serverIngestion ? 'bg-emerald-600' : 'bg-gray-400'
                   )}
                 >
@@ -514,7 +509,7 @@ export default function MissionsPage() {
                   type="button"
                   onClick={() => setCognitiveBypass(!cognitiveBypass)}
                   className={cn(
-                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0',
+                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0 cursor-pointer',
                     cognitiveBypass ? 'bg-amber-600' : 'bg-gray-400'
                   )}
                 >
@@ -540,23 +535,68 @@ export default function MissionsPage() {
             </div>
           </div>
 
-          {/* Squadron Station Badge */}
+          {/* ── Uploaded Video Player Panel (Replaces Station Defaults) ── */}
           <div
-            className="rounded-2xl p-5 border shadow-sm flex-1 flex flex-col justify-between"
-            style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
+            className="rounded-2xl p-4 border shadow-sm flex flex-col justify-between"
+            style={{ background: 'var(--raised)', borderColor: 'var(--line)', minHeight: '260px' }}
           >
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <HardDrive className="w-4 h-4 text-emerald-600" />
-                <h4 className="font-serif text-xs font-bold uppercase tracking-wider">Station Defaults</h4>
+            <div className="flex items-center justify-between pb-2 mb-2 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex items-center gap-2">
+                <Video className="w-4 h-4 text-[var(--sea-600)]" />
+                <h4 className="font-serif text-xs font-bold uppercase tracking-wider">
+                  Mission Video Stream
+                </h4>
               </div>
-              <p className="text-xs opacity-75 leading-relaxed">
-                Inherited from Kerala Coastal Police Station settings: <strong>Vizhinjam Station Base</strong>. All sorties are cryptographically signed with SHA-256 for evidentiary chain of custody.
-              </p>
+              {uploadedVideoUrl ? (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  PLAYING
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded opacity-60" style={{ background: 'var(--sand-200)', color: 'var(--ink-800)' }}>
+                  AWAITING VIDEO
+                </span>
+              )}
             </div>
-            <div className="pt-3 border-t mt-3 text-xs opacity-50 font-mono" style={{ borderColor: 'var(--line)' }}>
-              Police Deployment ID: KP-DRONE-SEC-4
+
+            <div className="flex-1 rounded-xl overflow-hidden relative flex items-center justify-center border bg-black/90 min-h-[190px]" style={{ borderColor: 'var(--line)' }}>
+              {uploadedVideoUrl ? (
+                <video
+                  key={uploadedVideoUrl}
+                  src={uploadedVideoUrl}
+                  controls
+                  autoPlay
+                  loop
+                  playsInline
+                  className="w-full h-full max-h-[220px] object-contain rounded-xl"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center p-4">
+                  <Video className="w-8 h-8 opacity-30 text-white mb-2" />
+                  <p className="text-xs text-white/90 font-medium">No video uploaded yet</p>
+                  <p className="text-[11px] text-white/50 max-w-[220px] mt-1 leading-normal">
+                    Upload a video file (MP4/TS/MKV) in the form to play and preview it here
+                  </p>
+                </div>
+              )}
             </div>
+
+            {uploadedVideoFile && (
+              <div className="pt-2 mt-2 border-t text-[11px] font-mono flex items-center justify-between" style={{ borderColor: 'var(--line)' }}>
+                <span className="truncate max-w-[200px] text-emerald-600 font-semibold">✓ {uploadedVideoFile}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (uploadedVideoUrl) URL.revokeObjectURL(uploadedVideoUrl);
+                    setUploadedVideoUrl(null);
+                    setUploadedVideoFile(null);
+                  }}
+                  className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -573,7 +613,7 @@ export default function MissionsPage() {
             <Clock className="w-4 h-4 text-[var(--sea-600)]" />
             <h3 className="font-serif text-sm font-bold">Historical Mission Log</h3>
           </div>
-          <span className="text-xs opacity-60">{historySorties.length} logged sorties</span>
+          <span className="text-xs opacity-60">{historyMissions.length} logged missions</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -591,7 +631,7 @@ export default function MissionsPage() {
               </tr>
             </thead>
             <tbody>
-              {historySorties.map(s => (
+              {historyMissions.map(s => (
                 <tr key={s.id} className="border-b transition-colors hover:bg-[var(--sand-100)]" style={{ borderColor: 'var(--line)' }}>
                   <td className="py-2.5 px-3 font-mono font-bold" style={{ color: 'var(--sea-600)' }}>
                     {s.missionId}
@@ -611,8 +651,8 @@ export default function MissionsPage() {
                   </td>
                   <td className="py-2.5 px-3 text-right">
                     <button
-                      onClick={() => handleDeleteSortie(s.id)}
-                      className="p-1 rounded text-red-500 hover:bg-red-50 transition-colors"
+                      onClick={() => handleDeleteMission(s.id)}
+                      className="p-1 rounded text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                       title="Delete Mission Record"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

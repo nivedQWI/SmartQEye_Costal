@@ -43,7 +43,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/',                 label: 'Command Center',      icon: LayoutDashboard, roles: ALL_ROLES },
       { to: '/live',             label: 'Live Monitor',        icon: Monitor,         roles: ALL_ROLES },
       { to: '/alerts',           label: 'Alerts',              icon: Bell,            roles: ALL_ROLES },
-      { to: '/missions',         label: 'Missions & Sorties',  icon: Anchor,          roles: ALL_ROLES },
+      { to: '/missions',         label: 'Mission Control',     icon: Anchor,          roles: ALL_ROLES },
       { to: '/map',              label: 'Map / GIS',           icon: Map,             roles: ALL_ROLES },
       { to: '/history',          label: 'History Playback',    icon: History,         roles: ALL_ROLES },
     ]
