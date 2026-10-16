@@ -1,0 +1,228 @@
+openapi: 3.1.0
+info:
+  title: SmartQEye Coastal — Kerala Police Surveillance & Video Analytics API
+  version: 2.6.4-prod-mvp
+  description: >
+    Production-grade RESTful and streaming API for SmartQEye Coastal.
+    Developed by Quantumweave Intelligence Pvt. Ltd. (Thiruvananthapuram)
+    for Kerala Police Coastal Police / Cyber Division – Drone Forensic Lab,
+    in response to the Kerala Startup Mission (KSUM) RFP for AI-Based Coastal Drone
+    Surveillance and Video Analytics Software.
+  contact:
+    name: Quantumweave Intelligence Technical Cell
+    email: coastal-support@quantumweave.in
+    url: https://quantumweave.in
+  license:
+    name: Proprietary — Government of Kerala Authorized Use Only
+servers:
+  - url: http://10.200.4.10:8000/api/v1
+    description: On-Premises Air-Gapped Central GPU Node A (Primary)
+  - url: http://10.200.4.11:8000/api/v1
+    description: On-Premises Air-Gapped Central GPU Node B (Failover)
+  - url: http://127.0.0.1:8000/api/v1
+    description: Tactical Edge Laptop / GCS Local Node
+
+paths:
+  # ── Auth & Session ─────────────────────────────────────────
+  /auth/login:
+    post:
+      summary: Officer Authentication (Step 1)
+      description: Validates officer username and password; returns temporary MFA challenge token.
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, example: "op.rajan" }
+                password: { type: string, format: password, example: "••••••••" }
+      responses:
+        '200':
+          description: Credentials valid; MFA challenge issued.
+        '401':
+          description: Invalid officer credentials.
+        '423':
+          description: Account locked after 3 failed attempts (60s security cooldown).
+
+  /auth/mfa:
+    post:
+      summary: Two-Factor Verification (Step 2)
+      description: Validates TOTP RFC 6238 token or FIDO2 hardware credential.
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mfaCode]
+              properties:
+                mfaCode: { type: string, example: "123456" }
+      responses:
+        '200':
+          description: Session established; JWT token returned.
+
+  /auth/me:
+    get:
+      summary: Current Officer Profile & Effective Permissions
+      tags: [Authentication]
+      responses:
+        '200':
+          description: Officer identity, active role, station jurisdiction, and permission list.
+
+  # ── Missions & Sorties ─────────────────────────────────────
+  /missions:
+    get:
+      summary: List Drone Sorties
+      tags: [Missions]
+      responses:
+        '200':
+          description: Array of planned, active, and completed UAV sorties.
+    post:
+      summary: Create / Launch New Mission Sortie
+      tags: [Missions]
+      responses:
+        '201':
+          description: Mission created and linked to context profile.
+
+  /missions/{id}/aar:
+    get:
+      summary: Generate After-Action Report (AAR)
+      tags: [Missions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Full post-sortie analytical debrief and statistics.
+
+  # ── Feeds & Telemetry ──────────────────────────────────────
+  /feeds:
+    get:
+      summary: List Tactical Video Feeds
+      tags: [Feeds & Telemetry]
+      responses:
+        '200':
+          description: 20+ live feeds with CFS state and compute placement.
+
+  /feeds/{id}/telemetry:
+    get:
+      summary: Synchronised Kinematic Telemetry Stream
+      tags: [Feeds & Telemetry]
+      responses:
+        '200':
+          description: High-frequency GPS, ground speed, altitude, and gimbal projection angles.
+
+  # ── Persistent Coastal Contacts ────────────────────────────
+  /contacts:
+    get:
+      summary: List Persistent Coastal Contacts
+      tags: [Contacts & Tracking]
+      responses:
+        '200':
+          description: Tracked marine vessels, speedboats, and beach contacts.
+
+  /contacts/{id}:
+    get:
+      summary: Get Contact Dossier & Occlusion Record
+      tags: [Contacts & Tracking]
+      responses:
+        '200':
+          description: Detailed trajectory, dwell history, and continuity metrics.
+
+  # ── Zones & Context Intelligence ───────────────────────────
+  /zones:
+    get:
+      summary: Coastal Geofences & Restricted Anchoring Zones
+      tags: [Zones & Context]
+      responses:
+        '200':
+          description: GeoJSON polygons and profiles for Kerala coastal zones.
+
+  /zones/profiles:
+    get:
+      summary: Kerala Context Intelligence Profiles
+      tags: [Zones & Context]
+      responses:
+        '200':
+          description: Thresholds by time window, monsoon trawling ban, and zone type.
+
+  # ── Alerts & Incidents ─────────────────────────────────────
+  /alerts:
+    get:
+      summary: Triage Alert Queue
+      tags: [Alerts & Decision Support]
+      responses:
+        '200':
+          description: Real-time decision-support alerts with AI rationale.
+
+  /alerts/{id}/acknowledge:
+    post:
+      summary: Acknowledge Alert (Decision Support)
+      tags: [Alerts & Decision Support]
+      responses:
+        '200':
+          description: Alert status updated and logged to audit ledger.
+
+  /incidents:
+    get:
+      summary: List Evidence-Linked Incident Records (ELIR)
+      tags: [Evidence & ELIR]
+      responses:
+        '200':
+          description: Court-admissible electronic dossiers.
+
+  /incidents/{id}/export:
+    post:
+      summary: Export Sealed Court Evidence ZIP Package
+      tags: [Evidence & ELIR]
+      responses:
+        '200':
+          description: Binary ZIP package with SHA-256 manifest and Sec 65B certificate.
+
+  # ── AI Model Registry & Rules ──────────────────────────────
+  /models:
+    get:
+      summary: AI Model Registry & Edge Profiles
+      tags: [AI Models & Compute]
+      responses:
+        '200':
+          description: Registered RTMDet, ByteTrack, CFS, and CKFE model engines.
+
+  /rules/replay:
+    post:
+      summary: Run 24h Historical Alert Suppression Replay
+      tags: [AI Models & Compute]
+      responses:
+        '200':
+          description: Evaluates rule sensitivity and verifies 94% alert reduction.
+
+  # ── Audit & Governance ─────────────────────────────────────
+  /audit:
+    get:
+      summary: Query Cryptographic Audit Ledger
+      tags: [Audit & Compliance]
+      responses:
+        '200':
+          description: Paged list of SHA-256 hash-chained audit blocks.
+
+  /audit/verify:
+    post:
+      summary: Verify In-Browser Cryptographic Hash Chain
+      tags: [Audit & Compliance]
+      responses:
+        '200':
+          description: Recomputes hashes from Genesis to Head; verifies zero divergence.
+
+  /health:
+    get:
+      summary: Platform & Edge Node Cluster Health
+      tags: [System Health]
+      responses:
+        '200':
+          description: GPU VRAM, queue depth, edge sync lag, and service statuses.

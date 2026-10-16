@@ -92,6 +92,7 @@ export default function App() {
               <Route index element={<CommandCenter />} />
               <Route path="live" element={<LiveMonitor />} />
               <Route path="fleet-wall" element={<FleetWallPage />} />
+              <Route path="fleet" element={<FleetWallPage />} />
               <Route path="alerts" element={<AlertQueue />} />
               <Route path="alerts/:id" element={<AlertDetail />} />
               <Route path="map" element={<MapGIS />} />
@@ -141,8 +142,11 @@ export default function App() {
 
               {/* Platform */}
               <Route path="deployment" element={<DeploymentPage />} />
+              <Route path="platform/deployment" element={<DeploymentPage />} />
               <Route path="integrations" element={<IntegrationsPage />} />
+              <Route path="platform/integrations" element={<IntegrationsPage />} />
               <Route path="health" element={<SystemHealthPage />} />
+
               <Route
                 path="admin"
                 element={
