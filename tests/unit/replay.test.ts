@@ -116,4 +116,44 @@ describe('Sidecar Replay Engine (src/lib/replay)', () => {
       expect(interpolated.headingDeg).toBeCloseTo(110);
     });
   });
+
+  describe('normalizeSidecarData (Appendix A Schema Compliance)', () => {
+    it('normalizes Appendix A schema (t, cls, cfs.mode) into standard SidecarData', async () => {
+      const { normalizeSidecarData } = await import('@/lib/replay');
+      const appendixA = {
+        scene: 'vizhinjam_dawn_01',
+        video: { file: 'vizhinjam_dawn_01.mp4', fps: 25, width: 1920, height: 1080, durationSec: 180 },
+        modality: 'RGB',
+        model: { detector: 'RTMDet-L', tracker: 'ByteTrack', bundle: 'qwi-coastal-ref-0.9' },
+        telemetry: [
+          { t: 0.0, lat: 8.3772, lon: 76.9996, altAglM: 120, speedKmh: 18.4, headingDeg: 92, battery: 87, hdop: 0.9, gimbalPitch: -45 }
+        ],
+        frames: [
+          {
+            t: 0.0,
+            cfs: { mode: 'FULL', reason: 'new_object' },
+            boxes: [
+              { trackId: 7, contactId: 'C-1042', cls: 'SMALL_CRAFT', conf: 0.91, bbox: [0.41, 0.52, 0.47, 0.57] }
+            ]
+          }
+        ],
+        events: [
+          { t: 62.0, type: 'ZONE_ENTRY', contactId: 'C-1042', zoneCode: 'Z-07', attention: 'ATTENTION' }
+        ],
+        occlusions: [{ contactId: 'C-1042', fromT: 41.0, toT: 49.5 }]
+      };
+
+      const normalized = normalizeSidecarData(appendixA);
+      expect(normalized.sceneName).toBe('vizhinjam_dawn_01');
+      expect(normalized.durationSec).toBe(180);
+      expect(normalized.frames[0].timeSec).toBe(0.0);
+      expect(normalized.frames[0].cfs.status).toBe('FULL');
+      expect(normalized.frames[0].cfs.reasonCode).toBe('new_object');
+      expect(normalized.frames[0].boxes[0].contactId).toBe('C-1042');
+      expect(normalized.frames[0].boxes[0].class).toBe('SMALL_CRAFT');
+      expect(normalized.telemetryTrack[0].lat).toBe(8.3772);
+      expect(normalized.events[0].contactId).toBe('C-1042');
+    });
+  });
 });
+

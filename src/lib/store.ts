@@ -414,7 +414,7 @@ export const TOUR_DEFINITIONS: Record<string, { title: string; steps: TourStep[]
   models: {
     title: 'AI Models & Governance Tour',
     steps: [
-      { title: '100% Permissive Frameworks', content: 'Verified zero AGPL-3.0 Ultralytics YOLO code; runs RTMDet, RT-DETRv2, and ByteTrack.', route: '/models' },
+      { title: '100% Permissive Frameworks', content: 'Verified zero copyleft AGPL-3.0 code; runs Apache-2.0 RTMDet, RT-DETRv2, and ByteTrack.', route: '/models' },
       { title: 'One-Click Production Rollback', content: 'Safely revert to previous validated model versions with mandatory audit justification.', route: '/models' },
       { title: 'Human-in-the-Loop Feedback Curation', content: 'Operator corrections go to an offline dataset queue and never alter live weights automatically.', route: '/models' },
     ],

@@ -382,7 +382,7 @@ export default function HelpCenterPage() {
                 title: 'GPS Coordinate Spoofing / Barometric Discrepancy Alert',
                 severity: 'CRITICAL',
                 cause: 'Telemetry packet timestamp jitter or coordinate jump greater than drone maximum velocity (80 km/h).',
-                solution: 'System flags telemetry sample with TAMPER_SUSPECT. Inspect raw DJI sidecar logs in /history and revert to visual landmarks on GIS Map.',
+                solution: 'System flags telemetry sample with TAMPER_FLAGGED. Inspect raw DJI sidecar logs in /history and revert to visual landmarks on GIS Map.',
               },
             ].map((t, idx) => (
               <div key={idx} className="p-4 rounded-xl border bg-[var(--panel)] space-y-2" style={{ borderColor: 'var(--line)' }}>

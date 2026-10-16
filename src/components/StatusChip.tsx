@@ -35,7 +35,7 @@ export function StatusChip({
       effectiveVariant = 'success';
     } else if (['STANDBY', 'WARNING', 'PENDING', 'BUFFERING', 'DEGRADED', 'ATTENTION', 'MONITOR', 'UNDER_REVIEW'].includes(normalized)) {
       effectiveVariant = 'warning';
-    } else if (['ERROR', 'FAILED', 'CRITICAL', 'NO_SIGNAL', 'OFFLINE', 'BREACH', 'TAMPER_SUSPECT', 'DISMISSED'].includes(normalized)) {
+    } else if (['ERROR', 'FAILED', 'CRITICAL', 'NO_SIGNAL', 'OFFLINE', 'BREACH', 'TAMPER_FLAGGED', 'DISMISSED'].includes(normalized)) {
       effectiveVariant = 'danger';
     } else if (['INFO', 'CANDIDATE', 'SCHEDULED', 'STARTING', 'ACKNOWLEDGED'].includes(normalized)) {
       effectiveVariant = 'info';

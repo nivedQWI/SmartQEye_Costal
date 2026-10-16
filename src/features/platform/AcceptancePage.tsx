@@ -183,7 +183,7 @@ const DEFAULT_ACCEPTANCE_ITEMS: AcceptanceItem[] = [
     clauseRef: 'RFP §16.13 / Proposal 6.5',
     title: 'License-Conscious AI Frameworks & Model Rollback',
     targetRoute: '/models',
-    demonstrationSteps: 'Open AI Models page. Confirm zero AGPL YOLO code; test one-click model rollback to previous validated version.',
+    demonstrationSteps: 'Open AI Models page. Confirm zero AGPL copyleft code (runs RTMDet & RT-DETR); test one-click model rollback to previous validated version.',
     expectedResult: '100% permissive licenses (Apache-2.0 / MIT); rollback executes instantly with mandatory audit justification.',
     status: 'PASS',
     evaluatorInitials: 'KP-DFL',

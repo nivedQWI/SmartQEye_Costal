@@ -192,6 +192,70 @@ export function createSyntheticSidecar(durationSec = 120, fps = 25): SidecarData
   };
 }
 
+export function normalizeSidecarData(raw: any): SidecarData {
+  if (raw && raw.frames && raw.frames.length > 0 && typeof raw.frames[0].t === 'number') {
+    // Appendix A format normalization
+    const frames: FrameData[] = raw.frames.map((f: any, idx: number) => ({
+      timeSec: f.t,
+      frameIndex: Math.floor(f.t * (raw.video?.fps || 25)),
+      cfs: {
+        status: (f.cfs?.mode || 'FULL') as any,
+        rateFps: f.cfs?.mode === 'FULL' ? 25 : f.cfs?.mode === 'LIGHT' ? 12 : 6,
+        reasonCode: f.cfs?.reason || 'new_object',
+        vramSavingsPct: f.cfs?.mode === 'FULL' ? 0 : f.cfs?.mode === 'LIGHT' ? 52 : 76,
+      },
+      boxes: (f.boxes || []).map((b: any, bIdx: number) => ({
+        id: `box-${idx}-${bIdx}`,
+        trackId: b.trackId,
+        contactId: b.contactId,
+        class: b.cls,
+        label: b.cls?.replace('_', ' ') || 'Vessel',
+        conf: b.conf,
+        bbox: b.bbox,
+        modality: raw.modality || 'RGB',
+      })),
+    }));
+
+    const telemetryTrack: TelemetryPoint[] = (raw.telemetry || []).map((t: any) => ({
+      timeSec: t.t,
+      lat: t.lat,
+      lon: t.lon,
+      altM: t.altAglM ?? 120,
+      speedMs: (t.speedKmh || 0) / 3.6,
+      headingDeg: t.headingDeg ?? 90,
+      gimbalPitchDeg: t.gimbalPitch ?? -45,
+      batteryPct: t.battery ?? 85,
+      timestampIso: new Date(Date.now() - (180 - t.t) * 1000).toISOString(),
+    }));
+
+    return {
+      version: '1.2.0-coastal',
+      sceneName: raw.scene || 'vizhinjam_dawn_01',
+      durationSec: raw.video?.durationSec || 180,
+      videoFps: raw.video?.fps || 25,
+      videoWidth: raw.video?.width || 1920,
+      videoHeight: raw.video?.height || 1080,
+      uavCode: 'UAV-KL-03',
+      missionCode: 'MSN-20261016-0830-01-VIZHINJAM',
+      detectorModel: `${raw.model?.detector || 'RTMDet-L'} (${raw.model?.bundle || 'qwi-coastal-ref-0.9'})`,
+      trackerModel: raw.model?.tracker || 'ByteTrack',
+      frames,
+      telemetryTrack,
+      events: (raw.events || []).map((e: any) => ({
+        timeSec: e.t,
+        type: e.type,
+        title: `${e.type} (${e.contactId})`,
+        description: `Event triggered in zone ${e.zoneCode || 'Z-07'}`,
+        severity: e.attention === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
+        contactId: e.contactId,
+        zoneCode: e.zoneCode,
+      })),
+    };
+  }
+
+  return raw as SidecarData;
+}
+
 /**
  * Asynchronously loads sidecar JSON from URL, falling back to synthetic sidecar.
  */
@@ -199,8 +263,8 @@ export async function loadSidecarData(sceneName: string): Promise<SidecarData> {
   try {
     const res = await fetch(`/demo/${sceneName}.detections.json`);
     if (res.ok) {
-      const data = (await res.json()) as SidecarData;
-      return data;
+      const data = await res.json();
+      return normalizeSidecarData(data);
     }
   } catch {
     // Fall back to synthetic sidecar

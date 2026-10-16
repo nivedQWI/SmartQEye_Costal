@@ -815,7 +815,7 @@ export default function AdminPage() {
         confirmLabel="Forcibly Kill Session"
         variant="danger"
         requireReason={true}
-        reasonPlaceholder="Mandatory operational justification (e.g. unauthorized terminal relocation, suspected session hijacking)..."
+        reasonPlaceholder="Mandatory operational justification (e.g. unauthorized terminal relocation, unverified session anomaly)..."
         auditActionName="KILL_SESSION"
         targetType="SESSION"
         targetId={killSessionTarget || ''}

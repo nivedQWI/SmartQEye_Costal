@@ -26,10 +26,29 @@ export interface BoundingBox {
 
 export type CfsStatus = 'FULL' | 'LIGHT' | 'SKIP';
 
+export type CfsReasonCode =
+  | 'new_object'
+  | 'significant_motion'
+  | 'track_uncertainty'
+  | 'zone_interaction'
+  | 'scene_change'
+  | 'periodic_refresh'
+  | 'idle';
+
+export const CFS_REASON_LABELS: Record<CfsReasonCode, string> = {
+  new_object: 'New object acquired',
+  significant_motion: 'Significant motion delta',
+  track_uncertainty: 'Track uncertainty / boundary ambiguity',
+  zone_interaction: 'Zone perimeter interaction',
+  scene_change: 'Gimbal movement / scene change',
+  periodic_refresh: 'Periodic full refresh check',
+  idle: 'Quiescent open water (idle)',
+};
+
 export interface CfsState {
   status: CfsStatus;
   rateFps: number; // e.g. 25, 12, 6
-  reasonCode: string; // e.g. "CFS-01: Attention contact in primary frame", "CFS-03: Quiescent open water"
+  reasonCode: string; // e.g. "CFS-01: Attention contact in primary frame", "CFS-03: Quiescent open water", or Appendix C reason code
   vramSavingsPct: number;
 }
 
