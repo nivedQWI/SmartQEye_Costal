@@ -4,9 +4,10 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Alert, Feed, TelemetrySample, SystemHealth, User, UserRole, Mission } from '@/types';
+import type { Alert, Feed, TelemetrySample, SystemHealth, User, UserRole, Mission, Permission } from '@/types';
 import { ALERTS, INITIAL_FEEDS, INITIAL_HEALTH, MISSIONS } from '@/lib/mockData';
 import { authApi } from '@/lib/api';
+import { DEFAULT_ROLE_PERMISSIONS, hasPermission as checkPermission } from '@/lib/permissions';
 
 // ─── Theme ────────────────────────────────────────────────────
 
@@ -69,31 +70,80 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   devRole: UserRole;  // dev-mode role switcher
+  viewAsRole: UserRole | null; // "View as role" preview switcher
+  customPermissions: Record<UserRole, Permission[]> | null;
+  lastActiveAt: number;
+  isIdleModalOpen: boolean;
   login: (username: string, password: string, mfaCode?: string) => Promise<void>;
   logout: () => void;
   setDevRole: (role: UserRole) => void;
+  setViewAsRole: (role: UserRole | null) => void;
+  setCustomPermissions: (matrix: Record<UserRole, Permission[]>) => void;
+  hasPermission: (permission: Permission) => boolean;
+  getEffectiveRole: () => UserRole;
+  recordActivity: () => void;
+  setIdleModalOpen: (open: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       devRole: 'OPERATOR',
+      viewAsRole: null,
+      customPermissions: null,
+      lastActiveAt: Date.now(),
+      isIdleModalOpen: false,
+
       login: async (username, password, mfaCode) => {
         const user = await authApi.login(username, password, mfaCode);
-        set({ user, isAuthenticated: true, devRole: user.role });
+        set({
+          user,
+          isAuthenticated: true,
+          devRole: user.role,
+          viewAsRole: null,
+          lastActiveAt: Date.now(),
+          isIdleModalOpen: false,
+        });
       },
-      logout: () => set({ user: null, isAuthenticated: false }),
+
+      logout: () =>
+        set({
+          user: null,
+          isAuthenticated: false,
+          viewAsRole: null,
+          isIdleModalOpen: false,
+        }),
+
       setDevRole: (devRole) => {
         const users = authApi.getMockUsers();
         const user = users.find(u => u.role === devRole) ?? users[0];
-        set({ devRole, user });
+        set({ devRole, user, viewAsRole: null });
       },
+
+      setViewAsRole: (viewAsRole) => set({ viewAsRole }),
+
+      setCustomPermissions: (customPermissions) => set({ customPermissions }),
+
+      getEffectiveRole: () => {
+        const { viewAsRole, user, devRole } = get();
+        return viewAsRole || user?.role || devRole;
+      },
+
+      hasPermission: (permission: Permission) => {
+        const effectiveRole = get().getEffectiveRole();
+        const matrix = get().customPermissions || DEFAULT_ROLE_PERMISSIONS;
+        return checkPermission(effectiveRole, permission, matrix);
+      },
+
+      recordActivity: () => set({ lastActiveAt: Date.now() }),
+      setIdleModalOpen: (isIdleModalOpen) => set({ isIdleModalOpen }),
     }),
     { name: 'sqeye-auth' }
   )
 );
+
 
 // ─── Alerts ──────────────────────────────────────────────────
 

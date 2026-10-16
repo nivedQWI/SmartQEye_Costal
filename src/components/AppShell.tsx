@@ -18,6 +18,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { cn, formatPct } from '@/lib/utils';
 import { ISTClock } from '@/components/ISTClock';
 import { AboutDialog } from '@/components/AboutDialog';
+import { IdleTimeoutModal } from '@/components/IdleTimeoutModal';
 import { useAlertStore, useAuthStore, useThemeStore, useHealthStore, useMissionStore, useLanguageStore } from '@/lib/store';
 import { t, type TranslationKey } from '@/lib/i18n';
 import { simulator } from '@/lib/simulator';
@@ -107,7 +108,8 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
 
-  const { user, devRole, logout, setDevRole } = useAuthStore();
+  const { user, devRole, logout, setDevRole, viewAsRole, setViewAsRole, getEffectiveRole } = useAuthStore();
+  const effectiveRole = getEffectiveRole();
   const { mode, setMode, resolveTheme, resolved } = useThemeStore();
   const { criticalBanner, unreadCount, addAlert, dismissBanner } = useAlertStore();
   const { updateHealth } = useHealthStore();
@@ -544,6 +546,29 @@ export function AppShell() {
           </div>
         )}
 
+        {/* ── Simulated "View as Role" Active Banner ── */}
+        {viewAsRole && (
+          <div
+            className="flex items-center justify-between px-4 py-1.5 text-xs font-mono font-bold border-b flex-shrink-0"
+            style={{
+              background: '#042F2E',
+              color: '#5EEAD4',
+              borderColor: 'rgba(94, 234, 212, 0.3)',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#5EEAD4] animate-pulse" />
+              <span>ROLE PREVIEW ACTIVE: Viewing platform as &ldquo;{viewAsRole}&rdquo; (Base login: {user?.role || devRole})</span>
+            </div>
+            <button
+              onClick={() => setViewAsRole(null)}
+              className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#134E4A] hover:bg-[#115E59] text-white border border-[#2DD4BF]/40 transition-colors cursor-pointer"
+            >
+              Exit Role Preview
+            </button>
+          </div>
+        )}
+
         {/* ── Page content ── */}
         <main className="flex-1 overflow-hidden min-h-0">
           <Outlet />
@@ -571,6 +596,9 @@ export function AppShell() {
 
       {/* About Platform Modal */}
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
+
+      {/* 15-Minute Inactivity Idle Timeout Modal */}
+      <IdleTimeoutModal />
     </div>
   );
 }

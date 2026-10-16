@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from '@/components/AppShell';
 import { useAuthStore } from '@/lib/store';
+import { RequirePermission } from '@/components/RequirePermission';
 import ComingSoon from '@/components/ComingSoon';
 
 // Lazy-loaded pages
@@ -109,20 +110,57 @@ export default function App() {
               {/* Evidence & Review */}
               <Route path="history" element={<HistoryPlayback />} />
               <Route path="incidents" element={<IncidentsPage />} />
+              <Route path="incidents/:id" element={<AlertDetail />} />
               <Route path="reports" element={<ReportsPage />} />
 
               {/* Configuration */}
-              <Route path="config/zones" element={<ZonesConfigPage />} />
-              <Route path="config/alerts" element={<AlertConfigPage />} />
-              <Route path="models" element={<AIModelsPage />} />
+              <Route
+                path="config/zones"
+                element={
+                  <RequirePermission permission="MANAGE_ZONES">
+                    <ZonesConfigPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="config/alerts"
+                element={
+                  <RequirePermission permission="MANAGE_ALERT_RULES">
+                    <AlertConfigPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="models"
+                element={
+                  <RequirePermission permission="MANAGE_MODELS">
+                    <AIModelsPage />
+                  </RequirePermission>
+                }
+              />
 
               {/* Platform */}
               <Route path="deployment" element={<DeploymentPage />} />
               <Route path="integrations" element={<IntegrationsPage />} />
               <Route path="health" element={<SystemHealthPage />} />
-              <Route path="admin" element={<AdminPage />} />
-              <Route path="audit" element={<AuditLogPage />} />
+              <Route
+                path="admin"
+                element={
+                  <RequirePermission permission="MANAGE_USERS">
+                    <AdminPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="audit"
+                element={
+                  <RequirePermission permission="VIEW_AUDIT">
+                    <AuditLogPage />
+                  </RequirePermission>
+                }
+              />
               <Route path="acceptance" element={<AcceptancePage />} />
+
 
               {/* Auxiliary / Style Guide */}
               <Route path="styleguide" element={<StyleGuide />} />

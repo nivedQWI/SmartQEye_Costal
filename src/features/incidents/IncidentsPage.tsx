@@ -1,85 +1,85 @@
 // ============================================================
-// SmartQEye Coastal — Evidence-Linked Incident Records (ELIR)
-// Immutable electronic dossier linked to GIS, video clips, and CKFE evidence
+// SmartQEye Coastal — Evidence-Linked Incident Records (ELIR) Page
+// Court-admissible electronic dossiers linking drone telemetry, CKFE keyframes, and police actions
 // ============================================================
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   FolderArchive, FileText, Download, Shield, Clock,
-  MapPin, CheckCircle2, ChevronRight, Lock, Key
+  MapPin, CheckCircle2, ChevronRight, Lock, Key, Search,
+  Filter, ExternalLink, RefreshCw, AlertTriangle
 } from 'lucide-react';
-import { formatIncidentId } from '@/lib/idGenerator';
-import { KERALA_POLICE_ROSTER } from '@/lib/roster';
+import { incidentsApi } from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
 import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
-import { cn } from '@/lib/utils';
-
-interface IncidentRecord {
-  id: string;
-  incidentCode: string;
-  title: string;
-  category: 'ZONE_INTRUSION' | 'SUSPICIOUS_CONVERGENCE' | 'SHORELINE_CONTRABAND' | 'SECURITY_BREACH';
-  station: string;
-  assignedOfficer: string;
-  badge: string;
-  openedAt: string;
-  status: 'UNDER_INVESTIGATION' | 'SUBMITTED_TO_COURT' | 'RESOLVED';
-  evidenceCount: number;
-  sha256DossierHash: string;
-  summary: string;
-}
+import { PermissionGate } from '@/components/PermissionGate';
+import { triggerFileDownload } from '@/lib/exportEvidence';
+import { cn, formatISTFull } from '@/lib/utils';
+import type { IncidentRecord, IncidentCategory, IncidentWorkflowStatus } from '@/types';
 
 export default function IncidentsPage() {
-  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { user, getEffectiveRole } = useAuthStore();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
-  const incidents: IncidentRecord[] = [
-    {
-      id: 'inc-01',
-      incidentCode: formatIncidentId(1),
-      title: 'Unauthorised High-Speed Approach into Vizhinjam Restricted Military Anchorage',
-      category: 'ZONE_INTRUSION',
-      station: 'Vizhinjam Coastal Police Station',
-      assignedOfficer: KERALA_POLICE_ROSTER[1].name, // CI Saji Varghese
-      badge: KERALA_POLICE_ROSTER[1].badgeNumber,
-      openedAt: '2026-10-16 08:35:12 IST',
-      status: 'UNDER_INVESTIGATION',
-      evidenceCount: 5,
-      sha256DossierHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-      summary: 'Craft C-1042 crossed outer security perimeter at 28 knots without VHF transponder or response. Recorded via UAV-KL-03 and UAV-KL-01 in thermal & RGB modalities.',
-    },
-    {
-      id: 'inc-02',
-      incidentCode: formatIncidentId(2),
-      title: 'Repeated Night Shoreline Convergence off Kovalam Light Beach',
-      category: 'SUSPICIOUS_CONVERGENCE',
-      station: 'Kovalam Coastal Police Station',
-      assignedOfficer: KERALA_POLICE_ROSTER[2].name, // SI Ananya Ramesh
-      badge: KERALA_POLICE_ROSTER[2].badgeNumber,
-      openedAt: '2026-10-16 07:15:40 IST',
-      status: 'UNDER_INVESTIGATION',
-      evidenceCount: 7,
-      sha256DossierHash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
-      summary: 'Two unlit artisanal craft observed exchanging packages 800m offshore before diverging towards Shanghumugham beach.',
-    },
-    {
-      id: 'inc-03',
-      incidentCode: formatIncidentId(3),
-      title: 'Unattended Shoreline Cargo Cluster Recovered at Shanghumugham',
-      category: 'SHORELINE_CONTRABAND',
-      station: 'Poonthura Police Station',
-      assignedOfficer: KERALA_POLICE_ROSTER[3].name, // SI V. Suresh Kumar
-      badge: KERALA_POLICE_ROSTER[3].badgeNumber,
-      openedAt: '2026-10-16 06:10:00 IST',
-      status: 'SUBMITTED_TO_COURT',
-      evidenceCount: 4,
-      sha256DossierHash: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a',
-      summary: 'CFS temporal dwell detector flagged 3 heavy crates left stationary for 48 minutes in high-tide splash zone.',
-    },
-  ];
+  const { data: incidents = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['incidents-list'],
+    queryFn: () => incidentsApi.list(),
+  });
+
+  const filteredIncidents = incidents.filter(inc => {
+    const matchesSearch =
+      inc.incidentCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inc.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inc.assignedOfficer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inc.station.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory = selectedCategory === 'ALL' || inc.category === selectedCategory;
+    const matchesStatus = selectedStatus === 'ALL' || inc.status === selectedStatus;
+
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  async function handleQuickExport(inc: IncidentRecord, e: React.MouseEvent) {
+    e.stopPropagation();
+    const purpose = window.prompt(
+      `Enter mandatory stated purpose / court reference for exporting incident package ${inc.incidentCode}:`,
+      'Judicial First Class Magistrate Court submission / Section 65B verification'
+    );
+    if (!purpose || !purpose.trim()) return;
+
+    setExportingId(inc.id);
+    try {
+      const result = await incidentsApi.exportPackage(inc.id, purpose, {
+        id: user?.id || 'u-curr',
+        name: user?.fullName || 'Current Officer',
+        badge: inc.badge,
+        rank: user?.rankTitle || 'Inspector',
+        role: getEffectiveRole(),
+        station: inc.station,
+      });
+      triggerFileDownload(result.blob, result.filename);
+      refetch();
+    } catch (err) {
+      alert(`Export failed: ${String(err)}`);
+    } finally {
+      setExportingId(null);
+    }
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg)' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
+      {/* ── Top Header ── */}
+      <div
+        className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0"
+        style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}
+      >
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-[var(--surface)] text-[var(--sea-600)] border" style={{ borderColor: 'var(--line)' }}>
             <FolderArchive className="w-5 h-5" />
@@ -92,92 +92,188 @@ export default function IncidentsPage() {
               </span>
             </div>
             <p className="text-xs opacity-60">
-              Court-admissible electronic dossiers linking drone telemetry, CKFE keyframes, and police actions
+              Court-admissible electronic dossiers linking drone telemetry, CKFE keyframes, and officer certifications
             </p>
           </div>
         </div>
 
-        <button
-          onClick={() => alert('Generating cryptographic court dossier export package with SHA-256 manifest...')}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] transition-colors shadow-xs"
-        >
-          <Download className="w-3.5 h-3.5" /> Export Court Dossier
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            className="p-2 rounded-lg border hover:bg-[var(--surface-hover)] transition-colors opacity-70 hover:opacity-100"
+            style={{ borderColor: 'var(--line)' }}
+            title="Refresh incident ledger"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        <div className="space-y-4">
-          {incidents.map(inc => (
-            <div
-              key={inc.id}
-              className="rounded-2xl border p-5 space-y-4 transition-all"
-              style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}
-            >
-              {/* Top row */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-[var(--sea-600)]">{inc.incidentCode}</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                      {inc.category.replace(/_/g, ' ')}
-                    </span>
-                    <span className="text-[10px] font-mono opacity-50">· {inc.openedAt}</span>
-                  </div>
-                  <h3 className="font-serif text-base font-bold mt-1">{inc.title}</h3>
-                </div>
-
-                <span
-                  className={cn(
-                    'px-2.5 py-1 rounded-full text-xs font-semibold font-mono',
-                    inc.status === 'UNDER_INVESTIGATION'
-                      ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                      : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                  )}
-                >
-                  {inc.status.replace(/_/g, ' ')}
-                </span>
-              </div>
-
-              {/* Summary */}
-              <p className="text-xs opacity-80 leading-relaxed font-sans">
-                {inc.summary}
-              </p>
-
-              {/* Station & Officer Details */}
-              <div className="grid grid-cols-3 gap-3 p-3 rounded-xl border bg-[var(--surface)] text-xs font-mono" style={{ borderColor: 'var(--line)' }}>
-                <div>
-                  <span className="opacity-50 block text-[10px]">POLICE JURISDICTION</span>
-                  <span className="font-semibold">{inc.station}</span>
-                </div>
-                <div>
-                  <span className="opacity-50 block text-[10px]">INVESTIGATING OFFICER</span>
-                  <span className="font-semibold">{inc.assignedOfficer} ({inc.badge})</span>
-                </div>
-                <div>
-                  <span className="opacity-50 block text-[10px]">ATTACHED EVIDENCE ARTIFACTS</span>
-                  <span className="font-semibold text-emerald-600">{inc.evidenceCount} Sealed Files</span>
-                </div>
-              </div>
-
-              {/* SHA-256 Chain of Custody */}
-              <div className="flex items-center justify-between text-[11px] font-mono opacity-70 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
-                <div className="flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>SHA-256 Dossier Digest: <code className="font-bold">{inc.sha256DossierHash.slice(0, 32)}…</code></span>
-                </div>
-                <button
-                  onClick={() => alert(`Full SHA-256 Digest:\n${inc.sha256DossierHash}\n\nEvidence files verified against tamper-evident chain of custody.`)}
-                  className="hover:underline text-[var(--sea-600)]"
-                >
-                  Verify Digest
-                </button>
-              </div>
-            </div>
-          ))}
+      {/* ── Filter Bar ── */}
+      <div
+        className="flex flex-wrap items-center justify-between px-6 py-3 border-b gap-3 flex-shrink-0"
+        style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}
+      >
+        {/* Search */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-[var(--panel)] min-w-[280px]" style={{ borderColor: 'var(--line)' }}>
+          <Search className="w-3.5 h-3.5 opacity-40" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search dossier ID, craft, station, officer…"
+            className="bg-transparent text-xs outline-none w-full font-sans"
+          />
         </div>
 
-        {/* Human in the loop footer */}
+        {/* Category & Status Filters */}
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          <select
+            value={selectedCategory}
+            onChange={e => setSelectedCategory(e.target.value)}
+            className="px-3 py-1.5 rounded-xl border bg-[var(--panel)] text-xs font-mono outline-none"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            <option value="ALL">All Categories</option>
+            <option value="ZONE_INTRUSION">Zone Intrusion</option>
+            <option value="SUSPICIOUS_CONVERGENCE">Suspicious Convergence</option>
+            <option value="SHORELINE_CONTRABAND">Shoreline Contraband</option>
+            <option value="SECURITY_BREACH">Security Breach</option>
+            <option value="ABANDONED_OBJECT">Abandoned Object</option>
+          </select>
+
+          <select
+            value={selectedStatus}
+            onChange={e => setSelectedStatus(e.target.value)}
+            className="px-3 py-1.5 rounded-xl border bg-[var(--panel)] text-xs font-mono outline-none"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="NEW">NEW</option>
+            <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
+            <option value="UNDER_REVIEW">UNDER REVIEW</option>
+            <option value="ESCALATED">ESCALATED</option>
+            <option value="RESOLVED">RESOLVED</option>
+            <option value="FALSE_POSITIVE">FALSE POSITIVE</option>
+          </select>
+        </div>
+      </div>
+
+      {/* ── Dossiers List ── */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-48 gap-3" style={{ color: 'var(--text-muted)' }}>
+            <div className="w-5 h-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+            <span className="font-mono text-xs">Loading court dossiers…</span>
+          </div>
+        ) : filteredIncidents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-center space-y-2 opacity-50">
+            <FolderArchive className="w-8 h-8" />
+            <span className="text-xs font-mono">No incident records match the current filters.</span>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredIncidents.map(inc => (
+              <div
+                key={inc.id}
+                onClick={() => navigate(`/incidents/${inc.id}`)}
+                className="rounded-2xl border p-5 space-y-4 transition-all hover:shadow-md cursor-pointer group"
+                style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}
+              >
+                {/* Header row */}
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[var(--sea-600)] group-hover:underline">
+                        {inc.incidentCode}
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600 border border-cyan-500/20">
+                        {inc.category.replace(/_/g, ' ')}
+                      </span>
+                      <span className="text-[10px] font-mono opacity-50">· {inc.openedAt}</span>
+                    </div>
+                    <h3 className="font-serif text-base font-bold mt-1 group-hover:text-[var(--sea-600)] transition-colors">
+                      {inc.title}
+                    </h3>
+                  </div>
+
+                  <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                    <span
+                      className={cn(
+                        'px-2.5 py-1 rounded-full text-xs font-semibold font-mono border',
+                        inc.status === 'RESOLVED'
+                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                          : inc.status === 'FALSE_POSITIVE'
+                          ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                          : inc.status === 'ESCALATED'
+                          ? 'bg-red-500/10 text-red-600 border-red-500/20'
+                          : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                      )}
+                    >
+                      {inc.status.replace(/_/g, ' ')}
+                    </span>
+
+                    <PermissionGate permission="EXPORT">
+                      <button
+                        onClick={e => handleQuickExport(inc, e)}
+                        disabled={exportingId === inc.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] transition-colors shadow-xs disabled:opacity-50"
+                        title="Export Court Evidence ZIP with SHA-256 manifest"
+                      >
+                        {exportingId === inc.id ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Download className="w-3 h-3" />
+                        )}
+                        <span>Court ZIP</span>
+                      </button>
+                    </PermissionGate>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <p className="text-xs opacity-80 leading-relaxed font-sans line-clamp-2">
+                  {inc.summary}
+                </p>
+
+                {/* Metadata cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-3 rounded-xl border bg-[var(--surface)] text-xs font-mono" style={{ borderColor: 'var(--line)' }}>
+                  <div>
+                    <span className="opacity-50 block text-[10px]">POLICE JURISDICTION</span>
+                    <span className="font-semibold">{inc.station}</span>
+                  </div>
+                  <div>
+                    <span className="opacity-50 block text-[10px]">INVESTIGATING OFFICER</span>
+                    <span className="font-semibold">{inc.assignedOfficer} ({inc.badge})</span>
+                  </div>
+                  <div>
+                    <span className="opacity-50 block text-[10px]">UAV SORTIE / ZONE</span>
+                    <span className="font-semibold">{inc.uavCode} · {inc.zoneCode}</span>
+                  </div>
+                  <div>
+                    <span className="opacity-50 block text-[10px]">SEALED EVIDENCE FILES</span>
+                    <span className="font-bold text-emerald-600">{inc.evidenceCount} Artifacts</span>
+                  </div>
+                </div>
+
+                {/* Bottom digest footer */}
+                <div className="flex items-center justify-between text-[11px] font-mono opacity-70 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>SHA-256 Digest: <code className="font-bold">{inc.sha256DossierHash.slice(0, 32)}…</code></span>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-[var(--sea-600)] font-semibold group-hover:translate-x-0.5 transition-transform">
+                    <span>Inspect Full 8-Tab ELIR</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Mandatory Human in the Loop Footer (Rule 7) ── */}
         <HumanInterpretationNote />
       </div>
     </div>

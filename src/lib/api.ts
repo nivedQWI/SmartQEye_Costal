@@ -9,13 +9,22 @@ import type {
   Alert, Contact, Zone, Mission, Feed, SystemHealth,
   CoastalEvent, User, AlertStatus, ZoneProfile,
   ContextProfileDetail, AlertRuleConfig, AbandonedObjectRecord,
-  AttentionLevel,
+  AttentionLevel, AuditEntry, IncidentRecord, IncidentWorkflowStatus,
+  AdminUser, DataRetentionPolicy, BackupDrillRecord, ActiveSession,
+  Permission, UserRole,
 } from '@/types';
 import {
   ALERTS, CONTACTS, ZONES, MISSIONS, INITIAL_FEEDS,
   INITIAL_HEALTH, HISTORICAL_EVENTS, ZONE_PROFILES, UAVS,
   CONTEXT_PROFILES, ALERT_RULES, ABANDONED_OBJECTS,
 } from './mockData';
+import { AUDIT_TRAIL_SEED } from './auditTrailSeed';
+import { INCIDENTS_DATA } from './incidentsData';
+import { computeAuditBlockHash, verifyAuditChain, type ChainVerificationResult, GENESIS_PREV_HASH } from './crypto';
+import { generateEvidencePackageZip } from './exportEvidence';
+import { KERALA_POLICE_ROSTER, KERALA_COASTAL_STATIONS } from './roster';
+import { DEFAULT_ROLE_PERMISSIONS } from './permissions';
+
 
 // ─── Pagination ──────────────────────────────────────────────
 
@@ -448,4 +457,683 @@ export const abandonedObjectsApi = {
     return item;
   },
 };
+
+// ─── Phase 4: Cryptographic Audit Trail API ─────────────────────────────────
+
+const LIVE_AUDIT_TRAIL: AuditEntry[] = [...AUDIT_TRAIL_SEED];
+
+export interface AuditFilters {
+  search?: string;
+  userId?: string;
+  userRole?: string;
+  action?: string;
+  targetType?: string;
+  outcome?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export const auditApi = {
+  async list(filters: AuditFilters = {}): Promise<Page<AuditEntry>> {
+    await delay(60);
+    let items = [...LIVE_AUDIT_TRAIL];
+
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      items = items.filter(
+        e =>
+          e.userName.toLowerCase().includes(q) ||
+          e.action.toLowerCase().includes(q) ||
+          e.targetId.toLowerCase().includes(q) ||
+          (e.beforeAfterSummary && e.beforeAfterSummary.toLowerCase().includes(q))
+      );
+    }
+    if (filters.userId) items = items.filter(e => e.userId === filters.userId);
+    if (filters.userRole) items = items.filter(e => e.userRole === filters.userRole);
+    if (filters.action) items = items.filter(e => e.action.includes(filters.action!));
+    if (filters.targetType) items = items.filter(e => e.targetType === filters.targetType);
+    if (filters.outcome) items = items.filter(e => e.outcome === filters.outcome);
+    if (filters.dateFrom) items = items.filter(e => e.timestamp >= filters.dateFrom!);
+    if (filters.dateTo) items = items.filter(e => e.timestamp <= filters.dateTo!);
+
+    // Default newest first for operator UI review
+    items.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+    const page = filters.page ?? 1;
+    const pageSize = filters.pageSize ?? 25;
+    const start = (page - 1) * pageSize;
+    return {
+      items: items.slice(start, start + pageSize),
+      total: items.length,
+      page,
+      pageSize,
+    };
+  },
+
+  async getLatestHead(): Promise<AuditEntry> {
+    const sorted = [...LIVE_AUDIT_TRAIL].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    return sorted[sorted.length - 1];
+  },
+
+  async append(data: {
+    userId: string;
+    userName: string;
+    userRole: UserRole;
+    action: string;
+    targetType: string;
+    targetId: string;
+    outcome?: 'SUCCESS' | 'FLAGGED' | 'BLOCKED';
+    ipAddress?: string;
+    sessionId?: string;
+    detail?: Record<string, unknown>;
+    beforeAfterSummary?: string;
+  }): Promise<AuditEntry> {
+    const head = await this.getLatestHead();
+    const prevHash = head ? head.hash ?? GENESIS_PREV_HASH : GENESIS_PREV_HASH;
+    const timestamp = new Date().toISOString();
+    const outcome = data.outcome || 'SUCCESS';
+    const sessionId = data.sessionId || 'sess-live';
+    const id = `aud-${String(LIVE_AUDIT_TRAIL.length + 1).padStart(4, '0')}`;
+
+    const blockHash = await computeAuditBlockHash({
+      prevHash,
+      timestamp,
+      userId: data.userId,
+      action: data.action,
+      targetType: data.targetType,
+      targetId: data.targetId,
+      outcome,
+      sessionId,
+    });
+
+    const newEntry: AuditEntry = {
+      id,
+      timestamp,
+      userId: data.userId,
+      userName: data.userName,
+      userRole: data.userRole,
+      action: data.action,
+      targetType: data.targetType,
+      targetId: data.targetId,
+      outcome,
+      ipAddress: data.ipAddress || '10.200.4.15',
+      sessionId,
+      detail: data.detail,
+      beforeAfterSummary: data.beforeAfterSummary,
+      prevHash,
+      hash: blockHash,
+    };
+
+    LIVE_AUDIT_TRAIL.push(newEntry);
+    return newEntry;
+  },
+
+  async verifyChain(): Promise<ChainVerificationResult> {
+    await delay(120);
+    return await verifyAuditChain(LIVE_AUDIT_TRAIL);
+  },
+
+  async exportCsv(filters: AuditFilters = {}): Promise<string> {
+    const { items } = await this.list({ ...filters, pageSize: 10000 });
+    const headers = [
+      'id',
+      'timestamp',
+      'user_id',
+      'user_name',
+      'user_role',
+      'action',
+      'target_type',
+      'target_id',
+      'outcome',
+      'ip_address',
+      'session_id',
+      'summary',
+      'prev_hash',
+      'block_hash',
+    ];
+    const rows = items.map(e =>
+      [
+        e.id,
+        `"${e.timestamp}"`,
+        `"${e.userId}"`,
+        `"${e.userName}"`,
+        `"${e.userRole}"`,
+        `"${e.action}"`,
+        `"${e.targetType}"`,
+        `"${e.targetId}"`,
+        `"${e.outcome || 'SUCCESS'}"`,
+        `"${e.ipAddress || ''}"`,
+        `"${e.sessionId || ''}"`,
+        `"${(e.beforeAfterSummary || '').replace(/"/g, '""')}"`,
+        `"${e.prevHash || ''}"`,
+        `"${e.hash || ''}"`,
+      ].join(',')
+    );
+    return [headers.join(','), ...rows].join('\n');
+  },
+};
+
+// ─── Phase 4: Incidents & ELIR API ──────────────────────────────────────────
+
+const LIVE_INCIDENTS: IncidentRecord[] = [...INCIDENTS_DATA];
+
+export const incidentsApi = {
+  async list(): Promise<IncidentRecord[]> {
+    await delay(60);
+    return LIVE_INCIDENTS;
+  },
+
+  async get(idOrCode: string): Promise<IncidentRecord | null> {
+    await delay(60);
+    const incident = LIVE_INCIDENTS.find(
+      i => i.id === idOrCode || i.incidentCode === idOrCode || i.alertId === idOrCode
+    );
+    if (incident) return incident;
+
+    // Fallback: Check if an alert matches this ID and generate an ELIR representation
+    const alert = ALERTS.find(a => a.id === idOrCode || a.alertCode === idOrCode);
+    if (alert) {
+      return {
+        id: alert.id,
+        incidentCode: alert.alertCode.replace('ALT-', 'INC-'),
+        alertId: alert.id,
+        title: alert.event.rationale.note || `${alert.event.type} in ${alert.event.zone?.name || 'Coastal Sector'}`,
+        category: (alert.event.type.includes('zone') || alert.event.type.includes('intrusion'))
+          ? 'ZONE_INTRUSION'
+          : alert.event.type.includes('convergence')
+          ? 'SUSPICIOUS_CONVERGENCE'
+          : 'SECURITY_BREACH',
+        station: 'Vizhinjam Coastal Police Station',
+        assignedOfficer: alert.assignedToName || 'CI Saji Varghese',
+        badge: 'KL-CP-0842',
+        openedAt: alert.createdAt,
+        status: (alert.status === 'NEW' ? 'NEW' : alert.status === 'ACKNOWLEDGED' ? 'ACKNOWLEDGED' : 'UNDER_REVIEW') as IncidentWorkflowStatus,
+        severity: alert.severity,
+        attention: alert.event.attention,
+        evidenceCount: alert.evidence.length || 4,
+        sha256DossierHash: '3f5a8c9b2d1e0f4a6c8e9b1d3f5a7c9e0b2d4f6a8c1e3b5d7f9a1c3e5b7d9f1a',
+        summary: alert.notes || 'Automated AI detection flagged persistent coastal contact exhibiting anomalous kinematics.',
+        uavCode: alert.event.uav.code,
+        missionCode: alert.event.mission.code,
+        zoneCode: alert.event.zone?.code || 'Z-01',
+        zoneName: alert.event.zone?.name || 'Coastal Surveillance Sector',
+        coordinates: { lat: alert.event.location.lat, lon: alert.event.location.lon },
+        contactCode: alert.event.contact?.code,
+        evidence: alert.evidence,
+        rationale: alert.event.rationale,
+        versions: alert.event.versions,
+        auditTrail: alert.auditTrail,
+        operatorNotes: alert.notes,
+      };
+    }
+
+    return null;
+  },
+
+  async updateStatus(
+    id: string,
+    status: IncidentWorkflowStatus,
+    note: string,
+    officer: { id: string; name: string; role: UserRole }
+  ): Promise<IncidentRecord> {
+    await delay(100);
+    const inc = LIVE_INCIDENTS.find(i => i.id === id || i.incidentCode === id || i.alertId === id);
+    if (!inc) throw new Error('Incident not found');
+
+    const previousStatus = inc.status;
+    inc.status = status;
+    inc.operatorNotes = note ? `${note} (Updated by ${officer.name})` : inc.operatorNotes;
+
+    const auditEntry = await auditApi.append({
+      userId: officer.id,
+      userName: officer.name,
+      userRole: officer.role,
+      action: `INCIDENT_STATUS_${status}`,
+      targetType: 'INCIDENT',
+      targetId: inc.incidentCode,
+      outcome: 'SUCCESS',
+      beforeAfterSummary: `Incident status transition: ${previousStatus} -> ${status}. Note: ${note}`,
+    });
+
+    inc.auditTrail.unshift(auditEntry);
+    return inc;
+  },
+
+  async markFalsePositive(
+    id: string,
+    reason: string,
+    officer: { id: string; name: string; role: UserRole }
+  ): Promise<IncidentRecord> {
+    await delay(100);
+    const inc = LIVE_INCIDENTS.find(i => i.id === id || i.incidentCode === id || i.alertId === id);
+    if (!inc) throw new Error('Incident not found');
+
+    inc.status = 'FALSE_POSITIVE';
+    inc.falsePositiveReason = reason;
+    inc.isAddedToCuratedDataset = true;
+
+    const auditEntry = await auditApi.append({
+      userId: officer.id,
+      userName: officer.name,
+      userRole: officer.role,
+      action: 'MARKED_FALSE_POSITIVE',
+      targetType: 'INCIDENT',
+      targetId: inc.incidentCode,
+      outcome: 'FLAGGED',
+      beforeAfterSummary: `Marked false positive: "${reason}". Added to offline curated dataset queue. Will not modify deployed models automatically.`,
+    });
+
+    inc.auditTrail.unshift(auditEntry);
+    return inc;
+  },
+
+  async verifySeal(id: string): Promise<{ verified: boolean; checkedCount: number; algorithm: string }> {
+    await delay(250);
+    const inc = await this.get(id);
+    if (!inc) throw new Error('Incident not found');
+    return {
+      verified: true,
+      checkedCount: (inc.evidence?.length ?? 0) > 0 ? inc.evidence.length : 6,
+      algorithm: 'SHA-256 (NIST FIPS 180-4)',
+    };
+  },
+
+  async exportPackage(
+    id: string,
+    purpose: string,
+    officer: { id: string; name: string; badge: string; rank: string; role: UserRole; station: string }
+  ) {
+    const inc = await this.get(id);
+    if (!inc) throw new Error('Incident not found');
+
+    const result = await generateEvidencePackageZip({
+      incident: inc,
+      purpose,
+      certifyingOfficer: {
+        name: officer.name,
+        badge: officer.badge,
+        rank: officer.rank,
+        station: officer.station,
+      },
+    });
+
+    await auditApi.append({
+      userId: officer.id,
+      userName: officer.name,
+      userRole: officer.role,
+      action: 'EXPORTED_COURT_EVIDENCE_ZIP',
+      targetType: 'INCIDENT',
+      targetId: inc.incidentCode,
+      outcome: 'SUCCESS',
+      beforeAfterSummary: `Exported sealed ZIP evidence package (${result.filename}). Purpose: "${purpose}". Manifest SHA-256: ${result.manifestSha256.slice(0, 16)}...`,
+    });
+
+    return result;
+  },
+};
+
+// ─── Phase 4: Administration & RBAC API ─────────────────────────────────────
+
+const ADMIN_USERS: AdminUser[] = KERALA_POLICE_ROSTER.map((officer, i) => ({
+  id: officer.id,
+  username: officer.name.toLowerCase().replace(/[^a-z0-9]/g, '.'),
+  fullName: officer.name,
+  rankTitle: officer.rank,
+  badgeNumber: officer.badgeNumber,
+  station: officer.stationName,
+  role: (
+    i === 0 ? 'SYS_ADMIN' :
+    i === 1 ? 'SUPERVISOR' :
+    i === 2 ? 'OPERATOR' :
+    i === 3 ? 'ZONE_ADMIN' :
+    i === 4 ? 'MODEL_CUSTODIAN' :
+    i === 5 ? 'AUDITOR' : 'ANALYST'
+  ) as UserRole,
+  status: 'ACTIVE',
+  lastLoginAt: '2026-10-16T08:12:00+05:30',
+  mfaEnabled: true,
+  mfaType: i % 2 === 0 ? 'TOTP' : 'FIDO2_KEY',
+  assignedZones: ['Z-01', 'Z-02', 'Z-03'],
+  email: `${officer.name.toLowerCase().replace(/[^a-z0-9]/g, '.')}@keralapolice.gov.in`,
+  phone: '+91 94979 ' + String(10000 + i * 234).slice(0, 5),
+}));
+
+let PERMISSIONS_MATRIX: Record<UserRole, Permission[]> = { ...DEFAULT_ROLE_PERMISSIONS };
+
+const RETENTION_POLICIES: DataRetentionPolicy[] = [
+  {
+    id: 'ret-01',
+    dataType: 'Raw Video Feed (Source H.264/H.265)',
+    retentionDays: 7,
+    storageLocation: 'Central SAN Node /mnt/video/raw',
+    legalHoldEligible: true,
+    isLegalHoldActive: false,
+    purgeSchedule: 'Daily 03:00 IST automated FIFO purge',
+    encryptionStandard: 'AES-256-GCM',
+    description: 'Continuous continuous drone streams kept for tactical review window.',
+  },
+  {
+    id: 'ret-02',
+    dataType: 'Edge Circular Temp Buffers',
+    retentionDays: 1,
+    storageLocation: 'Edge Laptop NVMe /opt/sqeye/edge/ring',
+    legalHoldEligible: false,
+    isLegalHoldActive: false,
+    purgeSchedule: 'Continuous 24-hour ring overwriting',
+    encryptionStandard: 'LUKS2 Full-Disk Encryption',
+    description: 'Local buffer on field laptops prior to central optical sync.',
+  },
+  {
+    id: 'ret-03',
+    dataType: 'Flagged Event Clips (Pre/Post Window)',
+    retentionDays: 90,
+    storageLocation: 'Central GPU Node Cluster /data/clips',
+    legalHoldEligible: true,
+    isLegalHoldActive: false,
+    purgeSchedule: 'Weekly Sunday 04:00 IST purge',
+    encryptionStandard: 'AES-256-GCM',
+    description: '30s pre and post event video clips extracted by CFS / CKFE.',
+  },
+  {
+    id: 'ret-04',
+    dataType: 'CKFE Keyframe Evidence Images',
+    retentionDays: 180,
+    storageLocation: 'WORM Optical Mirror /mnt/evidence/keyframes',
+    legalHoldEligible: true,
+    isLegalHoldActive: false,
+    purgeSchedule: 'Semi-annual archival rotation',
+    encryptionStandard: 'AES-256-GCM + SHA-256 Seal',
+    description: 'High-confidence keyframes linked to incident alerts.',
+  },
+  {
+    id: 'ret-05',
+    dataType: 'Contact Histories & Kinematic Trajectories',
+    retentionDays: 180,
+    storageLocation: 'PostgreSQL / TimescaleDB contact_history',
+    legalHoldEligible: true,
+    isLegalHoldActive: false,
+    purgeSchedule: 'Monthly partition drop',
+    encryptionStandard: 'TDE (Transparent Data Encryption)',
+    description: 'Persistent coastal craft observations, headings, and zone crossings.',
+  },
+  {
+    id: 'ret-06',
+    dataType: 'Crowd Density Grids & AI Heatmaps',
+    retentionDays: 365,
+    storageLocation: 'Object Storage /data/analytics',
+    legalHoldEligible: false,
+    isLegalHoldActive: false,
+    purgeSchedule: 'Annual audit archive',
+    encryptionStandard: 'AES-256',
+    description: 'Aggregated statistical density grids for beach and harbour monitoring.',
+  },
+  {
+    id: 'ret-07',
+    dataType: 'Formal Court ELIR Evidence Dossiers',
+    retentionDays: 0, // Permanent
+    storageLocation: 'Kerala State Data Centre (KSDC-Kochi WORM Archive)',
+    legalHoldEligible: true,
+    isLegalHoldActive: true,
+    purgeSchedule: 'Permanent Immutable Preservation (7+ Years per BNSS Sec 63)',
+    encryptionStandard: 'AES-256 + Tamper-Evident SHA-256 Hash Chain',
+    description: 'Certified court dossiers with full chain of custody and officer tokens.',
+  },
+];
+
+const BACKUP_DRILLS: BackupDrillRecord[] = [
+  {
+    id: 'drill-01',
+    drillDate: '2026-10-15 03:00 IST',
+    target: 'Full Database & Evidence Snapshot',
+    backupType: 'FULL',
+    rpoMinutesActual: 4.2,
+    rpoMinutesTarget: 15.0,
+    rtoMinutesActual: 22.4,
+    rtoMinutesTarget: 60.0,
+    status: 'PASSED',
+    verifiedBy: 'DySP K. R. Harikrishnan (Cyber Division)',
+    destinationMirror: 'KSDC-Kochi Offsite Optical Ring',
+    notes: 'Zero loss drill. Database restore verified with checksum match on 10,480 items.',
+  },
+  {
+    id: 'drill-02',
+    drillDate: '2026-10-08 02:30 IST',
+    target: 'Differential Evidence Store Mirror',
+    backupType: 'INCREMENTAL',
+    rpoMinutesActual: 3.8,
+    rpoMinutesTarget: 15.0,
+    rtoMinutesActual: 18.1,
+    rtoMinutesTarget: 60.0,
+    status: 'PASSED',
+    verifiedBy: 'Thomas J. (IT Cell)',
+    destinationMirror: 'Thiruvananthapuram Secondary Edge Node',
+    notes: 'Incremental sync of 48.6 GB evidence packages completed in 18 minutes.',
+  },
+  {
+    id: 'drill-03',
+    drillDate: '2026-10-01 03:15 IST',
+    target: 'WORM Optical Cold Storage Backup',
+    backupType: 'SNAPSHOT',
+    rpoMinutesActual: 6.5,
+    rpoMinutesTarget: 15.0,
+    rtoMinutesActual: 31.0,
+    rtoMinutesTarget: 60.0,
+    status: 'PASSED',
+    verifiedBy: 'DySP K. R. Harikrishnan',
+    destinationMirror: 'Cyber Forensics Air-Gapped Optical Library',
+    notes: 'Physical write-once Blu-ray media burn drill verified for Section 65B compliance.',
+  },
+];
+
+const ACTIVE_SESSIONS: ActiveSession[] = [
+  {
+    id: 'sess-01',
+    userId: 'u-op1',
+    userName: 'SI Ananya Ramesh',
+    role: 'OPERATOR',
+    ipAddress: '10.200.4.15',
+    station: 'Vizhinjam Coastal Police Station',
+    browser: 'Chromium 128 (Air-Gapped Workstation A)',
+    loginAt: '2026-10-16T08:00:12+05:30',
+    lastActivityAt: '2026-10-16T08:35:12+05:30',
+    currentRoute: '/live',
+    isCurrentSession: true,
+  },
+  {
+    id: 'sess-02',
+    userId: 'u-sup1',
+    userName: 'CI Saji Varghese',
+    role: 'SUPERVISOR',
+    ipAddress: '10.200.4.12',
+    station: 'Vizhinjam Coastal Police Station',
+    browser: 'Chromium 128 (Duty Officer Terminal)',
+    loginAt: '2026-10-16T07:45:00+05:30',
+    lastActivityAt: '2026-10-16T08:34:00+05:30',
+    currentRoute: '/alerts',
+    isCurrentSession: false,
+  },
+  {
+    id: 'sess-03',
+    userId: 'u-zadm',
+    userName: 'CI Krishna N.',
+    role: 'ZONE_ADMIN',
+    ipAddress: '10.200.4.8',
+    station: 'Coastal Police HQ (Thiruvananthapuram)',
+    browser: 'Firefox ESR 115 (Admin Desk)',
+    loginAt: '2026-10-16T06:30:00+05:30',
+    lastActivityAt: '2026-10-16T08:20:00+05:30',
+    currentRoute: '/config/zones',
+    isCurrentSession: false,
+  },
+  {
+    id: 'sess-04',
+    userId: 'u-aud1',
+    userName: 'Inspector Rahul Menon',
+    role: 'AUDITOR',
+    ipAddress: '10.200.4.30',
+    station: 'Cyber Division Drone Forensic Lab',
+    browser: 'Chromium 128 (Forensic Terminal)',
+    loginAt: '2026-10-16T08:10:00+05:30',
+    lastActivityAt: '2026-10-16T08:32:00+05:30',
+    currentRoute: '/audit',
+    isCurrentSession: false,
+  },
+];
+
+export const adminApi = {
+  async listUsers(): Promise<AdminUser[]> {
+    await delay(60);
+    return ADMIN_USERS;
+  },
+
+  async updateUser(id: string, updates: Partial<AdminUser>, adminOfficer: { id: string; name: string }): Promise<AdminUser> {
+    await delay(100);
+    const user = ADMIN_USERS.find(u => u.id === id);
+    if (!user) throw new Error('User not found');
+    Object.assign(user, updates);
+
+    await auditApi.append({
+      userId: adminOfficer.id,
+      userName: adminOfficer.name,
+      userRole: 'SYS_ADMIN',
+      action: 'ADMIN_USER_UPDATED',
+      targetType: 'USER',
+      targetId: user.username,
+      outcome: 'SUCCESS',
+      beforeAfterSummary: `Officer profile ${user.fullName} updated by ${adminOfficer.name}.`,
+    });
+    return user;
+  },
+
+  async toggleUserStatus(id: string, status: 'ACTIVE' | 'SUSPENDED' | 'LOCKED', adminOfficer: { id: string; name: string }): Promise<AdminUser> {
+    await delay(100);
+    const user = ADMIN_USERS.find(u => u.id === id);
+    if (!user) throw new Error('User not found');
+    user.status = status;
+
+    await auditApi.append({
+      userId: adminOfficer.id,
+      userName: adminOfficer.name,
+      userRole: 'SYS_ADMIN',
+      action: `USER_STATUS_${status}`,
+      targetType: 'USER',
+      targetId: user.username,
+      outcome: 'SUCCESS',
+      beforeAfterSummary: `Officer status changed to ${status} for ${user.fullName}.`,
+    });
+    return user;
+  },
+
+  async getPermissionsMatrix(): Promise<Record<UserRole, Permission[]>> {
+    await delay(40);
+    return { ...PERMISSIONS_MATRIX };
+  },
+
+  async updatePermissionsMatrix(
+    newMatrix: Record<UserRole, Permission[]>,
+    reason: string,
+    adminOfficer: { id: string; name: string }
+  ): Promise<Record<UserRole, Permission[]>> {
+    await delay(120);
+    PERMISSIONS_MATRIX = { ...newMatrix };
+
+    await auditApi.append({
+      userId: adminOfficer.id,
+      userName: adminOfficer.name,
+      userRole: 'SYS_ADMIN',
+      action: 'RBAC_MATRIX_MODIFIED',
+      targetType: 'SYSTEM',
+      targetId: 'RBAC_SECURITY_MATRIX',
+      outcome: 'SUCCESS',
+      beforeAfterSummary: `RBAC permission matrix modified by ${adminOfficer.name}. Justification: "${reason}".`,
+    });
+    return PERMISSIONS_MATRIX;
+  },
+
+  async getDataRetentionPolicies(): Promise<DataRetentionPolicy[]> {
+    await delay(50);
+    return RETENTION_POLICIES;
+  },
+
+  async toggleLegalHold(policyId: string, active: boolean, adminOfficer: { id: string; name: string }): Promise<DataRetentionPolicy> {
+    await delay(80);
+    const policy = RETENTION_POLICIES.find(p => p.id === policyId);
+    if (!policy) throw new Error('Policy not found');
+    policy.isLegalHoldActive = active;
+
+    await auditApi.append({
+      userId: adminOfficer.id,
+      userName: adminOfficer.name,
+      userRole: 'SYS_ADMIN',
+      action: active ? 'LEGAL_HOLD_ENGAGED' : 'LEGAL_HOLD_RELEASED',
+      targetType: 'SYSTEM',
+      targetId: policy.id,
+      outcome: 'SUCCESS',
+      beforeAfterSummary: `${active ? 'Engaged' : 'Released'} legal hold on ${policy.dataType}. Automatic pruning suspended.`,
+    });
+    return policy;
+  },
+
+  async getBackupDrills(): Promise<BackupDrillRecord[]> {
+    await delay(50);
+    return BACKUP_DRILLS;
+  },
+
+  async triggerBackupDrill(officer: { id: string; name: string }): Promise<BackupDrillRecord> {
+    await delay(400);
+    const newDrill: BackupDrillRecord = {
+      id: `drill-${String(BACKUP_DRILLS.length + 1).padStart(2, '0')}`,
+      drillDate: new Date().toISOString(),
+      target: 'Live State Disaster Recovery Verification',
+      backupType: 'INCREMENTAL',
+      rpoMinutesActual: 3.6,
+      rpoMinutesTarget: 15.0,
+      rtoMinutesActual: 19.4,
+      rtoMinutesTarget: 60.0,
+      status: 'PASSED',
+      verifiedBy: officer.name,
+      destinationMirror: 'KSDC-Kochi Mirror (Optical Feed Sync)',
+      notes: 'Scheduled operator drill simulated. SHA-256 state tree verified.',
+    };
+    BACKUP_DRILLS.unshift(newDrill);
+
+    await auditApi.append({
+      userId: officer.id,
+      userName: officer.name,
+      userRole: 'SYS_ADMIN',
+      action: 'BACKUP_RECOVERY_DRILL_EXECUTED',
+      targetType: 'SYSTEM',
+      targetId: newDrill.id,
+      outcome: 'SUCCESS',
+      beforeAfterSummary: `Drill executed by ${officer.name}. RPO: 3.6m (Target: 15m), RTO: 19.4m (Target: 60m). Status: PASSED.`,
+    });
+    return newDrill;
+  },
+
+  async getActiveSessions(): Promise<ActiveSession[]> {
+    await delay(40);
+    return ACTIVE_SESSIONS;
+  },
+
+  async killSession(sessionId: string, adminOfficer: { id: string; name: string }): Promise<void> {
+    await delay(100);
+    const idx = ACTIVE_SESSIONS.findIndex(s => s.id === sessionId);
+    if (idx !== -1) {
+      const removed = ACTIVE_SESSIONS.splice(idx, 1)[0];
+      await auditApi.append({
+        userId: adminOfficer.id,
+        userName: adminOfficer.name,
+        userRole: 'SYS_ADMIN',
+        action: 'SESSION_TERMINATED_BY_ADMIN',
+        targetType: 'USER',
+        targetId: removed.userId,
+        outcome: 'SUCCESS',
+        beforeAfterSummary: `Remote session killed for ${removed.userName} (${removed.ipAddress}) by ${adminOfficer.name}.`,
+      });
+    }
+  },
+};
+
 

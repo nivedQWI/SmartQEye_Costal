@@ -30,6 +30,23 @@ export type MissionStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'ABORTED';
 export type ProcessingMode = 'CENTRAL_GPU' | 'LOCAL_EDGE' | 'COOP_EDGE' | 'UAV_ONBOARD' | 'POST_MISSION';
 export type UserRole = 'OPERATOR' | 'ANALYST' | 'SUPERVISOR' | 'ZONE_ADMIN' | 'SYS_ADMIN' | 'MODEL_CUSTODIAN' | 'AUDITOR';
 
+export type Permission =
+  | 'VIEW_LIVE'
+  | 'VIEW_ARCHIVE'
+  | 'ANALYSE'
+  | 'ACKNOWLEDGE_ALERT'
+  | 'EXPORT'
+  | 'EVIDENCE_ACCESS'
+  | 'MANAGE_ZONES'
+  | 'MANAGE_ALERT_RULES'
+  | 'MANAGE_MODELS'
+  | 'MANAGE_DATASETS'
+  | 'APPROVE_MODEL'
+  | 'MANAGE_USERS'
+  | 'VIEW_AUDIT'
+  | 'SYSTEM_ADMIN'
+  | 'API_KEYS';
+
 export type EventType =
   | 'person_detected' | 'vehicle_detected' | 'vessel_detected'
   | 'zone_entry' | 'zone_exit' | 'zone_dwell_exceeded' | 'intrusion'
@@ -313,8 +330,13 @@ export interface AuditEntry {
   action: string;
   targetType: string;
   targetId: string;
-  detail?: Record<string, unknown>;
+  outcome?: 'SUCCESS' | 'FLAGGED' | 'BLOCKED';
   ipAddress?: string;
+  sessionId?: string;
+  detail?: Record<string, unknown>;
+  beforeAfterSummary?: string;
+  prevHash?: string;
+  hash?: string;
 }
 
 // ─── Alert ──────────────────────────────────────────────────
@@ -762,3 +784,114 @@ export interface CkfeEvidenceKeyframe {
   thumbnailUrl: string;
   sha256: string;
 }
+
+// ─── Phase 4: Evidence-Linked Incident Record (ELIR) ────────────────────────
+
+export type IncidentCategory =
+  | 'ZONE_INTRUSION'
+  | 'SUSPICIOUS_CONVERGENCE'
+  | 'SHORELINE_CONTRABAND'
+  | 'SECURITY_BREACH'
+  | 'ABANDONED_OBJECT'
+  | 'UNUSUAL_COURSE';
+
+export type IncidentWorkflowStatus =
+  | 'NEW'
+  | 'ACKNOWLEDGED'
+  | 'UNDER_REVIEW'
+  | 'ESCALATED'
+  | 'RESOLVED'
+  | 'FALSE_POSITIVE';
+
+export interface IncidentRecord {
+  id: string;
+  incidentCode: string;
+  alertId?: string;
+  title: string;
+  category: IncidentCategory;
+  station: string;
+  assignedOfficer: string;
+  badge: string;
+  openedAt: string;
+  status: IncidentWorkflowStatus;
+  severity: Severity;
+  attention: AttentionLevel;
+  evidenceCount: number;
+  sha256DossierHash: string;
+  summary: string;
+  uavCode: string;
+  missionCode: string;
+  zoneCode: string;
+  zoneName: string;
+  coordinates: { lat: number; lon: number };
+  contactCode?: string;
+  evidence: EvidenceItem[];
+  rationale: EventRationale;
+  versions: EventVersions;
+  auditTrail: AuditEntry[];
+  operatorNotes?: string;
+  falsePositiveReason?: string;
+  isAddedToCuratedDataset?: boolean;
+}
+
+// ─── Phase 4: Administration & RBAC ─────────────────────────────────────────
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  fullName: string;
+  rankTitle: string;
+  badgeNumber: string;
+  station: string;
+  role: UserRole;
+  status: 'ACTIVE' | 'SUSPENDED' | 'LOCKED';
+  lastLoginAt: string;
+  mfaEnabled: boolean;
+  mfaType: 'TOTP' | 'FIDO2_KEY';
+  assignedZones: string[];
+  temporaryAccessExpiry?: string;
+  email: string;
+  phone: string;
+}
+
+export interface DataRetentionPolicy {
+  id: string;
+  dataType: string;
+  retentionDays: number; // 0 indicates permanent retention
+  storageLocation: string;
+  legalHoldEligible: boolean;
+  isLegalHoldActive: boolean;
+  purgeSchedule: string;
+  encryptionStandard: string;
+  description: string;
+}
+
+export interface BackupDrillRecord {
+  id: string;
+  drillDate: string;
+  target: string;
+  backupType: 'FULL' | 'INCREMENTAL' | 'SNAPSHOT';
+  rpoMinutesActual: number;
+  rpoMinutesTarget: number;
+  rtoMinutesActual: number;
+  rtoMinutesTarget: number;
+  status: 'PASSED' | 'WARNING' | 'FAILED';
+  verifiedBy: string;
+  destinationMirror: string;
+  notes: string;
+}
+
+export interface ActiveSession {
+  id: string;
+  userId: string;
+  userName: string;
+  role: UserRole;
+  ipAddress: string;
+  station: string;
+  browser: string;
+  loginAt: string;
+  lastActivityAt: string;
+  currentRoute: string;
+  isCurrentSession: boolean;
+}
+

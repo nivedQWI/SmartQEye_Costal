@@ -3,10 +3,11 @@
 // Full-screen Harbor photograph + Light yellowish gradient overlay + Centered white card
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Shield, Lock } from 'lucide-react';
+import { Eye, EyeOff, Shield, Lock, AlertTriangle, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
+import type { UserRole } from '@/types';
 
 type Step = 'credentials' | 'mfa';
 
@@ -18,28 +19,67 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Lockout simulation (3 failed attempts -> 60s lockout)
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+
   const { login } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutSeconds(s => Math.max(0, s - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutSeconds]);
 
   async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    if (lockoutSeconds > 0) {
+      setError(`Account temporarily locked. Please wait ${lockoutSeconds} seconds.`);
+      return;
+    }
+
     if (!username || !password) {
       setError('Username and password are required.');
       return;
     }
+
+    // Simulate invalid password check if user inputs "wrong" or "invalid"
+    if (password.toLowerCase() === 'wrong' || password.toLowerCase() === 'invalid') {
+      const nextFailed = failedAttempts + 1;
+      setFailedAttempts(nextFailed);
+      if (nextFailed >= 3) {
+        setLockoutSeconds(60);
+        setError('Security Lockout: 3 consecutive failed login attempts. Workstation locked for 60s per CERT-In directive.');
+      } else {
+        setError(`Invalid credentials. ${3 - nextFailed} attempt(s) remaining before security lockout.`);
+      }
+      return;
+    }
+
     setStep('mfa');
   }
 
   async function handleMfa(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    if (lockoutSeconds > 0) {
+      setError(`Account temporarily locked. Please wait ${lockoutSeconds} seconds.`);
+      return;
+    }
+
     setLoading(true);
     try {
-      await login(username, password, mfaCode);
+      await login(username || 'op.rajan', password || 'demo', mfaCode);
       navigate('/');
     } catch {
-      setError('Authentication failed. Please try again.');
+      setError('Authentication failed. Please verify your MFA token.');
     } finally {
       setLoading(false);
     }
@@ -54,6 +94,25 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
+
+  async function handleQuickRoleLogin(usernameToUse: string) {
+    setLoading(true);
+    try {
+      await login(usernameToUse, 'demo', '123456');
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const demoRoles: { label: string; username: string; role: UserRole }[] = [
+    { label: 'Operator', username: 'op.rajan', role: 'OPERATOR' },
+    { label: 'Duty Officer', username: 'sup.menon', role: 'SUPERVISOR' },
+    { label: 'Zone Admin', username: 'za.krishna', role: 'ZONE_ADMIN' },
+    { label: 'Sys Admin', username: 'sa.thomas', role: 'SYS_ADMIN' },
+    { label: 'Auditor', username: 'aud.seema', role: 'AUDITOR' },
+    { label: 'Model Custodian', username: 'mc.arun', role: 'MODEL_CUSTODIAN' },
+  ];
 
   return (
     <div
@@ -76,7 +135,7 @@ export default function LoginPage() {
         RESTRICTED — AUTHORISED USE ONLY — ALL ACCESS IS AUDITED AND LOGGED
       </div>
 
-      {/* ── Gradient Color Overlay (matching light yellowish gradient layered over photo) ── */}
+      {/* ── Gradient Color Overlay ── */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -87,6 +146,17 @@ export default function LoginPage() {
 
       {/* ── Centered Container ── */}
       <div className="w-full max-w-md relative z-10 my-auto">
+        {/* ── Lockout Warning Banner ── */}
+        {lockoutSeconds > 0 && (
+          <div className="mb-4 rounded-2xl p-4 bg-rose-600 text-white shadow-xl flex items-center gap-3 animate-pulse">
+            <ShieldAlert className="w-6 h-6 flex-shrink-0" />
+            <div className="text-xs">
+              <span className="font-bold block font-mono">SECURITY LOCKOUT ACTIVE</span>
+              <span>Workstation locked for <strong>{lockoutSeconds} seconds</strong> due to excessive failed attempts.</span>
+            </div>
+          </div>
+        )}
+
         {/* ── Centered White Login Card ── */}
         <div
           className="bg-white rounded-3xl p-7 sm:p-9 shadow-2xl border"
@@ -117,7 +187,7 @@ export default function LoginPage() {
               className="text-xs font-mono tracking-wider uppercase mt-1 opacity-70"
               style={{ color: 'var(--ink-600)' }}
             >
-              Authorized Personnel Portal
+              Kerala Police Authorized Portal
             </p>
           </div>
 
@@ -128,7 +198,7 @@ export default function LoginPage() {
                   Sign In
                 </h2>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--ink-600)' }}>
-                  Enter your credentials or use Single Sign-On
+                  Enter credentials or authenticate with Police SSO
                 </p>
               </div>
 
@@ -136,8 +206,8 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleSSO}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl mb-4 font-medium text-sm transition-all border hover:opacity-90 disabled:opacity-50 shadow-sm"
+                disabled={loading || lockoutSeconds > 0}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl mb-4 font-medium text-sm transition-all border hover:opacity-90 disabled:opacity-50 shadow-sm cursor-pointer"
                 style={{ background: 'var(--sea-600)', color: 'white', borderColor: 'var(--sea-600)' }}
               >
                 <Shield className="w-4 h-4" />
@@ -160,10 +230,11 @@ export default function LoginPage() {
                   <input
                     type="text"
                     value={username}
+                    disabled={lockoutSeconds > 0}
                     onChange={e => setUsername(e.target.value)}
                     placeholder="police.username"
                     autoComplete="username"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs disabled:opacity-50"
                     style={{
                       background: 'var(--sand-50)',
                       borderColor: 'var(--sand-300)',
@@ -179,10 +250,11 @@ export default function LoginPage() {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
+                      disabled={lockoutSeconds > 0}
                       onChange={e => setPassword(e.target.value)}
                       placeholder="••••••••"
                       autoComplete="current-password"
-                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
+                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs disabled:opacity-50"
                       style={{
                         background: 'var(--sand-50)',
                         borderColor: 'var(--sand-300)',
@@ -205,10 +277,11 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 px-4 rounded-xl font-medium text-sm transition-all hover:opacity-90 shadow-md"
+                  disabled={lockoutSeconds > 0}
+                  className="w-full py-2.5 px-4 rounded-xl font-medium text-sm transition-all hover:opacity-90 disabled:opacity-50 shadow-md cursor-pointer"
                   style={{ background: 'var(--ink-900)', color: '#FFFFFF' }}
                 >
-                  Continue
+                  Continue to Two-Factor Verification
                 </button>
               </form>
             </>
@@ -217,7 +290,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setStep('credentials')}
-                className="text-xs mb-4 flex items-center gap-1 font-semibold transition-opacity opacity-80 hover:opacity-100"
+                className="text-xs mb-4 flex items-center gap-1 font-semibold transition-opacity opacity-80 hover:opacity-100 cursor-pointer"
                 style={{ color: 'var(--sea-600)' }}
               >
                 ← Back to credentials
@@ -234,7 +307,7 @@ export default function LoginPage() {
                     Two-Factor Authentication
                   </h2>
                   <p className="text-xs" style={{ color: 'var(--ink-600)' }}>
-                    Enter the 6-digit code from your authenticator app
+                    Enter 6-digit TOTP code (or accept demo default)
                   </p>
                 </div>
               </div>
@@ -244,7 +317,7 @@ export default function LoginPage() {
                   type="text"
                   value={mfaCode}
                   onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="000000"
+                  placeholder="123456"
                   maxLength={6}
                   className="w-full text-center px-3 py-3 rounded-xl text-2xl font-mono tracking-[0.5em] border outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
                   style={{
@@ -255,22 +328,42 @@ export default function LoginPage() {
                   autoFocus
                 />
                 <p className="text-xs text-center font-medium opacity-70" style={{ color: 'var(--ink-600)' }}>
-                  Demo: enter any 6 digits and click Verify
+                  Demo: enter <code>123456</code> or <code>000000</code> and click Verify
                 </p>
 
                 {error && <p className="text-xs text-red-600 text-center font-semibold">{error}</p>}
 
                 <button
                   type="submit"
-                  disabled={loading || mfaCode.length < 6}
-                  className="w-full py-2.5 px-4 rounded-xl font-medium text-sm transition-all hover:opacity-90 disabled:opacity-50 shadow-md"
+                  disabled={loading}
+                  className="w-full py-2.5 px-4 rounded-xl font-medium text-sm transition-all hover:opacity-90 disabled:opacity-50 shadow-md cursor-pointer"
                   style={{ background: 'var(--sea-600)', color: 'white' }}
                 >
-                  {loading ? 'Verifying…' : 'Verify & Sign In'}
+                  {loading ? 'Verifying Credentials…' : 'Verify & Enter Operations'}
                 </button>
               </form>
             </>
           )}
+
+          {/* ── Demo Quick Login Row ── */}
+          <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--sand-300)' }}>
+            <span className="text-[10px] font-mono uppercase tracking-wider block text-center opacity-60 mb-2 font-semibold">
+              Demo Evaluator Quick-Login by Role
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              {demoRoles.map(dr => (
+                <button
+                  key={dr.role}
+                  type="button"
+                  onClick={() => handleQuickRoleLogin(dr.username)}
+                  className="px-2 py-1 rounded-md text-[10px] font-mono border hover:bg-[var(--sand-100)] transition-colors cursor-pointer"
+                  style={{ borderColor: 'var(--sand-300)', color: 'var(--ink-800)' }}
+                >
+                  {dr.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* ── Classification notice below card ── */}
@@ -288,7 +381,7 @@ export default function LoginPage() {
 
         {/* ── Footer ── */}
         <p className="mt-4 text-center text-xs font-semibold drop-shadow-xs" style={{ color: 'var(--ink-900)' }}>
-          SmartQEye Coastal v1.0.3 · Quantumweave Intelligence Pvt. Ltd.
+          SmartQEye Coastal v2.6.4-prod-mvp · Quantumweave Intelligence Pvt. Ltd.
         </p>
       </div>
     </div>
