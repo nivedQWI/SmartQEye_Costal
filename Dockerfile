@@ -1,5 +1,6 @@
 # ============================================================
 # SmartQEye Coastal — Production Multi-Stage Dockerfile
+# Air-gapped, Non-root, Security-hardened (UID 101 nginx)
 # ============================================================
 
 # ─── Stage 1: Build Frontend Assets ───────────────────────────
@@ -9,40 +10,42 @@ WORKDIR /app
 
 # Install build dependencies
 COPY package.json package-lock.json ./
-
-# Clean install dependencies based on package-lock.json
 RUN npm ci
 
 # Copy source code and config
 COPY . .
 
-# Optional build-time argument for map tiles or backend URLs
-ARG VITE_MAP_TILE_URL=""
-ENV VITE_MAP_TILE_URL=${VITE_MAP_TILE_URL}
-
 # Compile TypeScript and bundle with Vite
 RUN npm run build
 
-# ─── Stage 2: Production Nginx Server ─────────────────────────
+# ─── Stage 2: Hardened Nginx Runner ───────────────────────────
 FROM nginx:alpine AS runner
+
+# Create temporary directories for unprivileged execution
+RUN mkdir -p /tmp/client_temp /tmp/proxy_temp_path /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && \
+    chown -R nginx:nginx /tmp && \
+    chmod -R 777 /tmp
 
 WORKDIR /usr/share/nginx/html
 
 # Clean default Nginx files
 RUN rm -rf ./*
 
-# Copy customized Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 # Copy compiled static assets from builder stage
-COPY --from=builder /app/dist .
+COPY --from=builder --chown=nginx:nginx /app/dist .
 
-# Expose HTTP port 80
-EXPOSE 80
+# Copy hardened non-root Nginx configuration
+COPY --chown=nginx:nginx nginx.conf /etc/nginx/nginx.conf
 
-# Healthcheck
+# Switch to non-root unprivileged user (UID 101)
+USER nginx
+
+# Expose non-privileged HTTP port 8080
+EXPOSE 8080
+
+# Container Healthcheck
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://127.0.0.1/healthz || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1:8080/healthz || exit 1
 
-# Start Nginx
+# Start Nginx in foreground
 CMD ["nginx", "-g", "daemon off;"]

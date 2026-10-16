@@ -1,0 +1,165 @@
+# ============================================================
+# SmartQEye Coastal — Full Production Stack (docker-compose.prod.yml)
+# Kerala Police Coastal Drone Surveillance System
+# Architecture: UI (React/Nginx) + Backend (FastAPI) + DB (PostGIS) + Cache (Redis) + Storage (MinIO)
+# ============================================================
+
+version: '3.8'
+
+networks:
+  coastal-internal:
+    driver: bridge
+    internal: false # In air-gapped deployments, internal=true isolates completely
+
+volumes:
+  postgis_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+
+services:
+  # ─── 1. Frontend UI (SmartQEye Web Console) ───────────────────
+  smartqeye-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: smartqeye-coastal-ui:0.9.0
+    container_name: smartqeye-ui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - VITE_API_MODE=live
+      - VITE_API_BASE_URL=http://localhost:8000/api/v1
+      - VITE_WS_BASE_URL=ws://localhost:8000/api/v1
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1024M
+    networks:
+      - coastal-internal
+    depends_on:
+      smartqeye-backend:
+        condition: service_healthy
+
+  # ─── 2. Backend API & Stream Processing (FastAPI) ─────────────
+  smartqeye-backend:
+    image: smartqeye-backend:0.9.0
+    container_name: smartqeye-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://smartqeye_user:coastal_secret_pw@db:5432/smartqeye_coastal
+      - REDIS_URL=redis://redis:6379/0
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=minio_admin
+      - S3_SECRET_KEY=minio_secret_key
+      - S3_BUCKET_EVIDENCE=coastal-evidence
+      - JWT_SECRET_KEY=kerala_police_drone_surveillance_jwt_secret_change_me
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=480
+      - CORS_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4096M
+    networks:
+      - coastal-internal
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ─── 3. Spatial Database (PostgreSQL 16 + PostGIS 3.4) ────────
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: smartqeye-postgis
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=smartqeye_user
+      - POSTGRES_PASSWORD=coastal_secret_pw
+      - POSTGRES_DB=smartqeye_coastal
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4096M
+    networks:
+      - coastal-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartqeye_user -d smartqeye_coastal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── 4. Message Broker & State Cache (Redis 7) ───────────────
+  redis:
+    image: redis:7-alpine
+    container_name: smartqeye-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "volatile-lru"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - coastal-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ─── 5. Evidence & Keyframe Storage (MinIO S3 Compatible) ──────
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    container_name: smartqeye-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minio_admin
+      - MINIO_ROOT_PASSWORD=minio_secret_key
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+    networks:
+      - coastal-internal
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 3

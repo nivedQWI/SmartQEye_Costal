@@ -1,101 +1,132 @@
-# SmartQEye Coastal — System Architecture & Tactical Intelligence Flow
+# SmartQEye Coastal — System Architecture Documentation
 
-**Quantumweave Intelligence Pvt. Ltd. (Thiruvananthapuram)**  
-**Kerala Police Coastal Police / Cyber Division – Drone Forensic Lab**  
-**KSUM RFP: "AI-Based Coastal Drone Surveillance and Video Analytics Software"**
+**System:** SmartQEye Coastal (AI-Based Coastal Drone Surveillance & Video Analytics)  
+**Authority:** Kerala Police Coastal Police / Cyber Division – Drone Forensic Lab  
+**Procurement Reference:** Kerala Startup Mission (KSUM) RFP  
+**Version:** v0.9.0-prod-mvp  
+**Classification:** RESTRICTED — OFFICIAL USE ONLY  
 
 ---
 
-## 1. Tactical Intelligence Pipeline Flow
+## 1. High-Level Architectural Overview
 
-The SmartQEye Coastal platform implements a 9-stage sequential intelligence pipeline. The diagram below maps the data flow from physical sensors through cognitive selection, multi-object tracking, contextual intelligence, to human-authorised operational response.
+SmartQEye Coastal is designed as a resilient, air-gapped, multi-tier intelligence platform for coastal maritime surveillance across Kerala's 580 km coastline. The system decouples frontend presentation from backend computation and video ingestion, allowing field deployment in edge patrol boats, coastal police stations, and central command headquarters.
 
 ```mermaid
 flowchart TD
-    Sensors["Drone RGB / Thermal Video + Telemetry\n(UAV-KL-01..06 · 1080p/720p @ 25 FPS)"] --> CFS
-
-    subgraph Compute_Optimisation ["Compute Optimisation Layer"]
-        CFS["Cognitive Frame Selection (CFS)\nDynamic 8–25 FPS Skip Rate\n(Saves ~68% GPU VRAM during quiescent patrol)"]
+    subgraph SENSORS["Aerial & Sensor Tier"]
+        UAV_RGB["UAV Optical (RGB) Feed"]
+        UAV_IR["UAV Thermal (LWIR) Feed"]
+        TELEM["DJI/Autel Subtitle SRT / MAVLink"]
+        AIS["Coastal AIS / Radar Feeds"]
     end
 
-    subgraph Detection_Tracking ["Perception & Tracking Layer"]
-        CFS --> DetTrack["AI Detection & Multi-Object Tracking\n• RTMDet-L / RTMDet-S (MMDetection, Apache-2.0)\n• RT-DETRv2 (Apache-2.0)\n• ByteTrack (MIT)"]
-        DetTrack --> Contacts["Persistent Coastal Contact\n• Multi-camera spatio-temporal association\n• Track continuity scoring (>85% target)\n• Kerala artisanal & commercial craft taxonomy"]
+    subgraph INGESTION["Edge / Ingestion Gateway"]
+        CFS["Cognitive Frame Selection (CFS)"]
+        SRT_PARSER["Telemetry & GPS Synchroniser"]
+        EDGE_INFER["Edge Model (RTMDet-S / ByteTrack)"]
     end
 
-    subgraph Context_Intelligence ["Coastal Context Intelligence Layer"]
-        Contacts --> Context["Kerala Coastal Context Intelligence\n• Geofenced zones (Z-01..07 Vizhinjam/Kovalam/Poovar)\n• Dwell timers & nautical speed baselines\n• High-tide lines & artisanal fishing schedules"]
-        Context --> Behaviour["Temporal & Cross-Contact Behaviour Intelligence\n• Shoreline approach frequency\n• Vessel convergence & co-travel analysis\n• Stationary abandoned cargo detection"]
+    subgraph CORE_COMPUTE["Central GPU & Storage Cluster"]
+        GPU_POOL["Central GPU Pool (RTMDet-L / RT-DETRv2)"]
+        BE_FASTAPI["FastAPI Backend Services"]
+        PG_GIS[("PostgreSQL 16 + PostGIS 3.4")]
+        REDIS[("Redis 7 Event Bus")]
+        MINIO[("MinIO S3 Evidence Vault")]
     end
 
-    subgraph Attention_Evidence ["Operational Attention & Evidence Capture"]
-        Behaviour --> Attention["Context-Aware Operational Attention\n• Dynamic severity ranking (CRITICAL, HIGH, MED, LOW)\n• Tactical prioritisation & queue triage"]
-        Attention --> CKFE["Cognitive Keyframe Extraction (CKFE)\n• Post-event keyframe harvester (RGB + Thermal)\n• Pre/post-roll incident clip (90s window)\n• Sidecar JSON metadata"]
+    subgraph CLIENT_TIER["Operator Command Console (Web UI)"]
+        RUNTIME_CFG["Runtime Config (/config.js)"]
+        API_LAYER["ApiClient (Mock / Live + Zod)"]
+        REALTIME["RealtimeStreamManager (WS / Simulator)"]
+        ZUSTAND["Global State (Alerts, Feeds, Telemetry, Auth)"]
+        UI_SHELL["Hardened AppShell (Header, LeftRail, TideBar)"]
+        VIEWS["Tactical Views (Command, Live, Fleet, Map, ELIR)"]
     end
 
-    subgraph Incident_Governance ["Governance & Human-in-the-Loop Response"]
-        CKFE --> ELIR["GIS-Linked Alert & ELIR\n• Evidence-Linked Incident Record\n• Tamper-evident SHA-256 integrity hash\n• Station & investigating officer assignment"]
-        ELIR --> HumanPolice["Human Police Interpretation\n• Mandatory officer confirmation dialog\n• Logged operational rationale written to audit trail\n• Operational decisions always rest with authorised police"]
-    end
+    UAV_RGB --> CFS
+    UAV_IR --> CFS
+    TELEM --> SRT_PARSER
+    AIS --> BE_FASTAPI
 
-    classDef primary fill:#e6f4f1,stroke:#0d9488,stroke-width:2px,color:#0f172a;
-    classDef caution fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a;
-    classDef police fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a;
+    CFS --> EDGE_INFER
+    CFS --> GPU_POOL
+    SRT_PARSER --> BE_FASTAPI
 
-    class CFS,CKFE caution;
-    class DetTrack,Contacts,Context,Behaviour,Attention,ELIR primary;
-    class HumanPolice police;
+    GPU_POOL --> BE_FASTAPI
+    EDGE_INFER --> BE_FASTAPI
+
+    BE_FASTAPI --> PG_GIS
+    BE_FASTAPI --> REDIS
+    BE_FASTAPI --> MINIO
+
+    BE_FASTAPI -.->|REST / OpenAPI 3.1| API_LAYER
+    REDIS -.->|WebSocket / SSE| REALTIME
+
+    RUNTIME_CFG --> API_LAYER
+    API_LAYER --> ZUSTAND
+    REALTIME --> ZUSTAND
+    ZUSTAND --> UI_SHELL
+    UI_SHELL --> VIEWS
 ```
 
 ---
 
-## 2. Four Approved Deployment Architectures (RFP §5)
+## 2. Platform Deployment Models
 
-To meet the physical operational realities of Kerala's 590 km coastline, SmartQEye Coastal supports four distinct, interoperable deployment models:
+SmartQEye Coastal formally supports four deployment tiers while maintaining a uniform, centralized monitoring invariant:
 
-```mermaid
-flowchart TD
-    subgraph Model1 ["Model 1: Central GPU Command Server"]
-        M1_HQ["State Coastal Police HQ / Cyber Division HQ\n• Central GPU Node A & B (High-Throughput Cluster)\n• Global GIS Map & Multi-Stream Ingestion\n• 20-Feed Fleet Wall & Multi-Squadron Command"]
-    end
-
-    subgraph Model2 ["Model 2: Local Coastal Station Edge Unit"]
-        M2_Station["Vizhinjam / Neendakara Coastal Police Stations\n• Local Micro-Server / Accelerated Edge Gateway\n• Autonomous local inference if backhaul drops\n• Automatic store-and-forward synchronisation"]
-    end
-
-    subgraph Model3 ["Model 3: Tactical Cooperative Edge Node"]
-        M3_Mobile["Mobile Surveillance Van / Coastal Interceptor Boat\n• Ruggedised in-vehicle edge compute box\n• On-scene drone telemetry & live local tactical HUD\n• Real-time shore-to-boat alert coordination"]
-    end
-
-    subgraph Model4 ["Model 4: Forensic Post-Mission Lab"]
-        M4_Lab["Drone Forensic Lab, Cyber Division, Thiruvananthapuram\n• Offline deep video inspection workstation\n• ELIR tamper-evident court dossier generation\n• Curated model evaluation & dataset annotation"]
-    end
-
-    M1_HQ <===>|"Encrypted mTLS / IPSec"| M2_Station
-    M2_Station <===>|"Tactical Radio / 4G-5G Mesh"| M3_Mobile
-    M2_Station -.->|"Offline Physical Media / Secure Sync"| M4_Lab
-    M1_HQ -.->|"Court Dossiers"| M4_Lab
-```
+| Deployment Model | Compute Placement | Video Ingestion | Network Requirement | Primary Operational Use Case |
+| :--- | :--- | :--- | :--- | :--- |
+| **Model 1: Central GPU + Gateway (Preferred)** | High-density GPU cluster at Police HQ | Ingestion gateway at coastal station / GCS | 4G/5G/Fiber (≥ 20 Mbps per feed) | Unified monitoring of Vizhinjam, Kochi, and Beypore sectors |
+| **Model 2: Local Edge + Central Sync (Practical)** | Ruggedised edge laptop (RTX 4060/4080) | Direct USB/HDMI/Ethernet capture card | Intermittent 4G or post-mission sync | Remote patrol vessels, forward coastal posts during severe weather |
+| **Model 3: Cooperative Edge (Optional)** | Dynamic worker pool of authenticated laptops | Edge laptops share analytical load | Secure LAN / Tactical Wi-Fi mesh | Multi-drone coordinated search & rescue operations |
+| **Model 4: UAV-Onboard Compute (Future)** | Jetson Orin Nano mounted on drone payload | Native on-gimbal camera stream | Ultra-low bandwidth telemetry link only | Deep offshore interdiction beyond standard terrestrial RF range |
 
 ---
 
-## 3. Key Pipeline Distinctions
+## 3. Client Architecture & Component Hierarchy
 
-### Cognitive Frame Selection (CFS) vs. Cognitive Keyframe Extraction (CKFE)
+### 3.1 Hardened App Shell (`src/components/AppShell.tsx`)
+The UI shell is built around zero-ambiguity police operations:
+- **Top Classification Bar**: Permanent `RESTRICTED — AUTHORISED USE ONLY` security notice.
+- **Top Command Header**: Collapsible navigation toggle, breadcrumb hierarchy, `Ctrl+K` global search palette (powered by `cmdk`), real-time IST operational clock, connectivity & processing-mode status pill, active alert triage slide-over drawer, language selector (English / മലയാളം), and user profile switcher.
+- **Left Tactical Rail**: Thematic grouping (`Operations`, `Intelligence`, `Evidence & Review`, `Configuration`, `Platform`) with unread alert badges, attention count indicators, and collapsible icon-only mode with tooltips.
+- **Main View Area**: Protected by `RouteErrorBoundary` to isolate render errors per route without tearing down the global command shell.
+- **Bottom TideBar Footer**: Continuous health diagnostics showing Feeds Online, GPU Load, Storage Utilization, Edge Node sync, Active Model Bundle (`RTMDet-L v2.4.1`), and Last Sync timestamp.
 
-| Feature | Cognitive Frame Selection (CFS) | Cognitive Keyframe Extraction (CKFE) |
-|---|---|---|
-| **Pipeline Position** | **Pre-Inference** (Front-end frame ingestion) | **Post-Inference** (Post-event evidence generation) |
-| **Primary Objective** | Compute & memory conservation | Evidence preservation & court admissibility |
-| **Mechanism** | Dynamically skips quiescent background frames (dropping from 25 FPS to 8 FPS) until motion/bounding box exceeds baseline | Extracts optimal high-contrast frames, ±90s pre/post roll video, and structured JSON telemetry |
-| **Output** | Streamlined frame tensor fed into RTMDet/ByteTrack | Immutable Evidence-Linked Incident Record (ELIR) signed with SHA-256 |
-| **System Benefit** | Reduces GPU VRAM load by ~68% on 20 concurrent feeds | Minimises court video file sizes while retaining forensic fidelity |
+### 3.2 State Management & Reactive Telemetry
+- **Zustand Global Stores**:
+  - `useAuthStore`: Role-based access control (RBAC), 15×7 permissions matrix, session timeout monitoring (15 min idle).
+  - `useAlertStore`: Operational alerts queue, critical notification banner, unread counters.
+  - `useFeedStore`: 20-32 feed metadata, active feed selection, grid layout (`1x1`, `2x2`, `3x3`, `4x4`), and modality overrides (`RGB`, `THERMAL`, `SPLIT`).
+  - `useMapStore`: Coordinate projections, GIS layer toggles, range rings, zone polygons.
+  - `useMissionStore`: Sortie parameters, pre-flight checklist verification, corridor deviation.
+  - `useHealthStore`: CPU, GPU, VRAM, disk, network, and node cluster diagnostics.
+- **Realtime Stream Abstraction (`src/lib/realtime.ts`)**:
+  - Encapsulates WebSocket and Server-Sent Events (SSE).
+  - Seamlessly toggles between local simulated event bus and remote live backend without modifying view components.
+  - Telemetry bridge maps time-stamped flight data (`lat`, `lon`, `altM`, `speedMs`, `headingDeg`, `gimbalPitchDeg`) directly to HUD overlays and mini-maps.
 
 ---
 
-## 4. Legal & Regulatory Compliance Safeguards
+## 4. API Contract & Data Validation
 
-1. **Human Operational Supremacy**: AI models generate recommendations only. No weaponised, kinetic, or siren automation is permitted. Every tactical response (e.g. "Recommend patrol response", "Notify duty officer") triggers an officer confirmation dialog requiring a mandatory operational reason.
-2. **Descriptive Non-Prejudicial Output**: The platform outputs observable physical behaviours (e.g. "Unscheduled nocturnal beach approach", "Vessel loitering in restricted anchorage"), never legal conclusions or characterisations of intent ("suspect", "smuggler", "criminal").
-3. **Court-Admissible Evidence Dossiers**: All generated ELIR dossiers include cryptographic SHA-256 hashes for video clips, individual keyframes, and the master JSON manifest, establishing an unbroken chain of custody under the Indian Evidence Act.
-4. **Air-Gapped Operation**: System binaries, weights, fonts, and cartographic layers are packaged for 100% offline deployment with zero external network connectivity.
+The frontend communicates with backend services via a strongly typed API client:
+- **Specification**: Driven by `docs/openapi.yaml` (OpenAPI 3.1 standard).
+- **Environment Agnostic**:
+  - `VITE_API_MODE=mock`: Uses local deterministic mocks (`src/lib/mockData.ts`, `src/lib/incidentsData.ts`).
+  - `VITE_API_MODE=live`: Activates `LiveApiClient` with bearer JWT authentication, automatic token refresh, exponential backoff retries, and unified HTTP error wrapping.
+- **Zod Runtime Validation (`src/lib/schemas.ts`)**:
+  - Strict payload validation across alerts, contacts, telemetry samples, missions, zones, audit records, and system health.
+- **Query Key Factory (`src/lib/queryKeys.ts`)**:
+  - Centralized React Query key hierarchy preventing cache collisions and simplifying invalidation.
+
+---
+
+## 5. Security & Air-Gapped Invariants
+
+1. **Zero External CDN Dependencies**: All web fonts (`@fontsource/manrope`, `@fontsource/fraunces`, `@fontsource/jetbrains-mono`), icons (`lucide-react`), and GIS geometries are bundled locally.
+2. **Immutable Audit Ledger**: Every operator action, export, threshold adjustment, and status modification is cryptographically hashed with SHA-256 and chained into the audit log.
+3. **Court-Admissible Evidence Sealing**: Evidence packages (ZIP) contain cryptographic checksums (`manifest.json`), Section 65B Indian Evidence Act / Section 63 Bharatiya Sakshya Adhiniyam compliance certificates, and uncompressed telemetry logs.
+4. **Human-in-the-Loop Safeguard**: Operator feedback or false-positive markings queue exclusively for offline review; deployed inference weights are never modified automatically at runtime.

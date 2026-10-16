@@ -12,9 +12,11 @@ import { useMapStore } from '@/lib/store';
 import { ZONES, CONTACTS, ALERTS } from '@/lib/mockData';
 import { telemetryBus } from '@/lib/telemetry';
 
+import { runtimeConfig } from '@/lib/runtimeConfig';
+
 // OpenStreetMap (OSM) Tile Provider URL
 const DEFAULT_OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_URL = import.meta.env.VITE_MAP_TILE_URL || DEFAULT_OSM_TILE_URL;
+const TILE_URL = runtimeConfig.MAP_TILE_URL || DEFAULT_OSM_TILE_URL;
 
 // High-reliability OpenStreetMap raster style (No external font glyph dependencies)
 function buildOSMStyle(): maplibregl.StyleSpecification {

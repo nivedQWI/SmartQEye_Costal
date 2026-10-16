@@ -25,6 +25,7 @@ import { GuidedTour } from '@/components/GuidedTour';
 import { GlobalSearchDialog } from '@/components/GlobalSearchDialog';
 import { AlertDrawer } from '@/components/AlertDrawer';
 import { ToastContainer } from '@/components/Toast';
+import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import {
   useAlertStore, useAuthStore, useThemeStore,
   useHealthStore, useMissionStore, useLanguageStore
@@ -715,7 +716,9 @@ export function AppShell() {
               tabIndex={-1}
               className="flex-1 overflow-hidden min-h-0 outline-none"
             >
-              <Outlet />
+              <RouteErrorBoundary>
+                <Outlet />
+              </RouteErrorBoundary>
             </main>
 
             {/* ── Status Tide Bar (7A) ── */}

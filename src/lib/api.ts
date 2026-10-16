@@ -24,6 +24,14 @@ import { computeAuditBlockHash, verifyAuditChain, type ChainVerificationResult, 
 import { generateEvidencePackageZip } from './exportEvidence';
 import { KERALA_POLICE_ROSTER, KERALA_COASTAL_STATIONS } from './roster';
 import { DEFAULT_ROLE_PERMISSIONS } from './permissions';
+import { runtimeConfig } from './runtimeConfig';
+import { LiveApiClient } from './liveApiClient';
+import type { ApiClient } from './apiClient';
+export { ApiError } from './apiClient';
+export type { ApiClient } from './apiClient';
+
+const liveClient = new LiveApiClient();
+const isLive = () => runtimeConfig.API_MODE === 'live';
 
 
 // ─── Pagination ──────────────────────────────────────────────
@@ -72,6 +80,7 @@ const delay = (ms = MOCK_LATENCY) => new Promise<void>(r => setTimeout(r, ms));
 
 export const alertsApi = {
   async list(filters: AlertFilters = {}): Promise<Page<Alert>> {
+    if (isLive()) return liveClient.alerts.list(filters);
     await delay();
     let items = [...ALERTS];
     if (filters.severity?.length) items = items.filter(a => filters.severity!.includes(a.severity));
@@ -90,11 +99,13 @@ export const alertsApi = {
   },
 
   async get(id: string): Promise<Alert | null> {
+    if (isLive()) return liveClient.alerts.get(id);
     await delay();
     return ALERTS.find(a => a.id === id) ?? null;
   },
 
   async acknowledge(id: string, note?: string): Promise<Alert> {
+    if (isLive()) return liveClient.alerts.acknowledge(id, note);
     await delay();
     const alert = ALERTS.find(a => a.id === id);
     if (!alert) throw new Error('Alert not found');
