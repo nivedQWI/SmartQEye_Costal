@@ -1,0 +1,112 @@
+SmartQEye Coastal — Root Directory Tree Structure
+Directory: D:\COSTAL_DEMO
+
+Folder PATH listing
+D:\COSTAL_DEMO
+|   .dockerignore
+|   .env.example
+|   .gitignore
+|   .oxlintrc.json
+|   docker-compose.yml
+|   Dockerfile
+|   index.html
+|   nginx.conf
+|   package-lock.json
+|   package.json
+|   plan.md
+|   README.md
+|   tree_structure.txt
+|   tsconfig.app.json
+|   tsconfig.json
+|   tsconfig.node.json
+|   vite.config.ts
+|   
++---.github
+|   \---workflows
+|           docker-build.yml
+|           
++---public
+|       coastal_harbor_bg.png
+|       favicon.svg
+|       icons.svg
+|       QW_logo.png
+|       
+\---src
+    |   App.tsx
+    |   index.css
+    |   main.tsx
+    |   vite-env.d.ts
+    |   
+    +---assets
+    |       hero.png
+    |       react.svg
+    |       vite.svg
+    |       
+    +---components
+    |       AppShell.tsx
+    |       CoastalMap.tsx
+    |       ComingSoon.tsx
+    |       FeedStateChip.tsx
+    |       ISTClock.tsx
+    |       SeverityChip.tsx
+    |       
+    +---features
+    |   +---alerts
+    |   |       AlertDetail.tsx
+    |   |       AlertQueue.tsx
+    |   |       
+    |   +---anomaly
+    |   |       AnomalyMonitorPage.tsx
+    |   |       
+    |   +---command
+    |   |       CommandCenter.tsx
+    |   |       
+    |   +---crowd
+    |   |       CrowdAnalyticsPage.tsx
+    |   |       
+    |   +---health
+    |   |       SystemHealth.tsx
+    |   |       
+    |   +---history
+    |   |       HistoryPlayback.tsx
+    |   |       
+    |   +---intrusion
+    |   |       IntrusionDetectionPage.tsx
+    |   |       
+    |   +---live
+    |   |       LiveMonitor.tsx
+    |   |       
+    |   +---login
+    |   |       LoginPage.tsx
+    |   |       
+    |   +---map
+    |   |       MapGIS.tsx
+    |   |       
+    |   +---missions
+    |   |       MissionsPage.tsx
+    |   |       
+    |   +---models
+    |   |       AIModelsPage.tsx
+    |   |       
+    |   +---person-reid
+    |   |       PersonReidPage.tsx
+    |   |       
+    |   +---reports
+    |   |       ReportsPage.tsx
+    |   |       
+    |   +---styleguide
+    |   |       StyleGuide.tsx
+    |   |       
+    |   \---vehicle-maritime
+    |           VehicleMaritimePage.tsx
+    |           
+    +---lib
+    |       api.ts
+    |       i18n.ts
+    |       mockData.ts
+    |       simulator.ts
+    |       store.ts
+    |       utils.ts
+    |       
+    \---types
+            index.ts
