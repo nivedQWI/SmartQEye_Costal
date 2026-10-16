@@ -206,7 +206,11 @@ export const INITIAL_FEEDS: Feed[] = [
 
 // ─── Contacts ─────────────────────────────────────────────────
 
-const CONTACT_CLASSES: ContactClass[] = ['VESSEL', 'SMALL_CRAFT', 'FISHING_BOAT', 'PERSON', 'VEHICLE', 'UNKNOWN'];
+const CONTACT_CLASSES: ContactClass[] = [
+  'VESSEL', 'SMALL_CRAFT', 'FISHING_BOAT', 'UNKNOWN_VESSEL',
+  'MECHANISED_TRAWLER', 'MOTORISED_COUNTRY_CRAFT', 'TRADITIONAL_WOODEN_CRAFT',
+  'CANOE_CATAMARAN', 'RECREATIONAL_CRAFT', 'PERSON', 'VEHICLE', 'UNKNOWN'
+];
 
 const CONTACT_LOCATIONS = [
   { lat: 8.379, lon: 76.981 }, { lat: 8.397, lon: 76.992 }, { lat: 8.321, lon: 76.963 },
@@ -222,8 +226,18 @@ export const CONTACTS: Contact[] = Array.from({ length: 40 }, (_, i) => {
   const cls = CONTACT_CLASSES[i % CONTACT_CLASSES.length];
   const loc = CONTACT_LOCATIONS[i % CONTACT_LOCATIONS.length];
   const clsLabels: Record<ContactClass, string> = {
-    VESSEL: 'Vessel', SMALL_CRAFT: 'Vessel › Small Craft', FISHING_BOAT: 'Vessel › Fishing Boat',
-    PERSON: 'Person', VEHICLE: 'Vehicle', UNKNOWN: 'Unknown',
+    VESSEL: 'Vessel',
+    SMALL_CRAFT: 'Vessel › Small Craft',
+    FISHING_BOAT: 'Vessel › Fishing Boat',
+    UNKNOWN_VESSEL: 'Vessel › Unknown Vessel',
+    MECHANISED_TRAWLER: 'Vessel › Mechanised Trawler',
+    MOTORISED_COUNTRY_CRAFT: 'Vessel › Motorised Country Craft',
+    TRADITIONAL_WOODEN_CRAFT: 'Vessel › Traditional Wooden Craft',
+    CANOE_CATAMARAN: 'Vessel › Canoe / Catamaran',
+    RECREATIONAL_CRAFT: 'Vessel › Recreational Craft',
+    PERSON: 'Person',
+    VEHICLE: 'Vehicle',
+    UNKNOWN: 'Unknown',
   };
   return {
     id: `c-${String(1030 + i).padStart(4, '0')}`,

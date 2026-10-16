@@ -10,8 +10,20 @@ import type { Geometry } from 'geojson';
 export type Severity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AttentionLevel = 'RECORD_ONLY' | 'MONITOR' | 'ATTENTION' | 'CRITICAL';
 export type AlertStatus = 'NEW' | 'ACKNOWLEDGED' | 'ASSIGNED' | 'UNDER_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'FALSE_ALERT' | 'CLOSED';
-export type ContactClass = 'VESSEL' | 'SMALL_CRAFT' | 'FISHING_BOAT' | 'PERSON' | 'VEHICLE' | 'UNKNOWN';
 export type FeedState = 'LIVE' | 'BUFFERING' | 'NO_SIGNAL' | 'RECORDED' | 'EDGE_SYNC_LAG';
+export type ContactClass =
+  | 'VESSEL'
+  | 'SMALL_CRAFT'
+  | 'FISHING_BOAT'
+  | 'UNKNOWN_VESSEL'
+  | 'MECHANISED_TRAWLER'
+  | 'MOTORISED_COUNTRY_CRAFT'
+  | 'TRADITIONAL_WOODEN_CRAFT'
+  | 'CANOE_CATAMARAN'
+  | 'RECREATIONAL_CRAFT'
+  | 'PERSON'
+  | 'VEHICLE'
+  | 'UNKNOWN';
 export type Modality = 'RGB' | 'THERMAL';
 export type ZoneType = 'RESTRICTED' | 'MONITORED' | 'FISHING' | 'TOURISM' | 'HARBOUR' | 'BEACH' | 'ESTUARY' | 'OPEN_SEA';
 export type MissionStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'ABORTED';
@@ -169,6 +181,10 @@ export interface Contact {
   classLabel: string;
   classConf: number;
   continuityConf: number;
+  isBroadClass?: boolean;
+  broadClassReason?: string;
+  fineGrainedType?: string;
+  classificationConf?: number;
   firstSeenAt: string;
   lastSeenAt: string;
   lastLocation?: Location;
@@ -448,7 +464,7 @@ export interface CrowdAnalyticsSample {
   activeAlerts: number;
   densityStatus: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   densityPpm2: number;
-  activeModel: 'CSRNet-A' | 'CSRNet-B' | 'DM-Count' | 'YOLO-Crowd';
+  activeModel: 'CSRNet-A' | 'CSRNet-B' | 'DM-Count' | 'RTMDet-Crowd';
   zones: CrowdZoneDensity[];
   trendHistory: Array<{ time: string; count: number; threshold: number }>;
 }
@@ -523,7 +539,7 @@ export type AnomalyType =
   | 'LOITERING'
   | 'FLEEING'
   | 'SUDDEN_FALL'
-  | 'WEAPON_BRANDISHING'
+  | 'OBJECT_OF_INTEREST_MANUAL_REVIEW'
   | 'WRONG_WAY_DRIVING'
   | 'ABRUPT_STOP'
   | 'ERRATIC_SPEEDING';
@@ -546,6 +562,7 @@ export interface AiModelItem {
   id: string;
   name: string;
   version: string;
+  licence: string;
   task: 'TARGET_DETECTION' | 'OBJECT_TRACKING' | 'FACE_RECOGNITION' | 'ANPR_OCR' | 'CROWD_DENSITY' | 'BEHAVIOR_ANOMALY';
   framework: string;
   vramMb: number;

@@ -16,7 +16,8 @@ import {
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { cn, formatPct } from '@/lib/utils';
 import { ISTClock } from '@/components/ISTClock';
-import { useAlertStore, useAuthStore, useThemeStore, useHealthStore, useMissionStore } from '@/lib/store';
+import { useAlertStore, useAuthStore, useThemeStore, useHealthStore, useMissionStore, useLanguageStore } from '@/lib/store';
+import { t, type TranslationKey } from '@/lib/i18n';
 import { simulator } from '@/lib/simulator';
 import type { UserRole } from '@/types';
 
@@ -24,13 +25,15 @@ import type { UserRole } from '@/types';
 
 interface NavEntry {
   to: string;
-  label: string;
+  labelKey: TranslationKey;
+  defaultLabel: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number; style?: React.CSSProperties }>;
   roles: UserRole[];
 }
 
 interface NavSection {
   title: string;
+  titleMl: string;
   items: NavEntry[];
 }
 
@@ -39,32 +42,35 @@ const ALL_ROLES: UserRole[] = ['OPERATOR', 'ANALYST', 'SUPERVISOR', 'ZONE_ADMIN'
 const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Tactical Ops',
+    titleMl: 'ടാക്ടിക്കൽ ഓപ്സ്',
     items: [
-      { to: '/',                 label: 'Command Center',      icon: LayoutDashboard, roles: ALL_ROLES },
-      { to: '/live',             label: 'Live Monitor',        icon: Monitor,         roles: ALL_ROLES },
-      { to: '/alerts',           label: 'Alerts',              icon: Bell,            roles: ALL_ROLES },
-      { to: '/missions',         label: 'Missions & Sorties',  icon: Anchor,          roles: ALL_ROLES },
-      { to: '/map',              label: 'Map / GIS',           icon: Map,             roles: ALL_ROLES },
-      { to: '/history',          label: 'History Playback',    icon: History,         roles: ALL_ROLES },
+      { to: '/',                 labelKey: 'nav_command_center', defaultLabel: 'Command Center',     icon: LayoutDashboard, roles: ALL_ROLES },
+      { to: '/live',             labelKey: 'nav_live',           defaultLabel: 'Live Monitor',       icon: Monitor,         roles: ALL_ROLES },
+      { to: '/alerts',           labelKey: 'nav_alerts',         defaultLabel: 'Alerts',             icon: Bell,            roles: ALL_ROLES },
+      { to: '/missions',         labelKey: 'nav_missions',       defaultLabel: 'Missions & Sorties', icon: Anchor,          roles: ALL_ROLES },
+      { to: '/map',              labelKey: 'nav_map',            defaultLabel: 'Map / GIS',          icon: Map,             roles: ALL_ROLES },
+      { to: '/history',          labelKey: 'nav_history',        defaultLabel: 'History Playback',   icon: History,         roles: ALL_ROLES },
     ]
   },
   {
     title: 'AI Analytics',
+    titleMl: 'എ.ഐ അനലിറ്റിക്സ്',
     items: [
-      { to: '/crowd-analytics',    label: 'Crowd Analytics',     icon: Users,           roles: ALL_ROLES },
-      { to: '/vehicle-maritime',   label: 'Vehicle & Maritime',  icon: Car,             roles: ALL_ROLES },
-      { to: '/person-reid',        label: 'Person Re-ID',        icon: ScanFace,        roles: ALL_ROLES },
-      { to: '/intrusion-detection',label: 'Intrusion Geofence',  icon: ShieldAlert,     roles: ALL_ROLES },
-      { to: '/anomaly-monitor',    label: 'Anomaly Monitor',     icon: AlertOctagon,    roles: ALL_ROLES },
+      { to: '/crowd-analytics',    labelKey: 'nav_crowd',     defaultLabel: 'Crowd Analytics',     icon: Users,           roles: ALL_ROLES },
+      { to: '/vehicle-maritime',   labelKey: 'nav_vehicle',   defaultLabel: 'Vehicle & Maritime',  icon: Car,             roles: ALL_ROLES },
+      { to: '/person-reid',        labelKey: 'nav_reid',      defaultLabel: 'Person Re-ID',        icon: ScanFace,        roles: ALL_ROLES },
+      { to: '/intrusion-detection',labelKey: 'nav_intrusion', defaultLabel: 'Intrusion Geofence',  icon: ShieldAlert,     roles: ALL_ROLES },
+      { to: '/anomaly-monitor',    labelKey: 'nav_anomaly',   defaultLabel: 'Anomaly Monitor',     icon: AlertOctagon,    roles: ALL_ROLES },
     ]
   },
   {
     title: 'System & Reports',
+    titleMl: 'സിസ്റ്റം & റിപ്പോർട്ടുകൾ',
     items: [
-      { to: '/reports',          label: 'Police Reports',      icon: FileText,        roles: ALL_ROLES },
-      { to: '/models',           label: 'AI Models Cluster',   icon: Cpu,             roles: ALL_ROLES },
-      { to: '/health',           label: 'System Health',       icon: Activity,        roles: ALL_ROLES },
-      { to: '/admin',            label: 'Administration',      icon: Shield,          roles: ['SYS_ADMIN', 'SUPERVISOR', 'AUDITOR'] },
+      { to: '/reports',          labelKey: 'nav_reports', defaultLabel: 'Police Reports',    icon: FileText,        roles: ALL_ROLES },
+      { to: '/models',           labelKey: 'nav_models',  defaultLabel: 'AI Models Cluster', icon: Cpu,             roles: ALL_ROLES },
+      { to: '/health',           labelKey: 'nav_health',  defaultLabel: 'System Health',     icon: Activity,        roles: ALL_ROLES },
+      { to: '/admin',            labelKey: 'nav_admin',   defaultLabel: 'Administration',    icon: Shield,          roles: ['SYS_ADMIN', 'SUPERVISOR', 'AUDITOR'] },
     ]
   }
 ];
@@ -81,6 +87,7 @@ export function AppShell() {
   const { criticalBanner, unreadCount, addAlert, dismissBanner } = useAlertStore();
   const { updateHealth } = useHealthStore();
   const { missions, activeMissionId, setActiveMission } = useMissionStore();
+  const { language, setLanguage } = useLanguageStore();
   const navigate = useNavigate();
 
   const activeMission = missions.find(m => m.id === activeMissionId);
@@ -179,60 +186,63 @@ export function AppShell() {
                 {/* Section title (visible when expanded) */}
                 {!collapsed && (
                   <div className="px-3 pt-2 pb-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-80">
-                    {section.title}
+                    {language === 'ml' ? section.titleMl : section.title}
                   </div>
                 )}
 
-                {visibleItems.map(item => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === '/'}
-                    title={collapsed ? item.label : undefined}
-                    className={({ isActive }) => cn(
-                      'flex items-center gap-3 mx-1 my-0.5 rounded-lg transition-all duration-150 group relative',
-                      collapsed ? 'px-0 justify-center h-10' : 'px-3 py-2',
-                      isActive
-                        ? 'font-semibold shadow-xs'
-                        : 'opacity-75 hover:opacity-100 hover:bg-[var(--surface-hover)]',
-                    )}
-                    style={({ isActive }) => ({
-                      background: isActive ? 'var(--sea-200)' : 'transparent',
-                      color: isActive ? 'var(--sea-600)' : 'var(--text)',
-                    })}
-                  >
-                    {({ isActive }) => (
-                      <>
-                        {/* Active bar */}
-                        {isActive && (
-                          <span
-                            className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full"
-                            style={{ background: 'var(--sea-600)' }}
+                {visibleItems.map(item => {
+                  const itemLabel = t(item.labelKey, language) || item.defaultLabel;
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.to === '/'}
+                      title={collapsed ? itemLabel : undefined}
+                      className={({ isActive }) => cn(
+                        'flex items-center gap-3 mx-1 my-0.5 rounded-lg transition-all duration-150 group relative',
+                        collapsed ? 'px-0 justify-center h-10' : 'px-3 py-2',
+                        isActive
+                          ? 'font-semibold shadow-xs'
+                          : 'opacity-75 hover:opacity-100 hover:bg-[var(--surface-hover)]',
+                      )}
+                      style={({ isActive }) => ({
+                        background: isActive ? 'var(--sea-200)' : 'transparent',
+                        color: isActive ? 'var(--sea-600)' : 'var(--text)',
+                      })}
+                    >
+                      {({ isActive }) => (
+                        <>
+                          {/* Active bar */}
+                          {isActive && (
+                            <span
+                              className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full"
+                              style={{ background: 'var(--sea-600)' }}
+                            />
+                          )}
+
+                          {/* Icon */}
+                          <item.icon
+                            className={cn('flex-shrink-0', collapsed ? 'w-5 h-5' : 'w-4 h-4')}
+                            strokeWidth={isActive ? 2.5 : 1.9}
+                            style={{ color: isActive ? 'var(--sea-600)' : 'inherit' }}
                           />
-                        )}
 
-                        {/* Icon */}
-                        <item.icon
-                          className={cn('flex-shrink-0', collapsed ? 'w-5 h-5' : 'w-4 h-4')}
-                          strokeWidth={isActive ? 2.5 : 1.9}
-                          style={{ color: isActive ? 'var(--sea-600)' : 'inherit' }}
-                        />
+                          {/* Label — clearly visible */}
+                          {!collapsed && (
+                            <span className="text-[13px] font-medium truncate flex-1">
+                              {itemLabel}
+                            </span>
+                          )}
 
-                        {/* Label — clearly visible */}
-                        {!collapsed && (
-                          <span className="text-[13px] font-medium truncate flex-1">
-                            {item.label}
-                          </span>
-                        )}
-
-                        {/* Chevron indicator for active item */}
-                        {!collapsed && isActive && (
-                          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
-                        )}
-                      </>
-                    )}
-                  </NavLink>
-                ))}
+                          {/* Chevron indicator for active item */}
+                          {!collapsed && isActive && (
+                            <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
               </div>
             );
           })}
@@ -328,6 +338,27 @@ export function AppShell() {
           </DropdownMenu.Root>
 
           <div className="flex-1" />
+
+          {/* DEMO / SIMULATED DATA Header Chip */}
+          {import.meta.env.VITE_DEMO_MODE !== 'false' && (
+            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span>DEMO · SIMULATED DATA</span>
+            </div>
+          )}
+
+          {/* Malayalam / English Language Toggle */}
+          <button
+            onClick={() => setLanguage(language === 'en' ? 'ml' : 'en')}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]"
+            style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
+            title={language === 'en' ? 'Switch to Malayalam (മലയാളം)' : 'Switch to English'}
+            aria-label="Toggle language"
+          >
+            <span className={cn(language === 'en' ? 'text-[var(--sea-600)] font-bold' : 'opacity-60')}>EN</span>
+            <span className="opacity-40">/</span>
+            <span className={cn(language === 'ml' ? 'text-[var(--sea-600)] font-bold' : 'opacity-60')}>മലയാളം</span>
+          </button>
 
           {/* IST Clock */}
           <ISTClock />
@@ -426,28 +457,33 @@ export function AppShell() {
                   <div className="text-xs opacity-50 font-mono">{user?.username}</div>
                 </div>
 
-                <div className="px-3 py-1 text-[10px] uppercase tracking-widest font-semibold opacity-40">
-                  Dev · Switch Role
-                </div>
-                {ROLES.map(role => (
-                  <DropdownMenu.Item
-                    key={role}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-xs transition-colors outline-none',
-                      'hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]',
-                      devRole === role && 'font-semibold',
-                    )}
-                    onSelect={() => setDevRole(role)}
-                  >
-                    <Shield className="w-3 h-3 opacity-40 flex-shrink-0" />
-                    <span>{role.replace(/_/g, ' ')}</span>
-                    {devRole === role && (
-                      <span className="ml-auto text-xs" style={{ color: 'var(--sea-600)' }}>✓</span>
-                    )}
-                  </DropdownMenu.Item>
-                ))}
+                {/* Dev role switcher - only shown in development */}
+                {import.meta.env.DEV && (
+                  <>
+                    <div className="px-3 py-1 text-[10px] uppercase tracking-widest font-semibold opacity-40">
+                      Dev · Switch Role
+                    </div>
+                    {ROLES.map(role => (
+                      <DropdownMenu.Item
+                        key={role}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-xs transition-colors outline-none',
+                          'hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]',
+                          devRole === role && 'font-semibold',
+                        )}
+                        onSelect={() => setDevRole(role)}
+                      >
+                        <Shield className="w-3 h-3 opacity-40 flex-shrink-0" />
+                        <span>{role.replace(/_/g, ' ')}</span>
+                        {devRole === role && (
+                          <span className="ml-auto text-xs" style={{ color: 'var(--sea-600)' }}>✓</span>
+                        )}
+                      </DropdownMenu.Item>
+                    ))}
+                    <DropdownMenu.Separator className="my-1 h-px" style={{ background: 'var(--line)' }} />
+                  </>
+                )}
 
-                <DropdownMenu.Separator className="my-1 h-px" style={{ background: 'var(--line)' }} />
                 <DropdownMenu.Item
                   className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors outline-none"
                   onSelect={logout}

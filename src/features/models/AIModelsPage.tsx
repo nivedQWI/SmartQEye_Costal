@@ -7,7 +7,7 @@ import { useState } from 'react';
 import {
   Cpu, Play, Square, RefreshCw, CheckCircle2,
   AlertTriangle, HardDrive, Zap, Sliders, Radio,
-  Activity, Layers
+  Activity, Layers, Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
@@ -17,10 +17,11 @@ export default function AIModelsPage() {
   const [models, setModels] = useState<AiModelItem[]>([
     {
       id: 'mod-1',
-      name: 'YOLOv8x / RT-DETRv2',
-      version: 'v8.4.1-coastal',
+      name: 'RTMDet-x / RT-DETRv2',
+      version: 'v2.4.1-coastal',
+      licence: 'Apache-2.0',
       task: 'TARGET_DETECTION',
-      framework: 'PyTorch / TensorRT 10.2',
+      framework: 'OpenMMLab / TensorRT 10.2',
       vramMb: 3450,
       state: 'ACTIVE',
       assignedDroneCodes: ['UAV-KL-01', 'UAV-KL-02', 'UAV-KL-03', 'UAV-KL-04'],
@@ -31,6 +32,7 @@ export default function AIModelsPage() {
       id: 'mod-2',
       name: 'ByteTrack Multi-Object Tracker',
       version: 'v2.1.0',
+      licence: 'MIT',
       task: 'OBJECT_TRACKING',
       framework: 'C++ CUDA Plugin',
       vramMb: 850,
@@ -43,6 +45,7 @@ export default function AIModelsPage() {
       id: 'mod-3',
       name: 'PaddleOCR / CRNN License Plate',
       version: 'v2.8-in-anpr',
+      licence: 'Apache-2.0',
       task: 'ANPR_OCR',
       framework: 'PaddleInference / ONNX',
       vramMb: 1950,
@@ -53,8 +56,9 @@ export default function AIModelsPage() {
     },
     {
       id: 'mod-4',
-      name: 'FaceNet / ArcFace Deep Re-ID',
+      name: 'OSNet-IBN / ArcFace Re-ID',
       version: 'v1.4.2-r100',
+      licence: 'Permissive — to be confirmed',
       task: 'FACE_RECOGNITION',
       framework: 'InsightFace / TensorRT',
       vramMb: 2400,
@@ -67,6 +71,7 @@ export default function AIModelsPage() {
       id: 'mod-5',
       name: 'CSRNet Density Estimator',
       version: 'v3.0.1-crowd',
+      licence: 'MIT',
       task: 'CROWD_DENSITY',
       framework: 'PyTorch CUDA 12.4',
       vramMb: 2100,
@@ -79,6 +84,7 @@ export default function AIModelsPage() {
       id: 'mod-6',
       name: 'SlowFast Behavior Anomaly',
       version: 'v2.0-action',
+      licence: 'Apache-2.0',
       task: 'BEHAVIOR_ANOMALY',
       framework: 'TorchVision / TensorRT',
       vramMb: 4200,
@@ -176,7 +182,7 @@ export default function AIModelsPage() {
             <Zap className="w-4 h-4 text-teal-600" />
           </div>
           <div className="text-xl font-bold font-mono">174.2 FPS</div>
-          <div className="text-[11px] opacity-70 font-mono mt-0.5">Across 6 Drone Feeds</div>
+          <div className="text-[11px] opacity-70 font-mono mt-0.5">Target — to be benchmarked on approved infrastructure</div>
         </div>
 
         <div className="rounded-2xl p-4 border shadow-sm" style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}>
@@ -185,7 +191,20 @@ export default function AIModelsPage() {
             <Activity className="w-4 h-4 text-sky-600" />
           </div>
           <div className="text-xl font-bold font-mono">18.8 ms</div>
-          <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">Real-Time Bound (&lt;33ms)</div>
+          <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">Target — to be benchmarked on approved infrastructure</div>
+        </div>
+      </div>
+
+      {/* ── Human-in-the-Loop Policy Banner (RFP §11, Proposal §5.1.29) ── */}
+      <div className="rounded-2xl p-4 border bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-xs flex items-start gap-3">
+        <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <div className="font-bold text-blue-900 dark:text-blue-200 mb-0.5">
+            Human-in-the-Loop & Model Governance Policy (RFP §11 / Proposal §5.1.29)
+          </div>
+          <p className="text-blue-800/80 dark:text-blue-300/80 leading-relaxed">
+            Operator feedback, triage dispositions, and manual bounding adjustments are routed directly to the curated offline training dataset queue. Deployed neural models are never automatically retrained or updated online without formal forensic validation and custodian sign-off.
+          </p>
         </div>
       </div>
 
@@ -212,6 +231,7 @@ export default function AIModelsPage() {
               <tr className="border-b font-mono opacity-60 uppercase text-[11px]" style={{ borderColor: 'var(--line)' }}>
                 <th className="py-2.5 px-3">Model Name &amp; Task</th>
                 <th className="py-2.5 px-3">Engine / Framework</th>
+                <th className="py-2.5 px-3">Licence</th>
                 <th className="py-2.5 px-3">VRAM</th>
                 <th className="py-2.5 px-3">Status</th>
                 <th className="py-2.5 px-3">Assigned Drones (Check to Hot-Swap)</th>
@@ -235,6 +255,13 @@ export default function AIModelsPage() {
 
                   {/* Engine */}
                   <td className="py-3 px-3 font-mono opacity-75">{m.framework}</td>
+
+                  {/* Licence */}
+                  <td className="py-3 px-3 font-mono font-semibold">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono border bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                      {m.licence}
+                    </span>
+                  </td>
 
                   {/* VRAM */}
                   <td className="py-3 px-3 font-mono font-semibold">{m.vramMb} MB</td>

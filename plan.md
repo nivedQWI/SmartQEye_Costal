@@ -18,7 +18,7 @@ The update transitions the platform from generic prototype stubs to a comprehens
 2. **Transformed from Stubs to Full Production UI**:
    - 🚀 **Missions Page (`/missions`)**: Full sortie setup, standardized Mission ID generator (`MSN-YYYYMMDD-HHMM-SS-SQUADRON`), live status banner, video source selector (RTMP/RTSP/Upload + .srt), transmission controls, and historical mission log.
    - 🚀 **Reports Page (`/reports`)**: On-demand generator for 4 formal Kerala Police reports (Daily Incident Summary, Weekly SLA Audit, 30-Day Fleet Utilization, Mission After-Action Report AAR) with PDF download ledger.
-   - 🚀 **AI Models Page (`/models`)**: GPU cluster model management (YOLOv8, RT-DETRv2, ByteTrack, FaceNet, ANPR OCR, CSRNet), hot-swap toggles, and live status pills per drone feed.
+   - 🚀 **AI Models Page (`/models`)**: GPU cluster model management (RTMDet-x, RT-DETRv2, ByteTrack, OSNet-IBN, ANPR OCR, CSRNet), hot-swap toggles, and live status pills per drone feed.
 3. **New Specialized AI Analytics Pages Added**:
    - 🌟 **Crowd Analytics (`/crowd-analytics`)**: Head count KPIs, live density heatmaps, 24h area timeline chart, density level distribution table, surge/stampede threshold alarms, PDF/CSV export.
    - 🌟 **Vehicle & Maritime Analytics (`/vehicle-maritime`)**: Dual-mode segmented switcher:
@@ -83,7 +83,7 @@ The navigation in the sidebar will be organized into logical operator sections:
 | `/person-reid` | `PersonReidPage` | **NEW Page** | Cross-camera person Re-ID, face crop gallery, watchlist hits |
 | `/intrusion-detection` | `IntrusionDetectionPage` | **NEW Page** | Polygon geofence breaches, real-time perimeter alarms, review timeline |
 | `/anomaly-monitor` | `AnomalyMonitorPage` | **NEW Page** | Abnormal behavior detection (person/traffic), risk scores, clip replay |
-| `/models` | `AIModelsPage` | **NEW Implementation** | GPU cluster model hot-swap, YOLOv8/CSRNet/FaceNet feed toggles |
+| `/models` | `AIModelsPage` | **NEW Implementation** | GPU cluster model hot-swap, RTMDet/CSRNet/OSNet-IBN feed toggles |
 | `/reports` | `ReportsPage` | **NEW Implementation** | 4 formal police reports generator (PDF), audit ledger |
 | `/history` | `HistoryPlayback` | Existing | Faceted historical search, list/map/timeline views |
 | `/health` | `SystemHealth` | Enhanced | 6 hardware SVG donut gauges + rolling timeline graph |
@@ -127,7 +127,7 @@ The navigation in the sidebar will be organized into logical operator sections:
 **Location:** `src/features/crowd/CrowdAnalyticsPage.tsx`
 - **Top Controls**:
   - Drone feed selector pills (`UAV-KL-01`, `UAV-KL-02`, etc.).
-  - Model selector dropdown: `CSRNet Part A (Dense)`, `CSRNet Part B (Sparse)`, `DM-Count`, `YOLOv8-Crowd`.
+  - Model selector dropdown: `CSRNet Part A (Dense)`, `CSRNet Part B (Sparse)`, `DM-Count`, `RTMDet-Crowd`.
   - Date/time range selector.
   - Export buttons: "Export PDF Report" & "Export CSV Data".
 - **4 KPI Cards Strip**:
@@ -157,7 +157,7 @@ The navigation in the sidebar will be organized into logical operator sections:
   4. `Plates Detected`: Cumulative license plate readings (`text-sky-600`).
   5. `Watchlist Matches`: Red alert counter for stolen/wanted vehicle hits (`text-red-600 animate-pulse`).
 - **Main Split (55% / 45%)**:
-  - **Left (55%)**: Dual-layer video feed (Raw feed vs. YOLOv8 + PaddleOCR annotated video showing vehicle bounding boxes and license plate crop tags).
+  - **Left (55%)**: Dual-layer video feed (Raw feed vs. RTMDet-x + PaddleOCR annotated video showing vehicle bounding boxes and license plate crop tags).
   - **Right (45%)**: Real-time ANPR Ledger:
     - Search & filter bar by plate string.
     - Live feed table: Plate string, Vehicle class (Car/Bike/Truck/Bus), Confidence %, Thumbnail crop, Timestamp, Watchlist Status.
@@ -238,7 +238,7 @@ The navigation in the sidebar will be organized into logical operator sections:
   - GPU Cluster health (NVIDIA RTX 4090 / A100), Active Workers, Model VRAM Allocation, Total Inferences/sec.
 - **Model Registry & Dynamic Deployment Matrix**:
   - Table of available neural network models:
-    - `YOLOv8x / RT-DETRv2` — Object & Target Detection
+    - `RTMDet-x / RT-DETRv2` — Object & Target Detection
     - `ByteTrack / BoT-SORT` — Multi-Object Tracking & Continuity
     - `FaceNet / ArcFace` — Face Recognition & Feature Vectors
     - `PaddleOCR / CRNN` — License Plate Recognition (ANPR)
@@ -420,7 +420,7 @@ flowchart TD
 - [ ] Intrusion Detection page displays virtual polygon boundaries and boundary breach alarms.
 - [ ] Anomaly Monitor page categorizes person & traffic anomalies with instant clip replay.
 - [ ] Reports page enables on-demand generation of all 4 formal police reports with PDF download ledger.
-- [ ] AI Models page manages GPU cluster models (YOLOv8, ByteTrack, FaceNet, ANPR, CSRNet) with per-feed hot-swap pills.
+- [ ] AI Models page manages GPU cluster models (RTMDet-x, RT-DETRv2, ByteTrack, OSNet-IBN, ANPR, CSRNet) with per-feed hot-swap pills.
 - [ ] System Health page features the 6 SVG hardware donut gauges and rolling timeline graph.
 - [ ] Map page includes interactive geofence polygon tool, digital compass, and telemetry readout.
 - [ ] Build succeeds with exit code 0 (`npm run build`).

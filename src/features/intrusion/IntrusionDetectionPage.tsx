@@ -68,7 +68,7 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
     severity: 'CRITICAL',
     dwellTimeSec: 84,
     timestamp: '19:42:10 IST',
-    snapshotUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%237f1d1d"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">TARGET-TRK-9041</text></svg>',
     status: 'ACTIVE'
   },
   {
@@ -80,7 +80,7 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
     severity: 'HIGH',
     dwellTimeSec: 210,
     timestamp: '19:15:32 IST',
-    snapshotUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=150&q=80',
+    snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%230c4a6e"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">VESSEL-DHOW-09</text></svg>',
     status: 'DISPATCHED'
   },
   {
@@ -92,7 +92,7 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
     severity: 'MEDIUM',
     dwellTimeSec: 45,
     timestamp: '18:50:18 IST',
-    snapshotUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%23b45309"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">TARGET-TRK-8812</text></svg>',
     status: 'RESOLVED'
   },
   {
@@ -104,7 +104,7 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
     severity: 'HIGH',
     dwellTimeSec: 12,
     timestamp: '17:30:45 IST',
-    snapshotUrl: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=150&q=80',
+    snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%231e293b"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">VESSEL-KERALA-33</text></svg>',
     status: 'ACKNOWLEDGED'
   }
 ];
@@ -128,7 +128,7 @@ export default function IntrusionDetectionPage() {
       severity: 'CRITICAL',
       dwellTimeSec: 8,
       timestamp: new Date().toLocaleTimeString('en-IN', { hour12: false }) + ' IST',
-      snapshotUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
+      snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%23dc2626"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">SIMULATED BREACH</text></svg>',
       status: 'ACTIVE'
     };
     setIntrusions(prev => [newBreach, ...prev]);

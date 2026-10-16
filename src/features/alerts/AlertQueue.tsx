@@ -482,6 +482,11 @@ export default function AlertQueue() {
           </div>
         )}
       </div>
+
+      {/* ── Mandatory Decision-Support Disclaimer Footer (Rule 7) ── */}
+      <footer className="text-center py-2 text-xs font-mono opacity-70 border-t flex-shrink-0" style={{ borderColor: 'var(--line)', color: 'var(--text-muted)' }}>
+        Observed behaviour only. Operational interpretation and action rest with authorised Kerala Police personnel.
+      </footer>
     </div>
   );
 }

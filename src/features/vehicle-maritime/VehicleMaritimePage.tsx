@@ -10,6 +10,7 @@ import {
   Gauge, Compass, ArrowUpRight, Radio, Filter, Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/lib/store';
 import { VehicleAnprRecord, MaritimeTrackRecord } from '@/types';
 
 // Mock initial ANPR data
@@ -21,8 +22,8 @@ const INITIAL_VEHICLES: VehicleAnprRecord[] = [
     confidence: 0.984,
     speedKmh: 46,
     isWatchlistMatch: true,
-    watchlistReason: 'FLAGGED: Suspect vehicle linked to Vizhinjam Harbor Smuggling Case #142/26',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=150&q=80',
+    watchlistReason: 'FLAGGED: Authorised watchlist contact of interest in coastal checkpoint transit (Ref: #142/26)',
+    thumbnailUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%230f172a"/><rect x="15" y="60" width="120" height="25" rx="3" fill="%23ffffff"/><text x="75" y="77" fill="%230f172a" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">KL-01-CB-4092</text></svg>',
     timestamp: '19:42:15 IST',
     droneCode: 'UAV-KL-01',
     locationName: 'Kovalam Beach Road / Junction 4'
@@ -34,7 +35,7 @@ const INITIAL_VEHICLES: VehicleAnprRecord[] = [
     confidence: 0.962,
     speedKmh: 32,
     isWatchlistMatch: false,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=150&q=80',
+    thumbnailUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%231e293b"/><rect x="15" y="60" width="120" height="25" rx="3" fill="%23ffffff"/><text x="75" y="77" fill="%230f172a" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">KL-16-J-8812</text></svg>',
     timestamp: '19:41:40 IST',
     droneCode: 'UAV-KL-01',
     locationName: 'Vizhinjam Port Coastal Bypass'
@@ -46,7 +47,7 @@ const INITIAL_VEHICLES: VehicleAnprRecord[] = [
     confidence: 0.991,
     speedKmh: 28,
     isWatchlistMatch: false,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1596733430284-f7437764b1a9?auto=format&fit=crop&w=150&q=80',
+    thumbnailUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%230284c7"/><rect x="15" y="60" width="120" height="25" rx="3" fill="%23ffffff"/><text x="75" y="77" fill="%230f172a" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">KL-01-AZ-9901</text></svg>',
     timestamp: '19:40:12 IST',
     droneCode: 'UAV-KL-02',
     locationName: 'Hawa Beach Access Way'
@@ -58,8 +59,8 @@ const INITIAL_VEHICLES: VehicleAnprRecord[] = [
     confidence: 0.947,
     speedKmh: 58,
     isWatchlistMatch: true,
-    watchlistReason: 'WARRANT: Stolen two-wheeler alert issued by Fort Police Station',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=150&q=80',
+    watchlistReason: 'FLAGGED: Authorised watchlist contact of interest in coastal checkpoint transit (Ref: Fort Station)',
+    thumbnailUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%23475569"/><rect x="15" y="60" width="120" height="25" rx="3" fill="%23ffffff"/><text x="75" y="77" fill="%230f172a" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">KL-22-E-1004</text></svg>',
     timestamp: '19:38:55 IST',
     droneCode: 'UAV-KL-03',
     locationName: 'Samudra Beach North Exit'
@@ -71,7 +72,7 @@ const INITIAL_VEHICLES: VehicleAnprRecord[] = [
     confidence: 0.978,
     speedKmh: 36,
     isWatchlistMatch: false,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=150&q=80',
+    thumbnailUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%230d9488"/><rect x="15" y="60" width="120" height="25" rx="3" fill="%23ffffff"/><text x="75" y="77" fill="%230f172a" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">KL-07-BF-5544</text></svg>',
     timestamp: '19:35:10 IST',
     droneCode: 'UAV-KL-01',
     locationName: 'Kovalam Main Arterial'
@@ -83,7 +84,7 @@ const INITIAL_VEHICLES: VehicleAnprRecord[] = [
     confidence: 0.988,
     speedKmh: 41,
     isWatchlistMatch: false,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=150&q=80',
+    thumbnailUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%23334155"/><rect x="15" y="60" width="120" height="25" rx="3" fill="%23ffffff"/><text x="75" y="77" fill="%230f172a" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">KL-01-DH-7231</text></svg>',
     timestamp: '19:32:04 IST',
     droneCode: 'UAV-KL-02',
     locationName: 'Lighthouse Coastal Avenue'
@@ -176,6 +177,9 @@ export default function VehicleMaritimePage() {
   const [vessels] = useState<MaritimeTrackRecord[]>(INITIAL_VESSELS);
 
   // SVG Unique IDs for patterns/gradients
+  const { devRole } = useAuthStore();
+  const isAuthorizedRole = ['ANALYST', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'].includes(devRole);
+
   const seaPatternId = useId();
   const rawGridPatternId = useId();
   const annoGridPatternId = useId();
@@ -294,6 +298,26 @@ export default function VehicleMaritimePage() {
       {/* ════════════════════════════════════════════════════════════ */}
       {activeTab === 'VEHICLE_ANPR' && (
         <div className="flex flex-col gap-6">
+          {/* ── Optional Module Authorization Banner (Rule 9) ── */}
+          <div className="rounded-2xl p-4 border bg-amber-500/10 border-amber-500/30 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold text-amber-900 dark:text-amber-200">
+                  Optional Module — Requires Authorisation (RFP Baseline Extension)
+                </div>
+                <p className="text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                  Automated Number Plate Recognition (ANPR) and hotlist matching are restricted to ANALYST / SUPERVISOR roles. Current Role: <span className="font-mono font-bold">{devRole}</span>. All queries and plate exports are recorded in the security audit log.
+                </p>
+              </div>
+            </div>
+            {!isAuthorizedRole && (
+              <span className="px-3 py-1 rounded bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-mono text-[11px] font-bold">
+                SUPERVISOR ELEVATION REQUIRED
+              </span>
+            )}
+          </div>
+
           {/* 5 KPI Metric Cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
             <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -360,7 +384,7 @@ export default function VehicleMaritimePage() {
             </div>
           </div>
 
-          {/* Dual Stream Video Display (Raw Feed vs YOLOv8 + OCR Annotations) */}
+          {/* Dual Stream Video Display (Raw Feed vs RTMDet-x + OCR Annotations) */}
           <div className="card-sand p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -417,7 +441,7 @@ export default function VehicleMaritimePage() {
                 </div>
               </div>
 
-              {/* Right: AI-Annotated Stream (YOLOv8 + PaddleOCR) */}
+              {/* Right: AI-Annotated Stream (RTMDet-x + PaddleOCR) */}
               <div className="relative rounded-lg overflow-hidden border-2 border-emerald-500/50 bg-slate-950 aspect-video flex flex-col justify-between p-3 select-none">
                 {/* Simulated AI Road Backdrop with Bounding Boxes */}
                 <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
@@ -441,7 +465,7 @@ export default function VehicleMaritimePage() {
                       {/* OCR Plate tag */}
                       <rect x="25" y="45" width="80" height="22" fill="#ffffff" stroke="#ef4444" strokeWidth="1.5" rx="2" />
                       <text x="32" y="60" fill="#0f172a" fontSize="10" fontFamily="monospace" fontWeight="bold">KL-01-CB-4092</text>
-                      <text x="6" y="80" fill="#fca5a5" fontSize="8" fontFamily="sans-serif">MATCH: HARBOR SMUGGLING</text>
+                      <text x="6" y="80" fill="#fca5a5" fontSize="8" fontFamily="sans-serif">OBSERVED: HARBOR PERIMETER DWELL</text>
                     </g>
 
                     {/* Car 2: Normal Auto-Rickshaw */}
@@ -465,7 +489,7 @@ export default function VehicleMaritimePage() {
                 {/* HUD Top Bar */}
                 <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-emerald-300">
                   <span className="bg-slate-900/90 px-2 py-0.5 rounded border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5">
-                    <Zap className="w-3 h-3 text-emerald-400" /> YOLOv8x + PaddleOCR (GPU-0)
+                    <Zap className="w-3 h-3 text-emerald-400" /> RTMDet-x + PaddleOCR (GPU-0)
                   </span>
                   <span className="bg-red-950/80 text-red-300 px-2 py-0.5 rounded border border-red-500/40 font-bold animate-pulse">
                     HOTLIST HIT: 1

@@ -44,6 +44,25 @@ export const useThemeStore = create<ThemeState>()(
   )
 );
 
+// ─── Language (English / Malayalam) ───────────────────────────
+
+export type Language = 'en' | 'ml';
+
+interface LanguageState {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+}
+
+export const useLanguageStore = create<LanguageState>()(
+  persist(
+    (set) => ({
+      language: 'en',
+      setLanguage: (language) => set({ language }),
+    }),
+    { name: 'sqeye-lang' }
+  )
+);
+
 // ─── Auth / User ──────────────────────────────────────────────
 
 interface AuthState {

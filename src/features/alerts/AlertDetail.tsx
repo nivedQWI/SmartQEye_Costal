@@ -376,6 +376,11 @@ export default function AlertDetail() {
             </section>
           </div>
         </div>
+
+        {/* ── Mandatory Decision-Support Disclaimer Footer (Rule 7) ── */}
+        <footer className="mt-8 pt-4 pb-2 border-t text-center text-xs font-mono opacity-70" style={{ borderColor: 'var(--line)', color: 'var(--text-muted)' }}>
+          Observed behaviour only. Operational interpretation and action rest with authorised Kerala Police personnel.
+        </footer>
       </div>
 
       {/* Export modal */}

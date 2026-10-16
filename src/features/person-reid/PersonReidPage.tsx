@@ -10,6 +10,7 @@ import {
   Radio, Clock, AlertTriangle, ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/lib/store';
 import { PersonReidRecord } from '@/types';
 
 // Mock high-resolution Re-ID records
@@ -19,9 +20,9 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
     trackId: 'TRK-9041',
     confidence: 0.948,
     isWatchlistMatch: true,
-    watchlistIdentity: 'Rajan @ "Meen" Rajan (Wanted in Case #88/24)',
-    watchlistNotes: 'Suspect in Vizhinjam Coastal Narcotics Consignment. Non-bailable arrest warrant active.',
-    faceCropUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    watchlistIdentity: 'Contact of Interest (Ref #88/24 - Vizhinjam)',
+    watchlistNotes: 'Contact of interest flagged in coastal consignment review. Authorised watchlist reference active.',
+    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%237f1d1d"/><circle cx="100" cy="80" r="38" fill="%23fca5a5"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23fca5a5"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-9041</text></svg>',
     firstSeenAt: '18:12:04 IST',
     lastSeenAt: '19:42:30 IST',
     appearanceFeatures: { upperColor: 'Red Check Shirt', lowerColor: 'Blue Denim', bag: true, helmet: false },
@@ -36,9 +37,9 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
     trackId: 'TRK-9048',
     confidence: 0.912,
     isWatchlistMatch: true,
-    watchlistIdentity: 'Anil Kumar (Absconding Warrant #112/25)',
-    watchlistNotes: 'Wanted by Fort Police for port perimeter trespassing and assault.',
-    faceCropUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    watchlistIdentity: 'Contact of Interest (Ref #112/25 - Fort Station)',
+    watchlistNotes: 'Flagged for port perimeter observation and verification.',
+    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23991b1b"/><circle cx="100" cy="80" r="38" fill="%23fecaca"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23fecaca"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-9048</text></svg>',
     firstSeenAt: '19:15:22 IST',
     lastSeenAt: '19:38:10 IST',
     appearanceFeatures: { upperColor: 'Black Polo T-Shirt', lowerColor: 'Khaki Trousers', bag: false, helmet: false },
@@ -52,7 +53,7 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
     trackId: 'TRK-8812',
     confidence: 0.985,
     isWatchlistMatch: false,
-    faceCropUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23065f46"/><circle cx="100" cy="80" r="38" fill="%23a7f3d0"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23a7f3d0"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-8812</text></svg>',
     firstSeenAt: '17:40:00 IST',
     lastSeenAt: '19:30:15 IST',
     appearanceFeatures: { upperColor: 'Yellow Kurta', lowerColor: 'White Churidhar', bag: true, helmet: false },
@@ -66,7 +67,7 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
     trackId: 'TRK-8830',
     confidence: 0.967,
     isWatchlistMatch: false,
-    faceCropUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80',
+    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%231e3a8a"/><circle cx="100" cy="80" r="38" fill="%23bfdbfe"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23bfdbfe"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-8830</text></svg>',
     firstSeenAt: '18:50:11 IST',
     lastSeenAt: '19:40:05 IST',
     appearanceFeatures: { upperColor: 'Light Blue Linen', lowerColor: 'Navy Slacks', bag: false, helmet: false },
@@ -80,7 +81,7 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
     trackId: 'TRK-8902',
     confidence: 0.934,
     isWatchlistMatch: false,
-    faceCropUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80',
+    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23374151"/><circle cx="100" cy="80" r="38" fill="%23e5e7eb"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23e5e7eb"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-8902</text></svg>',
     firstSeenAt: '19:02:44 IST',
     lastSeenAt: '19:36:12 IST',
     appearanceFeatures: { upperColor: 'Green T-Shirt', lowerColor: 'Cargo Shorts', bag: true, helmet: true },
@@ -93,7 +94,7 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
     trackId: 'TRK-8920',
     confidence: 0.971,
     isWatchlistMatch: false,
-    faceCropUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%234c1d95"/><circle cx="100" cy="80" r="38" fill="%23ddd6fe"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23ddd6fe"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-8920</text></svg>',
     firstSeenAt: '19:22:18 IST',
     lastSeenAt: '19:44:00 IST',
     appearanceFeatures: { upperColor: 'White Shirt', lowerColor: 'Blue Jeans', bag: false, helmet: false },
@@ -104,6 +105,9 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
 ];
 
 export default function PersonReidPage() {
+  const { devRole } = useAuthStore();
+  const isAuthorizedRole = ['ANALYST', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'].includes(devRole);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [watchlistOnly, setWatchlistOnly] = useState(false);
   const [hasBagFilter, setHasBagFilter] = useState(false);
@@ -154,6 +158,26 @@ export default function PersonReidPage() {
 
   return (
     <div className="h-full flex flex-col overflow-y-auto chart-paper p-4 md:p-6 gap-6">
+      {/* ── Optional Module Authorization Banner (Rule 9) ── */}
+      <div className="rounded-2xl p-4 border bg-amber-500/10 border-amber-500/30 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-2.5">
+          <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <div className="font-bold text-amber-900 dark:text-amber-200">
+              Optional Module — Requires Authorisation (RFP Baseline Extension)
+            </div>
+            <p className="text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+              Biometric facial crops and watchlist cross-matching are restricted to ANALYST / SUPERVISOR roles. Current Role: <span className="font-mono font-bold">{devRole}</span>. All queries and dossier views are cryptographically logged.
+            </p>
+          </div>
+        </div>
+        {!isAuthorizedRole && (
+          <span className="px-3 py-1 rounded bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-mono text-[11px] font-bold">
+            SUPERVISOR ELEVATION REQUIRED
+          </span>
+        )}
+      </div>
+
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
         <div>
@@ -166,7 +190,7 @@ export default function PersonReidPage() {
             </span>
           </div>
           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-            Cross-camera multi-target person re-identification, feature embedding matching &amp; criminal suspect watchlist hits
+            Cross-camera multi-target person re-identification, feature embedding matching &amp; authorised watchlist matches
           </p>
         </div>
 
@@ -226,7 +250,7 @@ export default function PersonReidPage() {
               ALERT
             </span>
           </div>
-          <div className="text-[10px] text-red-800 font-semibold mt-1">2 suspects confirmed</div>
+          <div className="text-[10px] text-red-800 font-semibold mt-1">2 matches flagged for verification</div>
         </div>
 
         <div className="card-sand p-3 flex flex-col justify-between">
@@ -284,7 +308,7 @@ export default function PersonReidPage() {
                   {/* Sidewalk promenade line */}
                   <line x1="0" y1="180" x2="500" y2="240" stroke="#334155" strokeWidth="2" strokeDasharray="5 5" />
 
-                  {/* Person 1: Wanted Suspect (Rajan) */}
+                  {/* Person 1: Flagged Contact of Interest (Rajan) */}
                   <g transform="translate(130, 90)">
                     {/* Bounding box */}
                     <rect x="0" y="0" width="75" height="150" fill="rgba(239, 68, 68, 0.15)" stroke="#ef4444" strokeWidth="2" rx="3" />
@@ -328,7 +352,7 @@ export default function PersonReidPage() {
 
             {/* Quick Actions */}
             <div className="p-3 bg-[var(--surface-muted)] rounded border border-[var(--border)] flex items-center justify-between text-xs">
-              <span className="text-slate-600 font-medium">Suspect in current view: <strong className="text-red-700">Rajan (Meen Rajan)</strong></span>
+              <span className="text-slate-600 font-medium">Flagged contact in current view: <strong className="text-red-700">Rajan (Meen Rajan)</strong></span>
               <button
                 onClick={() => handleDispatchPatrol('TRK-9041')}
                 disabled={dispatchedAlerts.includes('TRK-9041')}
@@ -339,13 +363,13 @@ export default function PersonReidPage() {
                     : "bg-red-700 hover:bg-red-800 text-white shadow-sm"
                 )}
               >
-                {dispatchedAlerts.includes('TRK-9041') ? 'PATROL DISPATCHED' : 'DISPATCH PATROL'}
+                {dispatchedAlerts.includes('TRK-9041') ? 'RECOMMENDATION SENT' : 'RECOMMEND PATROL CHECK'}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Right Column (7 Cols): Face Crop Gallery & Suspect Inspector */}
+        {/* Right Column (7 Cols): Face Crop Gallery & Contact Inspector */}
         <div className="lg:col-span-7 flex flex-col gap-4">
           <div className="card-sand p-4 flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -364,7 +388,7 @@ export default function PersonReidPage() {
                   <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search Track ID or suspect..."
+                    placeholder="Search Track ID or contact..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-8 pr-3 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
@@ -489,7 +513,7 @@ export default function PersonReidPage() {
         </div>
       </div>
 
-      {/* ── Suspect / Re-ID Dossier Modal ── */}
+      {/* ── Contact of Interest / Re-ID Dossier Modal ── */}
       {selectedRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="card-sand max-w-xl w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--border)] max-h-[90vh] overflow-y-auto">
@@ -540,7 +564,7 @@ export default function PersonReidPage() {
                 ) : (
                   <div className="text-emerald-700 font-semibold flex items-center gap-1">
                     <CheckCircle className="w-4 h-4" />
-                    No Active Arrest Warrants or Criminal Watchlist Matches
+                    No Active Lookout Circular or Watchlist Matches
                   </div>
                 )}
 

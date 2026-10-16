@@ -128,28 +128,40 @@ export const FEED_STATE_COLOUR: Record<FeedState, string> = {
 
 // ─── Contact class ────────────────────────────────────────────
 export const CONTACT_CLASS_LABELS: Record<ContactClass, string> = {
-  VESSEL:       'Vessel',
-  SMALL_CRAFT:  'Small Craft',
-  FISHING_BOAT: 'Fishing Boat',
-  PERSON:       'Person',
-  VEHICLE:      'Vehicle',
-  UNKNOWN:      'Unknown',
+  VESSEL:                   'Vessel',
+  SMALL_CRAFT:              'Small Craft',
+  FISHING_BOAT:             'Fishing Boat',
+  UNKNOWN_VESSEL:           'Unknown Vessel (Broad Class)',
+  MECHANISED_TRAWLER:       'Mechanised Trawler',
+  MOTORISED_COUNTRY_CRAFT:  'Motorised Country Craft',
+  TRADITIONAL_WOODEN_CRAFT: 'Traditional Wooden Craft',
+  CANOE_CATAMARAN:          'Canoe / Catamaran',
+  RECREATIONAL_CRAFT:       'Recreational / Water-sports Craft',
+  PERSON:                   'Person',
+  VEHICLE:                  'Vehicle',
+  UNKNOWN:                  'Unknown',
 };
 
 export const CONTACT_CLASS_ICON: Record<ContactClass, string> = {
-  VESSEL:       '🚢',
-  SMALL_CRAFT:  '⛵',
-  FISHING_BOAT: '🎣',
-  PERSON:       '🚶',
-  VEHICLE:      '🚗',
-  UNKNOWN:      '❓',
+  VESSEL:                   '🚢',
+  SMALL_CRAFT:              '⛵',
+  FISHING_BOAT:             '🎣',
+  UNKNOWN_VESSEL:           '🛥️',
+  MECHANISED_TRAWLER:       '⛴️',
+  MOTORISED_COUNTRY_CRAFT:  '🚤',
+  TRADITIONAL_WOODEN_CRAFT: '🛶',
+  CANOE_CATAMARAN:          '🛶',
+  RECREATIONAL_CRAFT:       '🏄',
+  PERSON:                   '🚶',
+  VEHICLE:                  '🚗',
+  UNKNOWN:                  '❓',
 };
 
 // ─── Coordinates ──────────────────────────────────────────────
 export function formatCoords(lat: number, lon: number): string {
   const latDir = lat >= 0 ? 'N' : 'S';
   const lonDir = lon >= 0 ? 'E' : 'W';
-  return `${Math.abs(lat).toFixed(4)}°${latDir} ${Math.abs(lon).toFixed(4)}°${lonDir}`;
+  return `${Math.abs(lat).toFixed(5)}°${latDir} ${Math.abs(lon).toFixed(5)}°${lonDir}`;
 }
 
 export function formatDeg(deg: number): string {

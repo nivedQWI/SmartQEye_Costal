@@ -520,6 +520,11 @@ export default function AnomalyMonitorPage() {
           </table>
         </div>
       </div>
+
+      {/* ── Decision-Support Legal Disclaimer Footer (Rule 7) ── */}
+      <footer className="text-center py-2 text-[11px] font-mono opacity-60 border-t border-[var(--line)]" style={{ color: 'var(--text-muted)' }}>
+        Observed behaviour only. Operational interpretation and action rest with authorised Kerala Police personnel.
+      </footer>
     </div>
   );
 }

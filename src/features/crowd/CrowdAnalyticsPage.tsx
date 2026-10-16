@@ -18,7 +18,7 @@ import { UAVS } from '@/lib/mockData';
 
 export default function CrowdAnalyticsPage() {
   const [selectedDrone, setSelectedDrone] = useState('UAV-KL-02');
-  const [selectedModel, setSelectedModel] = useState<'CSRNet Part A' | 'CSRNet Part B' | 'DM-Count' | 'YOLO-Crowd'>('CSRNet Part A');
+  const [selectedModel, setSelectedModel] = useState<'CSRNet Part A' | 'CSRNet Part B' | 'DM-Count' | 'RTMDet-Crowd'>('CSRNet Part A');
   const [showHeatmap, setShowHeatmap] = useState(true);
 
   // Live KPI values
@@ -149,7 +149,7 @@ export default function CrowdAnalyticsPage() {
             <option value="CSRNet Part A">CSRNet Part A (Dense Harbor)</option>
             <option value="CSRNet Part B">CSRNet Part B (Sparse Beach)</option>
             <option value="DM-Count">DM-Count (High Res)</option>
-            <option value="YOLO-Crowd">YOLOv8-Crowd Head Detector</option>
+            <option value="RTMDet-Crowd">RTMDet-Crowd Head Detector (MMDetection)</option>
           </select>
         </div>
       </div>

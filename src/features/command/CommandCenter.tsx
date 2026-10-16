@@ -240,34 +240,52 @@ export default function CommandCenter() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* ── Map (main canvas) ── */}
-      <div className="flex-1 relative min-w-0 flex flex-col">
-        <div className="flex-1 relative">
-          <CoastalMap
-            height="100%"
-            className="absolute inset-0"
-            onAlertClick={id => navigate(`/alerts/${id}`)}
-            onContactClick={id => navigate(`/contacts/${id}`)}
-          />
-          <LayerToggles />
-        </div>
-
-        {/* Feed Wall below map */}
-        <div className="flex-shrink-0 chart-paper" style={{ background: 'var(--panel)', borderTop: '1px solid var(--line)' }}>
-          <FeedWall />
-        </div>
+    <div className="flex h-full overflow-hidden flex-col">
+      {/* ── Intelligence Flow Ticker (1.2 Product Pipeline) ── */}
+      <div
+        className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-mono border-b overflow-x-auto select-none flex-shrink-0"
+        style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text-muted)' }}
+        title="Full Intelligence Processing Flow (Cognitive Frame Selection optimizes compute; Cognitive Keyframe Extraction captures evidence frames post-event)"
+      >
+        <span className="font-bold text-[var(--sea-600)] flex-shrink-0 uppercase tracking-wider">Tactical Flow:</span>
+        <span className="truncate">
+          Drone RGB/Thermal + Telemetry <span className="opacity-40">→</span> <strong className="text-[var(--text)]">CFS (Compute Opt)</strong> <span className="opacity-40">→</span> RTMDet/ByteTrack <span className="opacity-40">→</span> Persistent Contact <span className="opacity-40">→</span> Coastal Context <span className="opacity-40">→</span> Behaviour Intelligence <span className="opacity-40">→</span> Operational Attention <span className="opacity-40">→</span> <strong className="text-[var(--text)]">CKFE (Evidence Extraction)</strong> <span className="opacity-40">→</span> ELIR Alert <span className="opacity-40">→</span> <strong className="text-emerald-600 dark:text-emerald-400">Human Police Interpretation (Final)</strong>
+        </span>
       </div>
 
-      {/* ── Right panel (alert queue + stats) ── */}
-      <div
-        className="w-80 flex-shrink-0 flex flex-col border-l chart-paper"
-        style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}
-      >
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <AlertQueue />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* ── Map (main canvas) ── */}
+        <div className="flex-1 relative min-w-0 flex flex-col">
+          <div className="flex-1 relative">
+            <CoastalMap
+              height="100%"
+              className="absolute inset-0"
+              onAlertClick={id => navigate(`/alerts/${id}`)}
+              onContactClick={id => navigate(`/contacts/${id}`)}
+            />
+            <LayerToggles />
+          </div>
+
+          {/* Feed Wall below map */}
+          <div className="flex-shrink-0 chart-paper" style={{ background: 'var(--panel)', borderTop: '1px solid var(--line)' }}>
+            <FeedWall />
+          </div>
         </div>
-        <MissionStats />
+
+        {/* ── Right panel (alert queue + stats) ── */}
+        <div
+          className="w-80 flex-shrink-0 flex flex-col border-l chart-paper"
+          style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}
+        >
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <AlertQueue />
+          </div>
+          <MissionStats />
+          {/* Mandatory Decision-Support Disclaimer Footer */}
+          <div className="px-3 py-2 border-t text-[10px] font-mono opacity-70 text-center" style={{ borderColor: 'var(--line)', color: 'var(--text-muted)' }}>
+            Observed behaviour only. Operational interpretation and action rest with authorised Kerala Police personnel.
+          </div>
+        </div>
       </div>
     </div>
   );
