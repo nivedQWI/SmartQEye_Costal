@@ -32,7 +32,14 @@ Thumbs.db
 *.sln
 *.sw?
 
-# Test outputs
+# Testing, temporary & scratch artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.py
 test-results/
 playwright-report/
-blob-report/
+coverage/
+*scratch*
+*.tmp
+

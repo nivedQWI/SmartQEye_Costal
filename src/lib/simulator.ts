@@ -7,9 +7,8 @@ import type {
   Alert, Feed, TelemetrySample, SystemHealth, ContactClass, Severity,
 } from '@/types';
 import {
-  ALERTS, INITIAL_FEEDS, INITIAL_TELEMETRY, INITIAL_HEALTH, CONTACTS,
+  ALERTS, INITIAL_FEEDS, INITIAL_TELEMETRY, INITIAL_HEALTH, CONTACTS, KERALA_COASTAL_SECTORS,
 } from './mockData';
-import { formatAlertId, formatMissionId, formatUavCode } from '@/lib/idGenerator';
 
 // ─── Event types ─────────────────────────────────────────────
 
@@ -34,13 +33,48 @@ class CoastalSimulator {
   private alertIndex = ALERTS.length;
   private running = false;
 
-  // ── Drone paths (lat/lon delta per tick) ─────────────────
-  private dronePaths: Record<string, { lat: number; lon: number; heading: number; dLat: number; dLon: number }> = {
-    'f-01': { lat: 8.380, lon: 76.982, heading: 42,  dLat: 0.0002,  dLon: 0.0003 },
-    'f-03': { lat: 8.400, lon: 76.991, heading: 195, dLat: -0.0002, dLon: -0.0001 },
-    'f-05': { lat: 8.320, lon: 76.965, heading: 320, dLat: 0.0001,  dLon: -0.0002 },
-    'f-07': { lat: 8.483, lon: 76.920, heading: 110, dLat: 0.0001,  dLon: 0.0002 },
-    'f-09': { lat: 8.483, lon: 76.892, heading: 270, dLat: 0.0000,  dLon: -0.0003 },
+  // ── Drone paths patrolling across Kerala Coastal Sectors ──
+  private dronePaths: Record<string, {
+    lat: number; lon: number; heading: number; dLat: number; dLon: number;
+    anchorLat: number; anchorLon: number;
+    uavCode: string; missionCode: string; missionTitle: string; locationName: string;
+  }> = {
+    'f-01': {
+      lat: 9.965, lon: 76.230, heading: 45, dLat: 0.00018, dLon: 0.00012,
+      anchorLat: 9.965, anchorLon: 76.230,
+      uavCode: 'UAV-01', missionCode: 'M-2026-0416', missionTitle: 'Kochi Port & Naval Base Surveillance',
+      locationName: 'Kochi Port & Naval Base Sector, Ernakulam',
+    },
+    'f-03': {
+      lat: 8.382, lon: 76.980, heading: 195, dLat: -0.00015, dLon: -0.0001,
+      anchorLat: 8.382, anchorLon: 76.980,
+      uavCode: 'UAV-03', missionCode: 'M-2026-0415', missionTitle: 'Vizhinjam Seaport Security Patrol',
+      locationName: 'Vizhinjam International Seaport, Thiruvananthapuram',
+    },
+    'f-05': {
+      lat: 9.492, lon: 76.320, heading: 320, dLat: 0.00012, dLon: -0.00015,
+      anchorLat: 9.492, anchorLon: 76.320,
+      uavCode: 'UAV-05', missionCode: 'M-2026-0417', missionTitle: 'Alappuzha Coastal Infiltration Watch',
+      locationName: 'Alappuzha Beach & Pier Sector, Alappuzha',
+    },
+    'f-07': {
+      lat: 11.935, lon: 75.312, heading: 110, dLat: 0.00014, dLon: 0.00014,
+      anchorLat: 11.935, anchorLon: 75.312,
+      uavCode: 'UAV-04', missionCode: 'M-2026-0418', missionTitle: 'Kannur Azhikkal Estuary Monitoring',
+      locationName: 'Azhikkal Port Sector, Kannur',
+    },
+    'f-09': {
+      lat: 12.392, lon: 75.032, heading: 270, dLat: -0.00012, dLon: -0.00012,
+      anchorLat: 12.392, anchorLon: 75.032,
+      uavCode: 'UAV-06', missionCode: 'M-2026-0419', missionTitle: 'Bekal Coastal High-Security Sector',
+      locationName: 'Bekal Fort Coastal Sector, Kasaragod',
+    },
+    'f-11': {
+      lat: 11.168, lon: 75.802, heading: 180, dLat: 0.00015, dLon: -0.0001,
+      anchorLat: 11.168, anchorLon: 75.802,
+      uavCode: 'UAV-02', missionCode: 'M-2026-0414', missionTitle: 'Beypore Maritime & Harbour Patrol',
+      locationName: 'Beypore Deep Harbour Sector, Kozhikode',
+    },
   };
 
   subscribe(listener: Listener): () => void {
@@ -77,15 +111,18 @@ class CoastalSimulator {
 
   private tickTelemetry() {
     Object.entries(this.dronePaths).forEach(([feedId, path]) => {
-      // Move drone slightly
+      // Move drone slightly within patrol boundary
+      if (Math.abs(path.lat - path.anchorLat) > 0.02) path.dLat = -path.dLat;
+      if (Math.abs(path.lon - path.anchorLon) > 0.02) path.dLon = -path.dLon;
+
       path.lat += path.dLat + (Math.random() - 0.5) * 0.00005;
       path.lon += path.dLon + (Math.random() - 0.5) * 0.00005;
-      path.heading = (path.heading + (Math.random() - 0.5) * 5 + 360) % 360;
+      path.heading = (path.heading + (Math.random() - 0.5) * 4 + 360) % 360;
 
       const sample: TelemetrySample = {
         feedId,
-        uavCode: this.feeds.find(f => f.id === feedId)?.uavCode ?? 'UAV-KL-01',
-        missionCode: formatMissionId('VIZHINJAM', '0830', 1),
+        uavCode: path.uavCode,
+        missionCode: path.missionCode,
         timestamp: new Date().toISOString(),
         lat: path.lat,
         lon: path.lon,
@@ -97,6 +134,7 @@ class CoastalSimulator {
         signalStrengthPct: 85 + Math.floor(Math.random() * 15),
         satelliteCount: 12 + Math.floor(Math.random() * 4),
         telemetryAvailable: true,
+        locationName: path.locationName,
       };
 
       this.telemetry[feedId] = sample;
@@ -155,15 +193,14 @@ class CoastalSimulator {
 
     const contactIdx = Math.floor(Math.random() * CONTACTS.length);
     const contact = CONTACTS[contactIdx];
-    const uavCodes = [formatUavCode(1), formatUavCode(3), formatUavCode(5)];
-    const uavCode = uavCodes[Math.floor(Math.random() * uavCodes.length)];
+    const spot = KERALA_COASTAL_SECTORS[Math.floor(Math.random() * KERALA_COASTAL_SECTORS.length)];
 
     this.alertIndex++;
     const alertId = `a-${String(this.alertIndex).padStart(3, '0')}`;
 
     const newAlert: Alert = {
       id: alertId,
-      alertCode: formatAlertId(this.alertIndex),
+      alertCode: `ALC-2026-${String(this.alertIndex).padStart(3, '0')}`,
       severity,
       status: 'NEW',
       createdAt: new Date().toISOString(),
@@ -172,18 +209,19 @@ class CoastalSimulator {
         id: `ev-sim-${this.alertIndex}`,
         type: eventType,
         occurredAt: new Date().toISOString(),
-        uav: { id: 'u-03', code: uavCode },
-        mission: { id: 'm-01', code: formatMissionId('VIZHINJAM', '0830', 1) },
+        uav: { id: `u-${spot.uavCode.replace('UAV-0', '')}`, code: spot.uavCode },
+        mission: { id: `m-${spot.uavCode.replace('UAV-0', '')}`, code: spot.missionCode, title: spot.missionTitle },
         location: {
-          lat: 8.350 + Math.random() * 0.05,
-          lon: 76.960 + Math.random() * 0.04,
+          lat: spot.lat + (Math.random() - 0.5) * 0.008,
+          lon: spot.lon + (Math.random() - 0.5) * 0.008,
           method: 'DRONE_POSITION',
+          name: spot.name,
         },
         attention: severity === 'CRITICAL' ? 'CRITICAL' : severity === 'HIGH' ? 'ATTENTION' : 'MONITOR',
         rationale: {
           factors: [{ factorName: 'Threshold exceeded', value: 1, threshold: 1, contribution: 'PRIMARY' }],
         },
-        versions: { appVersion: '1.2.0-coastal' },
+        versions: { appVersion: '1.0.3' },
         contact: {
           code: contact.code,
           class: contact.class as ContactClass,

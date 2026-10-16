@@ -22,8 +22,7 @@ export const ZoneTypeSchema = z.enum([
 ]);
 
 export const UserRoleSchema = z.enum([
-  'OPERATOR', 'ANALYST', 'SUPERVISOR', 'ZONE_ADMIN',
-  'SYS_ADMIN', 'MODEL_CUSTODIAN', 'AUDITOR'
+  'OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'
 ]);
 
 // ─── Location ─────────────────────────────────────────────────

@@ -1,87 +1,18 @@
 // ============================================================
-// SmartQEye Coastal — Missions & Sorties Console (/missions)
-// Proposal §5.1 & RFP §5 Compliant
-// Unified Scenario Sortie (MSN-20261016-01), Pre-Flight Checklist,
-// Mission Profile Context Binding, Planned vs Actual Flown Track, and AAR Generator
+// SmartQEye Coastal — Mission Control Page (/missions)
+// Standardized Drone Mission Management & Video Ingestion
 // ============================================================
 
-import React, { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Anchor, Play, Square, RefreshCw, Upload, Video,
-  Radio, Shield, HardDrive, Trash2, CheckCircle2,
-  Clock, AlertCircle, FileText, Check,
-  AlertTriangle, Download, Navigation
+  Radio, Shield, Trash2, Clock, AlertCircle, FileText
 } from 'lucide-react';
-import { cn, formatIST } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
-import { auditApi } from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
+import { can } from '@/lib/roleConfig';
 import type { MissionSortie, Squadron, VideoSourceType } from '@/types';
-
-export type MissionContextProfileType =
-  | 'HARBOR_SURVEILLANCE'
-  | 'SHORELINE_BEACH'
-  | 'ESTUARY_INLET'
-  | 'DEEPWATER_INTERCEPT';
-
-interface DiagnosticCheck {
-  id: string;
-  name: string;
-  subsystem: string;
-  status: 'PENDING' | 'CHECKING' | 'PASS' | 'FAIL';
-  metric: string;
-  note: string;
-}
-
-const INITIAL_DIAGNOSTICS: DiagnosticCheck[] = [
-  {
-    id: 'diag-01',
-    name: 'Payload Optical & Thermal Sensors',
-    subsystem: 'Gimbal & Sensors',
-    status: 'PASS',
-    metric: '4K RGB + LWIR Thermal Calibrated',
-    note: 'Dual-sensor uncompressed RTSP streams initialized'
-  },
-  {
-    id: 'diag-02',
-    name: 'RF C2 & Telemetry Link',
-    subsystem: 'Avionics Comms',
-    status: 'PASS',
-    metric: 'MAVLink v2 / SNR 42 dB',
-    note: 'Encrypted 2.4/5.8GHz frequency hopping dual link'
-  },
-  {
-    id: 'diag-03',
-    name: 'Onboard & Gateway NVMe Storage',
-    subsystem: 'Storage Fabric',
-    status: 'PASS',
-    metric: '482 GB Available (Read: 3.2 GB/s)',
-    note: 'High-speed cyclic write endurance verified'
-  },
-  {
-    id: 'diag-04',
-    name: 'RTK GNSS & Clock Sync',
-    subsystem: 'Navigation & PTP',
-    status: 'PASS',
-    metric: 'PTP Locked / DOP 0.9 (18 Sats)',
-    note: 'Sub-10ms frame timecode alignment verified'
-  },
-  {
-    id: 'diag-05',
-    name: 'Geofence & Corridor Clearance',
-    subsystem: 'DGCA / Police Auth',
-    status: 'PASS',
-    metric: 'Sector Alpha Clearance Active',
-    note: 'Vizhinjam coastal corridor geofence loaded'
-  },
-  {
-    id: 'diag-06',
-    name: 'Edge AI Pipeline Readiness',
-    subsystem: 'Inference Fabric',
-    status: 'PASS',
-    metric: 'RTMDet-L + ByteTrack in VRAM',
-    note: 'CFS filter armed with 0.4s warmup latency'
-  }
-];
 
 function generateMissionId(squadron: Squadron): string {
   const now = new Date();
@@ -95,57 +26,40 @@ function generateMissionId(squadron: Squadron): string {
 }
 
 export default function MissionsPage() {
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const [squadron, setSquadron] = useState<Squadron>('ALPHA');
-  const [missionName, setMissionName] = useState('Sector Alpha High-Priority Coastal Surveillance');
-  const [missionId, setMissionId] = useState('MSN-20261016-01');
+  const [missionName, setMissionName] = useState('');
+  const [missionId, setMissionId] = useState(generateMissionId('ALPHA'));
   const [selectedDroneId, setSelectedDroneId] = useState(UAVS[0].id);
-  const [contextProfile, setContextProfile] = useState<MissionContextProfileType>('HARBOR_SURVEILLANCE');
-  const [videoSourceType, setVideoSourceType] = useState<VideoSourceType>('RTSP');
-  const [videoSourceUrl, setVideoSourceUrl] = useState('rtsp://10.200.1.10:8554/live/uav-kl01');
-  const [uploadedVideoFile, setUploadedVideoFile] = useState<string | null>(null);
+  const [videoSourceType, setVideoSourceType] = useState<VideoSourceType>('RTMP');
+  const [videoSourceUrl, setVideoSourceUrl] = useState('');
+  const [stagedVideoFile, setStagedVideoFile] = useState<string | null>(null);
+  const [stagedVideoUrl, setStagedVideoUrl] = useState<string | null>(null);
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [activeVideoTitle, setActiveVideoTitle] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const [srtFile, setSrtFile] = useState<string | null>(null);
-  const [pilotName, setPilotName] = useState('Insp. Anoop Nair (KP-4421)');
-  const [location, setLocation] = useState('Vizhinjam International Seaport Anchorage');
+  const [pilotName, setPilotName] = useState('');
+  const [location, setLocation] = useState('');
+
+  // Refs for video management and safe object URL lifecycle
+  const objectUrlRef = useRef<string | null>(null);
+  const formFileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Transmission controls
   const [serverIngestion, setServerIngestion] = useState(true);
   const [cognitiveBypass, setCognitiveBypass] = useState(false);
 
-  // Diagnostics State
-  const [diagnostics, setDiagnostics] = useState<DiagnosticCheck[]>(INITIAL_DIAGNOSTICS);
-  const [runningDiagnostics, setRunningDiagnostics] = useState(false);
+  // Active mission state (blank initially, user enters details and starts mission)
+  const [activeMission, setActiveMission] = useState<MissionSortie | null>(null);
 
-  // AAR Modal State
-  const [showAarModal, setShowAarModal] = useState(false);
-  const [aarSortie, setAarSortie] = useState<MissionSortie | null>(null);
-
-  // Active mission state (Unified with scenario MSN-20261016-01)
-  const [activeSortie, setActiveSortie] = useState<MissionSortie | null>({
-    id: 'sort-active-msn-01',
-    missionId: 'MSN-20261016-01',
-    name: 'Sector Alpha High-Priority Coastal Surveillance',
-    droneId: UAVS[0].id,
-    droneCode: UAVS[0].droneCode,
-    squadron: 'ALPHA',
-    videoSourceType: 'RTSP',
-    videoSourceUrl: 'rtsp://10.200.1.10:8554/live/uav-kl01',
-    pilotName: 'Insp. Anoop Nair (KP-4421)',
-    location: 'Vizhinjam International Seaport Anchorage & Fairway',
-    status: 'ACTIVE',
-    serverIngestion: true,
-    cognitiveBypass: false,
-    bitrateMbps: 8.6,
-    fps: 30.0,
-    packetLossPct: 0.02,
-    startedAt: new Date(Date.now() - 48 * 60 * 1000).toISOString(),
-    durationMin: 48,
-  });
-
-  // Historical Sorties
-  const [historySorties, setHistorySorties] = useState<MissionSortie[]>([
+  // Historical Missions
+  const [historyMissions, setHistoryMissions] = useState<MissionSortie[]>([
     {
-      id: 'sort-h-1',
-      missionId: 'MSN-20261015-1430-00-BRAVO',
+      id: 'msn-h-1',
+      missionId: 'MSN-20261012-1430-00-BRAVO',
       name: 'Kovalam Tourist Beach Perimeter Scan',
       droneId: UAVS[1].id,
       droneCode: UAVS[1].droneCode,
@@ -161,8 +75,8 @@ export default function MissionsPage() {
       durationMin: 58,
     },
     {
-      id: 'sort-h-2',
-      missionId: 'MSN-20261014-0915-00-ALPHA',
+      id: 'msn-h-2',
+      missionId: 'MSN-20261012-0915-00-ALPHA',
       name: 'Poovar Estuary Joint Maritime Patrol',
       droneId: UAVS[2].id,
       droneCode: UAVS[2].droneCode,
@@ -173,14 +87,14 @@ export default function MissionsPage() {
       status: 'COMPLETED',
       serverIngestion: true,
       cognitiveBypass: false,
-      startedAt: new Date(Date.now() - 46 * 3600 * 1000).toISOString(),
-      endedAt: new Date(Date.now() - 45 * 3600 * 1000).toISOString(),
+      startedAt: new Date(Date.now() - 28 * 3600 * 1000).toISOString(),
+      endedAt: new Date(Date.now() - 27 * 3600 * 1000).toISOString(),
       durationMin: 74,
     },
     {
-      id: 'sort-h-3',
-      missionId: 'MSN-20261013-1820-00-CHARLIE',
-      name: 'Vizhinjam International Terminal Night Sortie',
+      id: 'msn-h-3',
+      missionId: 'MSN-20261011-1820-00-CHARLIE',
+      name: 'Vizhinjam International Terminal Basin Night Patrol',
       droneId: UAVS[3].id,
       droneCode: UAVS[3].droneCode,
       squadron: 'CHARLIE',
@@ -191,11 +105,44 @@ export default function MissionsPage() {
       status: 'COMPLETED',
       serverIngestion: true,
       cognitiveBypass: true,
-      startedAt: new Date(Date.now() - 70 * 3600 * 1000).toISOString(),
-      endedAt: new Date(Date.now() - 69 * 3600 * 1000).toISOString(),
+      startedAt: new Date(Date.now() - 44 * 3600 * 1000).toISOString(),
+      endedAt: new Date(Date.now() - 43 * 3600 * 1000).toISOString(),
       durationMin: 62,
     },
   ]);
+
+  // Video file selected in the New Mission form (staged until Start Mission is clicked)
+  function handleFormFileSelect(file: File) {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
+    const url = URL.createObjectURL(file);
+    objectUrlRef.current = url;
+    setStagedVideoFile(file.name);
+    setStagedVideoUrl(url);
+    setVideoError(null);
+  }
+
+  function handleClearFormVideo() {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setStagedVideoFile(null);
+    setStagedVideoUrl(null);
+    setVideoError(null);
+    if (formFileInputRef.current) formFileInputRef.current.value = '';
+  }
+
+  // Only revoke object URL on actual component unmount
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+  }, []);
 
   function handleRegenerateId(sq = squadron) {
     setMissionId(generateMissionId(sq));
@@ -206,48 +153,21 @@ export default function MissionsPage() {
     handleRegenerateId(sq);
   }
 
-  // Pre-Flight Diagnostic Runner
-  const handleRunDiagnostics = () => {
-    setRunningDiagnostics(true);
-    setDiagnostics(prev => prev.map(d => ({ ...d, status: 'CHECKING' })));
-
-    let step = 0;
-    const interval = setInterval(() => {
-      if (step < diagnostics.length) {
-        setDiagnostics(prev => prev.map((d, idx) => idx === step ? { ...d, status: 'PASS' } : d));
-        step++;
-      } else {
-        clearInterval(interval);
-        setRunningDiagnostics(false);
-        auditApi.append({
-          userId: 'op-cur',
-          userName: pilotName,
-          userRole: 'OPERATOR',
-          action: 'SYSTEM_HEALTH_CHECK',
-          targetType: 'UAV',
-          targetId: selectedDroneId,
-          beforeAfterSummary: `Completed pre-flight diagnostic self-test sequence for UAV ${selectedDroneId}: 6/6 checks passed`,
-          outcome: 'SUCCESS'
-        }).catch(console.error);
-      }
-    }, 250);
-  };
-
   function handleStartMission(e: React.FormEvent) {
     e.preventDefault();
     const drone = UAVS.find(u => u.id === selectedDroneId) ?? UAVS[0];
-    const newSortie: MissionSortie = {
-      id: `sort-${Date.now()}`,
+    const newMission: MissionSortie = {
+      id: `msn-${Date.now()}`,
       missionId,
-      name: missionName,
+      name: missionName.trim() || 'Coastal Surveillance Mission',
       droneId: drone.id,
       droneCode: drone.droneCode,
       squadron,
       videoSourceType,
-      videoSourceUrl: videoSourceType === 'UPLOAD' ? undefined : videoSourceUrl,
+      videoSourceUrl: videoSourceType === 'UPLOAD' ? (stagedVideoFile ?? undefined) : videoSourceUrl,
       srtFileName: srtFile ?? undefined,
-      pilotName,
-      location,
+      pilotName: pilotName.trim() || 'Officer In-Charge',
+      location: location.trim() || 'Kerala Coastal Sector',
       status: 'ACTIVE',
       serverIngestion,
       cognitiveBypass,
@@ -257,114 +177,39 @@ export default function MissionsPage() {
       startedAt: new Date().toISOString(),
       durationMin: 1,
     };
-    setActiveSortie(newSortie);
+    setActiveMission(newMission);
 
-    auditApi.append({
-      userId: 'op-cur',
-      userName: pilotName,
-      userRole: 'OPERATOR',
-      action: 'UPDATE_MISSION',
-      targetType: 'MISSION',
-      targetId: newSortie.missionId,
-      beforeAfterSummary: `Launched live surveillance sortie "${newSortie.name}" (${newSortie.droneCode}) with context profile ${contextProfile}`,
-      outcome: 'SUCCESS'
-    }).catch(console.error);
+    // Only start playing the video when Start Mission is clicked
+    if (videoSourceType === 'UPLOAD' && stagedVideoUrl) {
+      setActiveVideoUrl(stagedVideoUrl);
+      setActiveVideoTitle(stagedVideoFile);
+      setVideoError(null);
+    } else {
+      setActiveVideoUrl(null);
+      setActiveVideoTitle(null);
+      setVideoError(null);
+    }
 
     handleRegenerateId();
   }
 
   function handleStopMission() {
-    if (!activeSortie) return;
+    if (!activeMission) return;
     const completed: MissionSortie = {
-      ...activeSortie,
+      ...activeMission,
       status: 'COMPLETED',
       endedAt: new Date().toISOString(),
     };
-    setHistorySorties([completed, ...historySorties]);
-    setActiveSortie(null);
-
-    auditApi.append({
-      userId: 'op-cur',
-      userName: completed.pilotName,
-      userRole: 'OPERATOR',
-      action: 'UPDATE_MISSION',
-      targetType: 'MISSION',
-      targetId: completed.missionId,
-      beforeAfterSummary: `Terminated surveillance sortie "${completed.name}" (${completed.droneCode}) after ${completed.durationMin ?? 0} minutes`,
-      outcome: 'SUCCESS'
-    }).catch(console.error);
-
-    // Open AAR Generator
-    setAarSortie(completed);
-    setShowAarModal(true);
+    setHistoryMissions([completed, ...historyMissions]);
+    setActiveMission(null);
+    setActiveVideoUrl(null);
+    setActiveVideoTitle(null);
+    setVideoError(null);
   }
 
-  function handleDeleteSortie(id: string) {
-    setHistorySorties(historySorties.filter(s => s.id !== id));
+  function handleDeleteMission(id: string) {
+    setHistoryMissions(historyMissions.filter(s => s.id !== id));
   }
-
-  // Generate & Download AAR Report File
-  const handleDownloadAarDossier = (s: MissionSortie) => {
-    const aarText = `================================================================================
-KERALA POLICE COASTAL SURVEILLANCE & DRONE FORENSIC LAB
-SORTIE AFTER-ACTION REPORT (AAR) — CONFIDENTIAL EVIDENTIARY DOSSIER
-================================================================================
-Report Generated : ${formatIST(new Date().toISOString())}
-Document Class   : Official Police Incident Review (RFP §5 / Section 65B Compliant)
-Station Command  : Vizhinjam Coastal Police Station, Thiruvananthapuram
-
---------------------------------------------------------------------------------
-1. MISSION SORTIE METADATA
---------------------------------------------------------------------------------
-Mission ID       : ${s.missionId}
-Operation Name   : ${s.name}
-UAV Identifier   : ${s.droneCode} (Drone ID: ${s.droneId})
-Flight Squadron  : Squadron ${s.squadron}
-Pilot-in-Command : ${s.pilotName}
-Location Sector  : ${s.location}
-Sortie Duration  : ${s.durationMin} minutes
-Status           : ${s.status}
-
---------------------------------------------------------------------------------
-2. SENSOR & COGNITIVE ANALYTICS SUMMARY
---------------------------------------------------------------------------------
-Total Video Frames Ingested : ${((s.durationMin ?? 0) * 60 * 30).toLocaleString()} frames
-CFS Frames Processed (FULL) : ${((s.durationMin ?? 0) * 60 * 12).toLocaleString()} frames
-CFS Frames Processed (LIGHT): ${((s.durationMin ?? 0) * 60 * 10).toLocaleString()} frames
-CFS Frames Skipped (CFS-SKP): ${((s.durationMin ?? 0) * 60 * 8).toLocaleString()} frames (41.4% GPU Savings)
-Persistent Contacts Tracked : 14 persistent tracks (Vessels: 11, Shoreline: 3)
-High-Attention Alerts Raised: 1 Critical (Security Zone Incursion C-1042)
-Cognitive Keyframes (CKFE)  : 9 evidentiary keyframes archived
-
---------------------------------------------------------------------------------
-3. FLIGHT CORRIDOR & TRACK DEVIATION
---------------------------------------------------------------------------------
-Planned Corridor WP Range   : WP-1 to WP-6 (Fairway Ingress/Egress)
-Mean Cross-Track Deviation  : 3.8 meters (DGCA Max Allowed: 15.0m)
-Flown Path Distance         : ${((s.durationMin ?? 0) * 0.28).toFixed(1)} nautical miles
-Corridor Boundary Adherence : 99.4%
-
---------------------------------------------------------------------------------
-4. SECTION 65B / 63 INDIAN EVIDENCE ACT ATTESTATION
---------------------------------------------------------------------------------
-Hardware Machine Hash       : SHA-256: 9e4f2b189c4418a02b8d91c287410948b273419028471
-Video Ingest Digital Seal   : SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b9
-Officer Attestation         : Certified true and unaltered drone flight telemetry
-                              and cognitive analytics record.
-================================================================================
-SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
-================================================================================`;
-
-    const blob = new Blob([aarText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `AAR_${s.missionId}_${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   const selectedDrone = UAVS.find(u => u.id === selectedDroneId) ?? UAVS[0];
 
@@ -373,85 +218,64 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
       {/* ── Page Header ── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-serif text-2xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>
-              Missions &amp; Sorties Console
-            </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600 border border-cyan-500/20">
-              PROPOSAL §5.1 / RFP §5
-            </span>
-          </div>
+          <h1 className="font-serif text-2xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>
+            Mission Control
+          </h1>
           <p className="text-xs opacity-70" style={{ color: 'var(--text-muted)' }}>
-            Launch sorties, bind context intelligence profiles, execute pre-flight diagnostics, and inspect planned vs flown corridors
+            Start and terminate drone surveillance missions, configure ingestion, and manage mission flight logs
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs px-3 py-1 rounded-full font-mono font-medium border"
-            style={{ background: 'var(--sand-200)', borderColor: 'var(--sand-300)', color: 'var(--ink-900)' }}>
-            Station: Vizhinjam Coastal Police
-          </span>
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════
-          TOP: ACTIVE MISSION STATUS BANNER (MSN-20261016-01)
+          TOP: ACTIVE MISSION STATUS BANNER
          ══════════════════════════════════════════════════ */}
-      {activeSortie ? (
+      {activeMission ? (
         <div
-          className="rounded-2xl p-5 border flex items-center justify-between flex-wrap gap-4 shadow-md relative overflow-hidden"
+          className="rounded-2xl p-4 border flex items-center justify-between flex-wrap gap-4 shadow-md"
           style={{
             background: 'linear-gradient(135deg, rgba(43, 127, 166, 0.08) 0%, rgba(238, 223, 181, 0.25) 100%)',
             borderColor: 'var(--sea-400)',
           }}
         >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-emerald-500/15 border border-emerald-500 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5">
-              <span className="w-4 h-4 rounded-full bg-emerald-500 animate-ping" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-500/15 border border-emerald-500 text-emerald-600 dark:text-emerald-400">
+              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
             </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded bg-emerald-500 text-white">
-                  LIVE SORTIE ACTIVE
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-500 text-white">
+                  LIVE MISSION ACTIVE
                 </span>
-                <span className="font-mono text-xs font-bold text-[var(--sea-600)]">{activeSortie.missionId}</span>
+                <span className="font-mono text-xs font-semibold opacity-75">{activeMission.missionId}</span>
                 <span className="text-xs px-2 py-0.5 rounded font-mono font-bold"
                   style={{ background: 'var(--sand-200)', color: 'var(--ink-900)' }}>
-                  SQUADRON {activeSortie.squadron}
-                </span>
-                <span className="text-xs px-2 py-0.5 rounded font-mono font-bold bg-cyan-500/10 text-cyan-700 border border-cyan-500/20">
-                  PROFILE: {contextProfile}
+                  SQUADRON {activeMission.squadron}
                 </span>
               </div>
-              <h2 className="font-serif text-lg font-bold" style={{ color: 'var(--text)' }}>
-                {activeSortie.name}
+              <h2 className="font-serif text-lg font-bold mt-0.5" style={{ color: 'var(--text)' }}>
+                {activeMission.name}
               </h2>
-              <div className="flex items-center gap-4 text-xs flex-wrap opacity-80" style={{ color: 'var(--text-muted)' }}>
-                <span>Drone: <strong className="font-mono">{activeSortie.droneCode}</strong></span>
-                <span>Pilot: <strong>{activeSortie.pilotName}</strong></span>
-                <span>Location: <strong>{activeSortie.location}</strong></span>
-                <span>Sensor Stream: <strong>{activeSortie.bitrateMbps} Mbps @ {activeSortie.fps} FPS</strong></span>
-                <span>Airborne Duration: <strong className="font-mono text-emerald-600 font-bold">{activeSortie.durationMin} min</strong></span>
+              <div className="flex items-center gap-4 text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                <span>Drone: <strong className="font-mono">{activeMission.droneCode}</strong></span>
+                <span>Pilot: <strong>{activeMission.pilotName}</strong></span>
+                <span>Location: <strong>{activeMission.location}</strong></span>
+                <span>Stream: <strong>{activeMission.bitrateMbps} Mbps @ {activeMission.fps} FPS</strong></span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 ml-auto">
-            <button
-              onClick={() => { setAarSortie(activeSortie); setShowAarModal(true); }}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-colors shadow-sm"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              <FileText className="w-3.5 h-3.5 text-[var(--sea-600)]" />
-              Live AAR Debrief
-            </button>
-            <button
-              onClick={handleStopMission}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm"
-            >
-              <Square className="w-3.5 h-3.5 fill-white" />
-              Terminate Sortie
-            </button>
-          </div>
+          {can(activeRole, 'START_STOP_MISSION') && (
+            <div className="flex items-center gap-3 ml-auto">
+              <button
+                onClick={handleStopMission}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
+              >
+                <Square className="w-4 h-4 fill-white" />
+                Stop Mission
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div
@@ -460,166 +284,16 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
         >
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-500" />
-            <span>No drone sortie currently active. Configure, run diagnostics, and launch a sortie below.</span>
+            <span>No drone mission currently active. Configure and launch a mission below.</span>
           </div>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════
-          MIDDLE SECTION: PRE-FLIGHT CHECKLIST & PLANNED VS FLOWN CORRIDOR
-         ══════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        {/* ── Pre-Flight Diagnostic Checklist (6 Checks) ── */}
-        <div className="rounded-2xl p-5 border shadow-sm space-y-4" style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[var(--sea-600)]" />
-              <h2 className="font-serif text-base font-bold">Pre-Flight Diagnostic Checklist</h2>
-            </div>
-            <button
-              onClick={handleRunDiagnostics}
-              disabled={runningDiagnostics}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              <RefreshCw className={cn('w-3.5 h-3.5 text-[var(--sea-600)]', runningDiagnostics && 'animate-spin')} />
-              {runningDiagnostics ? 'Probing Subsystems...' : 'Run Diagnostics'}
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {diagnostics.map(chk => (
-              <div
-                key={chk.id}
-                className="p-3 rounded-xl border bg-[var(--panel)] flex items-center justify-between text-xs"
-                style={{ borderColor: 'var(--line)' }}
-              >
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{chk.name}</span>
-                    <span className="text-[10px] font-mono opacity-50">· {chk.subsystem}</span>
-                  </div>
-                  <div className="text-[11px] font-mono opacity-70">{chk.metric}</div>
-                </div>
-
-                <div>
-                  {chk.status === 'PASS' && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1">
-                      <Check className="w-3 h-3" /> PASS
-                    </span>
-                  )}
-                  {chk.status === 'CHECKING' && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600 border border-cyan-500/20 flex items-center gap-1 animate-pulse">
-                      <RefreshCw className="w-3 h-3 animate-spin" /> CHECKING
-                    </span>
-                  )}
-                  {chk.status === 'FAIL' && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-500/10 text-red-600 border border-red-500/20 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" /> FAIL
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Planned vs Actual Track on Map & Corridor Deviation ── */}
-        <div className="rounded-2xl p-5 border shadow-sm space-y-4 flex flex-col justify-between" style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}>
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Navigation className="w-4 h-4 text-[var(--sea-600)]" />
-                <h2 className="font-serif text-base font-bold">Planned Corridor vs Actual Flown Track</h2>
-              </div>
-              <span className="text-xs font-mono font-bold text-emerald-600 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> 99.4% Corridor Bound
-              </span>
-            </div>
-            <p className="text-xs opacity-60">DGCA survey corridor compliance with real-time GNSS cross-track deviation</p>
-          </div>
-
-          {/* Visual Corridor SVG Map */}
-          <div className="p-3 rounded-xl border bg-[var(--panel)] relative overflow-hidden h-48 flex items-center justify-center" style={{ borderColor: 'var(--line)' }}>
-            <svg viewBox="0 0 400 180" className="w-full h-full">
-              {/* Shoreline background */}
-              <path d="M 0,160 Q 100,140 200,150 T 400,130 L 400,180 L 0,180 Z" fill="rgba(238, 223, 181, 0.3)" />
-              <text x="280" y="170" fill="currentColor" opacity="0.4" fontSize="10" fontFamily="sans-serif">Vizhinjam Coastline</text>
-
-              {/* Planned Corridor (Dashed Blue Line with Waypoints) */}
-              <path
-                d="M 30,50 L 110,40 L 190,70 L 270,45 L 360,60"
-                fill="none"
-                stroke="#2b7fa6"
-                strokeWidth="6"
-                strokeOpacity="0.2"
-                strokeLinecap="round"
-              />
-              <path
-                d="M 30,50 L 110,40 L 190,70 L 270,45 L 360,60"
-                fill="none"
-                stroke="#2b7fa6"
-                strokeWidth="2"
-                strokeDasharray="4 4"
-              />
-
-              {/* Waypoint markers */}
-              {[
-                { x: 30, y: 50, label: 'WP-1' },
-                { x: 110, y: 40, label: 'WP-2' },
-                { x: 190, y: 70, label: 'WP-3' },
-                { x: 270, y: 45, label: 'WP-4' },
-                { x: 360, y: 60, label: 'WP-5' },
-              ].map(wp => (
-                <g key={wp.label}>
-                  <circle cx={wp.x} cy={wp.y} r="3" fill="#2b7fa6" />
-                  <text x={wp.x - 10} y={wp.y - 8} fill="#2b7fa6" fontSize="9" fontWeight="bold" fontFamily="monospace">{wp.label}</text>
-                </g>
-              ))}
-
-              {/* Actual Flown Track (Solid Emerald Line with slight realistic jitter) */}
-              <path
-                d="M 30,51 Q 70,44 110,39 T 190,72 T 270,44 T 330,55"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-
-              {/* Current UAV Live Position Marker */}
-              <g transform="translate(330, 55)">
-                <circle cx="0" cy="0" r="6" fill="#10b981" opacity="0.3" className="animate-ping" />
-                <circle cx="0" cy="0" r="4" fill="#10b981" />
-                <text x="8" y="4" fill="#10b981" fontSize="10" fontWeight="bold" fontFamily="monospace">UAV-KL-01</text>
-              </g>
-            </svg>
-          </div>
-
-          {/* Deviation Metrics Bar */}
-          <div className="grid grid-cols-3 gap-2 p-3 rounded-xl border bg-[var(--surface)] text-xs font-mono" style={{ borderColor: 'var(--line)' }}>
-            <div>
-              <span className="opacity-50 block text-[10px]">MEAN DEVIATION</span>
-              <span className="font-bold text-emerald-600">3.8 m</span>
-            </div>
-            <div>
-              <span className="opacity-50 block text-[10px]">MAX CROSS-TRACK</span>
-              <span className="font-bold text-[var(--sea-600)]">8.2 m</span>
-            </div>
-            <div>
-              <span className="opacity-50 block text-[10px]">DGCA CORRIDOR LIMIT</span>
-              <span className="font-bold opacity-75">15.0 m</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ══════════════════════════════════════════════════
-          MAIN CENTER: SPLIT 2 COLUMNS (SORTIE CONFIG & CONTROLS)
+          MAIN CENTER: SPLIT 2 COLUMNS
          ══════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* ── LEFT FORM: SORTIE SETUP (2 Columns Span) ── */}
+        {/* ── LEFT FORM: NEW MISSION (2 Columns Span) ── */}
         <div
           className="lg:col-span-2 rounded-2xl p-5 border shadow-sm flex flex-col justify-between"
           style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
@@ -628,7 +302,7 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
             <div className="flex items-center justify-between pb-3 border-b mb-4" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <Anchor className="w-5 h-5" style={{ color: 'var(--sea-600)' }} />
-                <h2 className="font-serif text-base font-bold">New Mission Sortie Setup</h2>
+                <h2 className="font-serif text-base font-bold">New Mission</h2>
               </div>
               <span className="text-xs opacity-60 font-mono">Standardized Protocol v2.4</span>
             </div>
@@ -645,7 +319,7 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                     required
                     value={missionName}
                     onChange={e => setMissionName(e.target.value)}
-                    placeholder="e.g. Poovar Estuary Shoreline Patrol"
+                    placeholder="Enter mission title (e.g. Cochin Coastal Sector Patrol)..."
                     className="w-full px-3 py-2 rounded-xl text-sm border outline-none focus:ring-2 focus:ring-[var(--sea-400)] font-medium"
                     style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                   />
@@ -660,7 +334,7 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                     <button
                       type="button"
                       onClick={() => handleRegenerateId()}
-                      className="text-xs flex items-center gap-1 opacity-70 hover:opacity-100"
+                      className="text-xs flex items-center gap-1 opacity-70 hover:opacity-100 cursor-pointer"
                       style={{ color: 'var(--sea-600)' }}
                     >
                       <RefreshCw className="w-3 h-3" /> Regenerate
@@ -676,38 +350,6 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                   <p className="text-[11px] opacity-60 mt-0.5">Format: MSN-YYYYMMDD-HHMM-SS-SQUADRON</p>
                 </div>
 
-                {/* Context Intelligence Profile Dynamic Selector */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
-                    Applied Coastal Context Intelligence Profile
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {[
-                      { id: 'HARBOR_SURVEILLANCE' as MissionContextProfileType, name: 'Harbor & Anchorage', desc: 'Anchored vessel drift, fairways, breakwaters' },
-                      { id: 'SHORELINE_BEACH' as MissionContextProfileType, name: 'Tourist & Bathing Beach', desc: 'High-density crowds, after-hours loitering' },
-                      { id: 'ESTUARY_INLET' as MissionContextProfileType, name: 'Estuary & Creek Ingress', desc: 'Shallow draft skiffs, landing points' },
-                      { id: 'DEEPWATER_INTERCEPT' as MissionContextProfileType, name: 'High Seas & Dark Vessel', desc: 'AIS gap detection, speed anomalies' },
-                    ].map(cp => (
-                      <div
-                        key={cp.id}
-                        onClick={() => setContextProfile(cp.id)}
-                        className={cn(
-                          'p-3 rounded-xl border cursor-pointer transition-all space-y-1',
-                          contextProfile === cp.id
-                            ? 'bg-[var(--surface)] border-[var(--sea-500)] shadow-xs'
-                            : 'bg-[var(--panel)] border-[var(--line)] opacity-70 hover:opacity-100'
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-xs">{cp.name}</span>
-                          {contextProfile === cp.id && <Check className="w-3.5 h-3.5 text-[var(--sea-600)]" />}
-                        </div>
-                        <p className="text-[11px] opacity-70">{cp.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Squadron Selector */}
                 <div>
                   <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
@@ -720,7 +362,7 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                         type="button"
                         onClick={() => handleSquadronChange(sq)}
                         className={cn(
-                          'py-1.5 px-2 rounded-xl text-xs font-mono font-bold border transition-all text-center',
+                          'py-1.5 px-2 rounded-xl text-xs font-mono font-bold border transition-all text-center cursor-pointer',
                           squadron === sq
                             ? 'bg-[var(--sea-600)] text-white border-[var(--sea-600)] shadow-xs'
                             : 'bg-[var(--panel)] border-[var(--line)] opacity-70 hover:opacity-100'
@@ -767,7 +409,7 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                         type="button"
                         onClick={() => setVideoSourceType(st.type)}
                         className={cn(
-                          'flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold border transition-all',
+                          'flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer',
                           videoSourceType === st.type
                             ? 'bg-[var(--sand-200)] text-[var(--ink-900)] border-[var(--sand-300)] shadow-xs'
                             : 'bg-[var(--panel)] border-[var(--line)] opacity-60 hover:opacity-100'
@@ -791,7 +433,7 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                       required
                       value={videoSourceUrl}
                       onChange={e => setVideoSourceUrl(e.target.value)}
-                      placeholder={videoSourceType === 'RTMP' ? 'rtmp://server:1935/live/feed' : 'rtsp://user:pass@camera/stream'}
+                      placeholder={videoSourceType === 'RTMP' ? 'Enter RTMP URL (e.g. rtmp://server:1935/live/feed)' : 'Enter RTSP URL (e.g. rtsp://user:pass@camera/stream)'}
                       className="w-full px-3 py-2 rounded-xl text-sm border font-mono outline-none"
                       style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                     />
@@ -800,14 +442,32 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                   <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="border-2 border-dashed rounded-xl p-3 text-center" style={{ borderColor: 'var(--line)' }}>
                       <Upload className="w-5 h-5 mx-auto mb-1 opacity-50" />
-                      <div className="text-xs font-semibold">Raw Video (MP4 / TS / MKV)</div>
+                      <div className="text-xs font-semibold">Raw Video (MP4 / WebM / MOV)</div>
                       <input
+                        ref={formFileInputRef}
                         type="file"
-                        accept=".mp4,.ts,.mkv"
-                        onChange={e => setUploadedVideoFile(e.target.files?.[0]?.name ?? null)}
-                        className="mt-1 text-xs"
+                        required={!stagedVideoFile}
+                        accept="video/mp4,video/webm,video/quicktime,video/*"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFormFileSelect(file);
+                        }}
+                        className="mt-1 text-xs cursor-pointer"
                       />
-                      {uploadedVideoFile && <p className="text-[11px] font-mono text-emerald-600 mt-1">✓ {uploadedVideoFile}</p>}
+                      {stagedVideoFile && (
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <p className="text-[11px] font-mono text-emerald-600 font-semibold truncate max-w-[200px]" title={stagedVideoFile}>
+                            ✓ {stagedVideoFile}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleClearFormVideo}
+                            className="text-[10px] text-red-500 hover:underline cursor-pointer font-bold"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="border-2 border-dashed rounded-xl p-3 text-center" style={{ borderColor: 'var(--line)' }}>
@@ -817,9 +477,22 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                         type="file"
                         accept=".srt"
                         onChange={e => setSrtFile(e.target.files?.[0]?.name ?? null)}
-                        className="mt-1 text-xs"
+                        className="mt-1 text-xs cursor-pointer"
                       />
-                      {srtFile && <p className="text-[11px] font-mono text-emerald-600 mt-1">✓ {srtFile}</p>}
+                      {srtFile && (
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <p className="text-[11px] font-mono text-emerald-600 font-semibold truncate max-w-[200px]" title={srtFile}>
+                            ✓ {srtFile}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setSrtFile(null)}
+                            className="text-[10px] text-red-500 hover:underline cursor-pointer font-bold"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -834,6 +507,7 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                     required
                     value={pilotName}
                     onChange={e => setPilotName(e.target.value)}
+                    placeholder="Enter pilot / operator name..."
                     className="w-full px-3 py-2 rounded-xl text-sm border outline-none"
                     style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                   />
@@ -849,26 +523,28 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                     required
                     value={location}
                     onChange={e => setLocation(e.target.value)}
+                    placeholder="Enter coastal deployment location (e.g. Alappuzha Beach)..."
                     className="w-full px-3 py-2 rounded-xl text-sm border outline-none"
                     style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                   />
                 </div>
               </div>
-
-              <div className="pt-3 flex justify-end">
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity shadow-md"
-                >
-                  <Play className="w-4 h-4 fill-white" />
-                  Launch Mission Sortie
-                </button>
-              </div>
+              {can(activeRole, 'START_STOP_MISSION') && (
+                <div className="pt-3 flex justify-end">
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+                  >
+                    <Play className="w-4 h-4 fill-white" />
+                    Start Mission
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>
 
-        {/* ── RIGHT PANEL: TRANSMISSION & COGNITIVE CONTROLS ── */}
+        {/* ── RIGHT PANEL: TRANSMISSION CONTROLS & UPLOADED VIDEO PLAYER ── */}
         <div className="space-y-4 flex flex-col">
           {/* Transmission Controls Card */}
           <div
@@ -891,7 +567,7 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                   type="button"
                   onClick={() => setServerIngestion(!serverIngestion)}
                   className={cn(
-                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0',
+                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0 cursor-pointer',
                     serverIngestion ? 'bg-emerald-600' : 'bg-gray-400'
                   )}
                 >
@@ -909,7 +585,7 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                   type="button"
                   onClick={() => setCognitiveBypass(!cognitiveBypass)}
                   className={cn(
-                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0',
+                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0 cursor-pointer',
                     cognitiveBypass ? 'bg-amber-600' : 'bg-gray-400'
                   )}
                 >
@@ -935,29 +611,113 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
             </div>
           </div>
 
-          {/* Squadron Station Badge */}
+          {/* ── Mission Video Stream Panel (Plays active mission video) ── */}
           <div
-            className="rounded-2xl p-5 border shadow-sm flex-1 flex flex-col justify-between"
-            style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
+            className="rounded-2xl p-4 border shadow-sm flex flex-col justify-between"
+            style={{ background: 'var(--raised)', borderColor: 'var(--line)', minHeight: '300px' }}
           >
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <HardDrive className="w-4 h-4 text-emerald-600" />
-                <h4 className="font-serif text-xs font-bold uppercase tracking-wider">Station Defaults</h4>
+            <div className="flex items-center justify-between pb-2 mb-2 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex items-center gap-2">
+                <Video className="w-4 h-4 text-[var(--sea-600)]" />
+                <h4 className="font-serif text-xs font-bold uppercase tracking-wider">
+                  Mission Video Stream
+                </h4>
               </div>
-              <p className="text-xs opacity-75 leading-relaxed">
-                Inherited from Kerala Coastal Police Station settings: <strong>Vizhinjam Station Base</strong>. All sorties are cryptographically signed with SHA-256 for evidentiary chain of custody.
-              </p>
+              {activeMission && activeVideoUrl && !videoError ? (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  LIVE STREAM
+                </span>
+              ) : activeMission && !videoError ? (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-600 border border-cyan-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+                  INGESTION ACTIVE
+                </span>
+              ) : videoError ? (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-500 border border-red-500/30">
+                  CODEC ERROR
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded opacity-60" style={{ background: 'var(--sand-200)', color: 'var(--ink-800)' }}>
+                  AWAITING MISSION
+                </span>
+              )}
             </div>
-            <div className="pt-3 border-t mt-3 text-xs opacity-50 font-mono" style={{ borderColor: 'var(--line)' }}>
-              Police Deployment ID: KP-DRONE-SEC-4
+
+            {/* Video Canvas / Player Area */}
+            <div
+              className="flex-1 rounded-xl overflow-hidden relative flex flex-col items-center justify-center border bg-black/95 min-h-[190px]"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              {activeMission && activeVideoUrl && !videoError ? (
+                <video
+                  ref={videoRef}
+                  key={activeVideoUrl}
+                  src={activeVideoUrl}
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                  onLoadedData={() => {
+                    if (videoRef.current) {
+                      videoRef.current.play().catch(err => console.log('Autoplay deferred:', err));
+                    }
+                  }}
+                  onError={() => {
+                    setVideoError('The browser could not decode this video. Browsers natively support MP4 (H.264), WebM, or MOV formats. Raw .ts/.mkv streams require conversion.');
+                  }}
+                  className="w-full h-full max-h-[230px] object-contain rounded-xl"
+                />
+              ) : activeMission && videoError ? (
+                <div className="p-4 text-center flex flex-col items-center justify-center">
+                  <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
+                  <p className="text-xs text-red-400 font-semibold mb-1">Playback Error</p>
+                  <p className="text-[11px] text-white/70 max-w-[240px] leading-relaxed">{videoError}</p>
+                </div>
+              ) : activeMission && !activeVideoUrl ? (
+                <div className="flex flex-col items-center justify-center text-center p-4">
+                  <Radio className="w-8 h-8 text-cyan-400 animate-pulse mb-2" />
+                  <p className="text-xs text-white/90 font-semibold">Live Ingestion Feed Active</p>
+                  <p className="text-[11px] font-mono text-cyan-200/80 max-w-[230px] truncate mt-1">
+                    {activeMission.videoSourceUrl || `${activeMission.videoSourceType} Gateway Stream`}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2 text-[10px] font-mono text-emerald-400">
+                    <span>{activeMission.bitrateMbps} Mbps</span>
+                    <span>•</span>
+                    <span>{activeMission.fps} FPS</span>
+                    <span>•</span>
+                    <span>TLS Encrypted</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center p-4">
+                  <Video className="w-8 h-8 opacity-40 text-[var(--sea-400)] mb-2" />
+                  <p className="text-xs text-white/90 font-semibold">Awaiting Mission Launch</p>
+                  <p className="text-[11px] text-white/50 max-w-[230px] mt-1 leading-normal">
+                    Uploaded video will play here once you click &ldquo;Start Mission&rdquo;
+                  </p>
+                </div>
+              )}
             </div>
+
+            {activeMission && (
+              <div className="pt-2 mt-2 border-t text-[11px] font-mono flex items-center justify-between" style={{ borderColor: 'var(--line)' }}>
+                <span className="truncate max-w-[220px] text-emerald-600 font-semibold" title={activeVideoTitle ?? activeMission.name}>
+                  ✓ {activeVideoTitle ? activeVideoTitle : activeMission.name}
+                </span>
+                <span className="text-[10px] opacity-70 font-mono">
+                  {activeMission.droneCode}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════
-          BOTTOM: HISTORICAL MISSION LOG TABLE WITH AAR ACTION
+          BOTTOM: HISTORICAL MISSION LOG TABLE
          ══════════════════════════════════════════════════ */}
       <div
         className="rounded-2xl p-5 border shadow-sm"
@@ -966,9 +726,9 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
         <div className="flex items-center justify-between pb-3 border-b mb-3" style={{ borderColor: 'var(--line)' }}>
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-[var(--sea-600)]" />
-            <h3 className="font-serif text-sm font-bold">Historical Mission Log &amp; After-Action Reports</h3>
+            <h3 className="font-serif text-sm font-bold">Historical Mission Log</h3>
           </div>
-          <span className="text-xs opacity-60">{historySorties.length} logged sorties</span>
+          <span className="text-xs opacity-60">{historyMissions.length} logged missions</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -982,11 +742,13 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                 <th className="py-2.5 px-3">Pilot</th>
                 <th className="py-2.5 px-3">Duration</th>
                 <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3 text-right">Actions</th>
+                {can(activeRole, 'DELETE_MISSION') && (
+                  <th className="py-2.5 px-3 text-right">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {historySorties.map(s => (
+              {historyMissions.map(s => (
                 <tr key={s.id} className="border-b transition-colors hover:bg-[var(--sand-100)]" style={{ borderColor: 'var(--line)' }}>
                   <td className="py-2.5 px-3 font-mono font-bold" style={{ color: 'var(--sea-600)' }}>
                     {s.missionId}
@@ -1004,117 +766,23 @@ SMARTQEYE COASTAL — QUANTUMWEAVE INTELLIGENCE PVT. LTD.
                       {s.status}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-right space-x-2">
-                    <button
-                      onClick={() => { setAarSortie(s); setShowAarModal(true); }}
-                      className="p-1 rounded text-[var(--sea-600)] hover:bg-[var(--surface)] transition-colors inline-flex items-center gap-1 font-mono text-[11px]"
-                      title="View After-Action Report (AAR)"
-                    >
-                      <FileText className="w-3.5 h-3.5" /> AAR
-                    </button>
-                    <button
-                      onClick={() => handleDeleteSortie(s.id)}
-                      className="p-1 rounded text-red-500 hover:bg-red-50 transition-colors inline-flex items-center"
-                      title="Delete Mission Record"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
+                  {can(activeRole, 'DELETE_MISSION') && (
+                    <td className="py-2.5 px-3 text-right">
+                      <button
+                        onClick={() => handleDeleteMission(s.id)}
+                        className="p-1 rounded text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Delete Mission Record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
-
-      {/* ══════════════════════════════════════════════════
-          AAR DEBRIEF MODAL (SORTIE AFTER-ACTION REPORT)
-         ══════════════════════════════════════════════════ */}
-      {showAarModal && aarSortie && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl rounded-2xl border p-6 space-y-5 shadow-2xl overflow-y-auto max-h-[90vh]" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
-            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-[var(--sea-600)]">{aarSortie.missionId}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600">
-                    AAR DOSSIER
-                  </span>
-                </div>
-                <h3 className="font-serif text-lg font-bold mt-1">Sortie After-Action Report &amp; Evidentiary Review</h3>
-              </div>
-              <button onClick={() => setShowAarModal(false)} className="opacity-60 hover:opacity-100 text-sm">✕</button>
-            </div>
-
-            {/* AAR Metrics Summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-              <div className="p-3 rounded-xl border bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
-                <span className="opacity-60 block text-[10px]">SORTIE DURATION</span>
-                <span className="font-bold text-sm">{aarSortie.durationMin} minutes</span>
-              </div>
-              <div className="p-3 rounded-xl border bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
-                <span className="opacity-60 block text-[10px]">FRAMES INGESTED</span>
-                <span className="font-bold text-sm">{((aarSortie.durationMin ?? 0) * 60 * 30).toLocaleString()}</span>
-              </div>
-              <div className="p-3 rounded-xl border bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
-                <span className="opacity-60 block text-[10px]">CFS LOAD SAVED</span>
-                <span className="font-bold text-sm text-emerald-600">41.4% (Skipped)</span>
-              </div>
-              <div className="p-3 rounded-xl border bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
-                <span className="opacity-60 block text-[10px]">CONTACTS TRACKED</span>
-                <span className="font-bold text-sm text-[var(--sea-600)]">14 Contacts</span>
-              </div>
-            </div>
-
-            {/* Findings & Evidence */}
-            <div className="space-y-3 text-xs">
-              <div className="p-4 rounded-xl border bg-[var(--surface)] space-y-2" style={{ borderColor: 'var(--line)' }}>
-                <h4 className="font-serif font-bold text-sm">Operational Findings &amp; AI Attention Events</h4>
-                <ul className="list-disc list-inside space-y-1 opacity-80 leading-relaxed font-sans">
-                  <li><strong>Security Zone Incursion:</strong> Unregistered high-speed skiff C-1042 breached Inner Anchorage Fairway at 14:22 IST. CKFE extracted 4 keyframes.</li>
-                  <li><strong>Shoreline Crowd Density:</strong> Bathing beach cluster within permissible safety limits (Density Estimator: 42 persons / 100m²).</li>
-                  <li><strong>AIS Cross-Correlation:</strong> 11/11 merchant vessels in deepwater roads correlated with Coast Guard AIS broadcasts. Zero Dark Vessels detected.</li>
-                </ul>
-              </div>
-
-              {/* Evidentiary Section 65B Seal */}
-              <div className="p-3 rounded-xl border bg-[var(--surface)] font-mono text-[11px] space-y-1" style={{ borderColor: 'var(--line)' }}>
-                <div className="text-emerald-600 font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Section 65B Indian Evidence Act Cryptographic Seal
-                </div>
-                <div className="opacity-70 break-all">
-                  SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-                </div>
-                <div className="opacity-60 text-[10px]">
-                  Attested by: Insp. Anoop Nair · Vizhinjam Coastal Police Station
-                </div>
-              </div>
-            </div>
-
-            {/* Footer Buttons */}
-            <div className="pt-2 border-t flex justify-between items-center" style={{ borderColor: 'var(--line)' }}>
-              <span className="text-xs opacity-60 font-mono">Confidential Police Record</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowAarModal(false)}
-                  className="px-4 py-2 rounded-xl border text-xs font-semibold hover:bg-[var(--surface)]"
-                  style={{ borderColor: 'var(--line)' }}
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => handleDownloadAarDossier(aarSortie)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] transition-colors shadow-sm"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Download AAR Dossier (.txt)
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

@@ -4,11 +4,12 @@
 // ============================================================
 
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from '@/components/AppShell';
 import { useAuthStore } from '@/lib/store';
-import { RequirePermission } from '@/components/RequirePermission';
+import { canAccess, ROLE_CONFIG } from '@/lib/roleConfig';
+import type { UserRole } from '@/types';
 
 // Lazy-loaded pages
 const LoginPage             = lazy(() => import('@/features/login/LoginPage'));
@@ -30,11 +31,12 @@ const VehicleMaritimePage   = lazy(() => import('@/features/vehicle-maritime/Veh
 const PersonReidPage        = lazy(() => import('@/features/person-reid/PersonReidPage'));
 const IntrusionDetectionPage = lazy(() => import('@/features/intrusion/IntrusionDetectionPage'));
 const AnomalyMonitorPage    = lazy(() => import('@/features/anomaly/AnomalyMonitorPage'));
+const OverviewDashboard     = lazy(() => import('@/features/overview/OverviewDashboard'));
 
-// New Phase 1 Pages (RFP Compliance & Platform Architecture)
+// New Phase pages (RFP Compliance & Platform Architecture)
 const FleetWallPage         = lazy(() => import('@/features/fleet/FleetWallPage'));
 const ContactsPage          = lazy(() => import('@/features/contacts/ContactsPage'));
-const ContactDetailPage    = lazy(() => import('@/features/contacts/ContactDetailPage'));
+const ContactDetailPage     = lazy(() => import('@/features/contacts/ContactDetailPage'));
 const AbandonedObjectsPage  = lazy(() => import('@/features/abandoned/AbandonedObjectsPage'));
 const IncidentsPage         = lazy(() => import('@/features/incidents/IncidentsPage'));
 const ZonesConfigPage       = lazy(() => import('@/features/config/ZonesConfigPage'));
@@ -64,12 +66,34 @@ function PageSkeleton() {
   );
 }
 
-// ─── Auth guard ───────────────────────────────────────────────
+// ─── Auth & Role guards ───────────────────────────────────────
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
+}
+
+function RequireRole({ path, children }: { path: string; children: React.ReactNode }) {
+  const { user, devRole } = useAuthStore();
+  const location = useLocation();
+  const activeRole: UserRole = user?.role ?? devRole ?? 'OPERATOR';
+
+  if (!canAccess(activeRole, path) && !canAccess(activeRole, location.pathname)) {
+    const landing = ROLE_CONFIG[activeRole]?.landing ?? '/';
+    return <Navigate to={landing} replace />;
+  }
+  return <>{children}</>;
+}
+
+function CatchAll() {
+  const { isAuthenticated, user, devRole } = useAuthStore();
+  if (isAuthenticated) {
+    const activeRole = user?.role ?? devRole ?? 'OPERATOR';
+    const landing = ROLE_CONFIG[activeRole]?.landing ?? '/';
+    return <Navigate to={landing} replace />;
+  }
+  return <Navigate to="/login" replace />;
 }
 
 // ─── App ─────────────────────────────────────────────────────
@@ -89,104 +113,59 @@ export default function App() {
                 <AppShell />
               </RequireAuth>
             }>
-              {/* Operations */}
-              <Route index element={<CommandCenter />} />
-              <Route path="live" element={<LiveMonitor />} />
-              <Route path="fleet-wall" element={<FleetWallPage />} />
-              <Route path="fleet" element={<FleetWallPage />} />
-              <Route path="alerts" element={<AlertQueue />} />
-              <Route path="alerts/:id" element={<AlertDetail />} />
-              <Route path="map" element={<MapGIS />} />
-              <Route path="missions" element={<MissionsPage />} />
-              <Route path="uavs" element={<MissionsPage />} />
+              {/* Tactical Operations */}
+              <Route index element={<RequireRole path="/"><CommandCenter /></RequireRole>} />
+              <Route path="overview" element={<RequireRole path="/overview"><OverviewDashboard /></RequireRole>} />
+              <Route path="live" element={<RequireRole path="/live"><LiveMonitor /></RequireRole>} />
+              <Route path="alerts" element={<RequireRole path="/alerts"><AlertQueue /></RequireRole>} />
+              <Route path="alerts/:id" element={<RequireRole path="/alerts/:id"><AlertDetail /></RequireRole>} />
+              <Route path="map" element={<RequireRole path="/map"><MapGIS /></RequireRole>} />
+              <Route path="missions" element={<RequireRole path="/missions"><MissionsPage /></RequireRole>} />
+              <Route path="history" element={<RequireRole path="/history"><HistoryPlayback /></RequireRole>} />
+              <Route path="fleet" element={<RequireRole path="/fleet"><FleetWallPage /></RequireRole>} />
+
+              {/* AI Analytics Pages */}
+              <Route path="crowd-analytics" element={<RequireRole path="/crowd-analytics"><CrowdAnalyticsPage /></RequireRole>} />
+              <Route path="vehicle-maritime" element={<RequireRole path="/vehicle-maritime"><VehicleMaritimePage /></RequireRole>} />
+              <Route path="person-reid" element={<RequireRole path="/person-reid"><PersonReidPage /></RequireRole>} />
+              <Route path="intrusion-detection" element={<RequireRole path="/intrusion-detection"><IntrusionDetectionPage /></RequireRole>} />
+              <Route path="anomaly-monitor" element={<RequireRole path="/anomaly-monitor"><AnomalyMonitorPage /></RequireRole>} />
+              <Route path="abandoned-objects" element={<RequireRole path="/abandoned-objects"><AbandonedObjectsPage /></RequireRole>} />
 
               {/* Intelligence */}
-              <Route path="contacts" element={<ContactsPage />} />
-              <Route path="contacts/:id" element={<ContactDetailPage />} />
-              <Route path="vehicle-maritime" element={<VehicleMaritimePage />} />
-              <Route path="crowd-analytics" element={<CrowdAnalyticsPage />} />
-              <Route path="intrusion-detection" element={<IntrusionDetectionPage />} />
-              <Route path="anomaly-monitor" element={<AnomalyMonitorPage />} />
-              <Route path="abandoned-objects" element={<AbandonedObjectsPage />} />
-              <Route path="person-reid" element={<PersonReidPage />} />
+              <Route path="contacts" element={<RequireRole path="/contacts"><ContactsPage /></RequireRole>} />
+              <Route path="contacts/:id" element={<RequireRole path="/contacts/:id"><ContactDetailPage /></RequireRole>} />
 
               {/* Evidence & Review */}
-              <Route path="history" element={<HistoryPlayback />} />
-              <Route path="incidents" element={<IncidentsPage />} />
-              <Route path="incidents/:id" element={<AlertDetail />} />
-              <Route path="reports" element={<ReportsPage />} />
+              <Route path="incidents" element={<RequireRole path="/incidents"><IncidentsPage /></RequireRole>} />
+              <Route path="incidents/:id" element={<RequireRole path="/incidents/:id"><AlertDetail /></RequireRole>} />
+
+              {/* System & Governance */}
+              <Route path="reports" element={<RequireRole path="/reports"><ReportsPage /></RequireRole>} />
+              <Route path="models" element={<RequireRole path="/models"><AIModelsPage /></RequireRole>} />
+              <Route path="health" element={<RequireRole path="/health"><SystemHealthPage /></RequireRole>} />
 
               {/* Configuration */}
-              <Route
-                path="config/zones"
-                element={
-                  <RequirePermission permission="MANAGE_ZONES">
-                    <ZonesConfigPage />
-                  </RequirePermission>
-                }
-              />
-              <Route
-                path="config/alerts"
-                element={
-                  <RequirePermission permission="MANAGE_ALERT_RULES">
-                    <AlertConfigPage />
-                  </RequirePermission>
-                }
-              />
-              <Route
-                path="models"
-                element={
-                  <RequirePermission permission="MANAGE_MODELS">
-                    <AIModelsPage />
-                  </RequirePermission>
-                }
-              />
-              <Route
-                path="config/models"
-                element={
-                  <RequirePermission permission="MANAGE_MODELS">
-                    <AIModelsPage />
-                  </RequirePermission>
-                }
-              />
+              <Route path="config/zones" element={<RequireRole path="/config/zones"><ZonesConfigPage /></RequireRole>} />
+              <Route path="config/alerts" element={<RequireRole path="/config/alerts"><AlertConfigPage /></RequireRole>} />
 
               {/* Platform */}
-              <Route path="deployment" element={<DeploymentPage />} />
-              <Route path="platform/deployment" element={<DeploymentPage />} />
-              <Route path="integrations" element={<IntegrationsPage />} />
-              <Route path="platform/integrations" element={<IntegrationsPage />} />
-              <Route path="health" element={<SystemHealthPage />} />
-
-              <Route
-                path="admin"
-                element={
-                  <RequirePermission permission="MANAGE_USERS">
-                    <AdminPage />
-                  </RequirePermission>
-                }
-              />
-              <Route
-                path="audit"
-                element={
-                  <RequirePermission permission="VIEW_AUDIT">
-                    <AuditLogPage />
-                  </RequirePermission>
-                }
-              />
-              <Route path="acceptance" element={<AcceptancePage />} />
-              <Route path="platform/acceptance" element={<AcceptancePage />} />
+              <Route path="deployment" element={<RequireRole path="/deployment"><DeploymentPage /></RequireRole>} />
+              <Route path="integrations" element={<RequireRole path="/integrations"><IntegrationsPage /></RequireRole>} />
+              <Route path="admin" element={<RequireRole path="/admin"><AdminPage /></RequireRole>} />
+              <Route path="audit" element={<RequireRole path="/audit"><AuditLogPage /></RequireRole>} />
+              <Route path="acceptance" element={<RequireRole path="/acceptance"><AcceptancePage /></RequireRole>} />
               <Route path="help" element={<HelpCenterPage />} />
 
-
-              {/* Auxiliary / Style Guide */}
+              {/* Auxiliary */}
               <Route path="styleguide" element={<StyleGuide />} />
 
               {/* In-shell 404 route */}
               <Route path="*" element={<NotFoundPage />} />
             </Route>
 
-            {/* Top-level catch-all */}
-            <Route path="*" element={<NotFoundPage />} />
+            {/* Catch-all */}
+            <Route path="*" element={<CatchAll />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

@@ -247,7 +247,7 @@ export async function generatePoliceReportPdf(options: ReportPdfOptions): Promis
   auditApi.append({
     userId: 'rep-gen',
     userName: options.generatedBy,
-    userRole: 'ANALYST',
+    userRole: 'SUPERVISOR',
     action: 'EXPORT_EVIDENCE',
     targetType: 'REPORT',
     targetId: options.reportId,

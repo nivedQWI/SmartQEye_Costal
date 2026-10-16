@@ -1,10 +1,10 @@
 // ============================================================
 // SmartQEye Coastal — App Shell
-// Phase 7A & 7F: App Shell, Header, Accessibility, Responsive Navigation
+// Adaptive UI, Dynamic Role Navigation & HarbourBar
 // ============================================================
 
 import { useState, useEffect, useMemo } from 'react';
-import { NavLink, Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Anchor, LayoutDashboard, Monitor, Bell, Map, History,
   FileText, Shield, Cpu, Users, Radio,
@@ -32,14 +32,18 @@ import {
 } from '@/lib/store';
 import { t, type TranslationKey } from '@/lib/i18n';
 import { simulator } from '@/lib/simulator';
+import { ROLE_CONFIG, canAccess, can } from '@/lib/roleConfig';
 import type { UserRole } from '@/types';
+
+// Toggle to display developer role switcher in HarbourBar (hidden for customer demo)
+const SHOW_DEV_ROLE_SWITCHER = false;
 
 // ─── Nav Structure with Thematic Sections ────────────────────
 
 interface NavEntry {
   to: string;
-  labelKey: TranslationKey;
-  defaultLabel: string;
+  label: string;
+  labelKey?: TranslationKey;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number; style?: React.CSSProperties }>;
   roles: UserRole[];
   badgeKey?: 'alerts' | 'contacts';
@@ -47,72 +51,75 @@ interface NavEntry {
 
 interface NavSection {
   title: string;
-  titleMl: string;
+  titleMl?: string;
   items: NavEntry[];
 }
 
-const ALL_ROLES: UserRole[] = ['OPERATOR', 'ANALYST', 'SUPERVISOR', 'ZONE_ADMIN', 'SYS_ADMIN', 'MODEL_CUSTODIAN', 'AUDITOR'];
+const ALL_ROLES: UserRole[] = ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'];
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: 'Operations',
-    titleMl: 'ഓപ്പറേഷൻസ്',
+    title: 'Tactical Ops',
+    titleMl: 'ടാക്ടിക്കൽ ഓപ്സ്',
     items: [
-      { to: '/',                 labelKey: 'nav_command_center', defaultLabel: 'Command Center',     icon: LayoutDashboard, roles: ALL_ROLES },
-      { to: '/live',             labelKey: 'nav_live',           defaultLabel: 'Live Monitor',       icon: Monitor,         roles: ALL_ROLES },
-      { to: '/fleet-wall',       labelKey: 'nav_fleet_wall',     defaultLabel: 'Fleet Wall (20 Feeds)', icon: Grid,         roles: ALL_ROLES },
-      { to: '/map',              labelKey: 'nav_map',            defaultLabel: 'Map / GIS',          icon: Map,             roles: ALL_ROLES },
-      { to: '/missions',         labelKey: 'nav_missions',       defaultLabel: 'Missions & Sorties', icon: Anchor,          roles: ALL_ROLES },
-      { to: '/alerts',           labelKey: 'nav_alerts',         defaultLabel: 'Alerts',             icon: Bell,            roles: ALL_ROLES, badgeKey: 'alerts' },
+      { to: '/overview',           label: 'Overview Dashboard',  labelKey: 'nav_command_center', icon: Activity,        roles: ['OPERATOR'] },
+      { to: '/',                   label: 'Command Center',      labelKey: 'nav_command_center', icon: LayoutDashboard, roles: ALL_ROLES },
+      { to: '/live',               label: 'Live Monitor',        labelKey: 'nav_live',           icon: Monitor,         roles: ALL_ROLES },
+      { to: '/fleet',              label: 'Fleet Wall',          labelKey: 'nav_fleet_wall',     icon: Grid,            roles: ALL_ROLES },
+      { to: '/alerts',             label: 'Alerts',              labelKey: 'nav_alerts',         icon: Bell,            roles: ALL_ROLES, badgeKey: 'alerts' },
+      { to: '/missions',           label: 'Mission Control',     labelKey: 'nav_missions',       icon: Anchor,          roles: ALL_ROLES },
+      { to: '/map',                label: 'Map / GIS',           labelKey: 'nav_map',            icon: Map,             roles: ALL_ROLES },
+      { to: '/history',            label: 'History Playback',    labelKey: 'nav_history',        icon: History,         roles: ALL_ROLES },
     ]
   },
   {
-    title: 'Intelligence',
-    titleMl: 'ഇന്റലിജൻസ്',
+    title: 'AI Analytics',
+    titleMl: 'എഐ അനലിറ്റിക്സ്',
     items: [
-      { to: '/contacts',         labelKey: 'nav_contacts',       defaultLabel: 'Contacts',           icon: Radio,           roles: ALL_ROLES, badgeKey: 'contacts' },
-      { to: '/vehicle-maritime', labelKey: 'nav_vehicle',        defaultLabel: 'Vehicle & Maritime',  icon: Car,             roles: ALL_ROLES },
-      { to: '/crowd-analytics',  labelKey: 'nav_crowd',          defaultLabel: 'Crowd & Persons',    icon: Users,           roles: ALL_ROLES },
-      { to: '/intrusion-detection', labelKey: 'nav_intrusion',   defaultLabel: 'Intrusion & Geofence', icon: ShieldAlert,   roles: ALL_ROLES },
-      { to: '/anomaly-monitor',  labelKey: 'nav_anomaly',        defaultLabel: 'Anomaly & Behaviour', icon: AlertOctagon,   roles: ALL_ROLES },
-      { to: '/abandoned-objects',labelKey: 'nav_abandoned',      defaultLabel: 'Abandoned Objects',  icon: PackageSearch,   roles: ALL_ROLES },
-      { to: '/person-reid',      labelKey: 'nav_reid',           defaultLabel: 'Person Re-ID (Optional)', icon: ScanFace,    roles: ALL_ROLES },
+      { to: '/crowd-analytics',    label: 'Crowd Analytics',     labelKey: 'nav_crowd',          icon: Users,           roles: ALL_ROLES },
+      { to: '/vehicle-maritime',   label: 'Vehicle & Maritime',  labelKey: 'nav_vehicle',        icon: Car,             roles: ALL_ROLES },
+      { to: '/person-reid',        label: 'Person Re-ID',        labelKey: 'nav_reid',           icon: ScanFace,        roles: ALL_ROLES },
+      { to: '/intrusion-detection',label: 'Intrusion Geofence',  labelKey: 'nav_intrusion',      icon: ShieldAlert,     roles: ALL_ROLES },
+      { to: '/anomaly-monitor',    label: 'Anomaly Monitor',     labelKey: 'nav_anomaly',        icon: AlertOctagon,    roles: ALL_ROLES },
+      { to: '/abandoned-objects',  label: 'Abandoned Objects',   labelKey: 'nav_abandoned',      icon: PackageSearch,   roles: ALL_ROLES },
     ]
   },
   {
-    title: 'Evidence & Review',
-    titleMl: 'തെളിവുകൾ & അവലോകനം',
+    title: 'Intelligence & Evidence',
+    titleMl: 'ഇന്റലിജൻസ് & തെളിവുകൾ',
     items: [
-      { to: '/history',          labelKey: 'nav_history',        defaultLabel: 'History & Playback', icon: History,         roles: ALL_ROLES },
-      { to: '/incidents',        labelKey: 'nav_incidents',      defaultLabel: 'Incident Records',   icon: FolderArchive,   roles: ALL_ROLES },
-      { to: '/reports',          labelKey: 'nav_reports',        defaultLabel: 'Reports',            icon: FileText,        roles: ALL_ROLES },
+      { to: '/contacts',           label: 'Contacts',            labelKey: 'nav_contacts',       icon: Radio,           roles: ALL_ROLES, badgeKey: 'contacts' },
+      { to: '/incidents',          label: 'Incident Records',    labelKey: 'nav_incidents',      icon: FolderArchive,   roles: ALL_ROLES },
     ]
   },
   {
-    title: 'Configuration',
-    titleMl: 'കോൺഫിഗറേഷൻ',
+    title: 'Analytics & Reporting',
+    titleMl: 'അനലിറ്റിക്സ് & റിപ്പോർട്ടിംഗ്',
     items: [
-      { to: '/config/zones',     labelKey: 'nav_config_zones',   defaultLabel: 'Zones & Context',    icon: Sliders,         roles: ALL_ROLES },
-      { to: '/config/alerts',    labelKey: 'nav_config_alerts',  defaultLabel: 'Alert Configuration',icon: Settings2,       roles: ALL_ROLES },
-      { to: '/models',           labelKey: 'nav_models',         defaultLabel: 'AI Models & Datasets', icon: Cpu,           roles: ALL_ROLES },
+      { to: '/reports',            label: 'Police Reports',      labelKey: 'nav_reports',        icon: FileText,        roles: ALL_ROLES },
     ]
   },
   {
-    title: 'Platform',
-    titleMl: 'പ്ലാറ്റ്ഫോം',
+    title: 'Administration',
+    titleMl: 'അഡ്മിനിസ്ട്രേഷൻ',
     items: [
-      { to: '/deployment',       labelKey: 'nav_deployment',     defaultLabel: 'Deployment & Compute', icon: Server,        roles: ALL_ROLES },
-      { to: '/integrations',     labelKey: 'nav_integrations',   defaultLabel: 'API & Integrations', icon: Network,         roles: ALL_ROLES },
-      { to: '/health',           labelKey: 'nav_health',         defaultLabel: 'System Health',      icon: Activity,        roles: ALL_ROLES },
-      { to: '/admin',            labelKey: 'nav_admin',          defaultLabel: 'Administration',     icon: Shield,          roles: ALL_ROLES },
-      { to: '/audit',            labelKey: 'nav_audit',          defaultLabel: 'Audit Log',          icon: ScrollText,      roles: ALL_ROLES },
-      { to: '/acceptance',       labelKey: 'nav_acceptance',     defaultLabel: 'Acceptance Console', icon: CheckSquare,     roles: ALL_ROLES },
-      { to: '/help',             labelKey: 'nav_help',           defaultLabel: 'Help & Training',    icon: GraduationCap,   roles: ALL_ROLES },
+      { to: '/health',             label: 'System Health',       labelKey: 'nav_health',         icon: Activity,        roles: ALL_ROLES },
+      { to: '/models',             label: 'AI Models Cluster',   labelKey: 'nav_models',         icon: Cpu,             roles: ALL_ROLES },
+      { to: '/admin',              label: 'Administration',      labelKey: 'nav_admin',          icon: Shield,          roles: ['SYS_ADMIN', 'SUPERVISOR', 'AUDITOR'] },
+      { to: '/audit',              label: 'Audit Log',           labelKey: 'nav_audit',          icon: ScrollText,      roles: ['SYS_ADMIN'] },
+      { to: '/config/zones',       label: 'Zones & Context',     labelKey: 'nav_config_zones',   icon: Sliders,         roles: ['SUPERVISOR'] },
+      { to: '/config/alerts',      label: 'Alert Configuration', labelKey: 'nav_config_alerts',  icon: Settings2,       roles: ['SUPERVISOR', 'SYS_ADMIN'] },
+      { to: '/deployment',         label: 'Deployment & Compute',labelKey: 'nav_deployment',     icon: Server,          roles: ['SYS_ADMIN'] },
+      { to: '/integrations',       label: 'API & Integrations',  labelKey: 'nav_integrations',   icon: Network,         roles: ['SYS_ADMIN'] },
+      { to: '/acceptance',         label: 'Acceptance Console',  labelKey: 'nav_acceptance',     icon: CheckSquare,     roles: ['SYS_ADMIN', 'AUDITOR'] },
+      { to: '/help',               label: 'Help & Training',     labelKey: 'nav_help',           icon: GraduationCap,   roles: ALL_ROLES },
     ]
   }
 ];
 
-const ROLES: UserRole[] = ['OPERATOR', 'ANALYST', 'SUPERVISOR', 'ZONE_ADMIN', 'SYS_ADMIN', 'MODEL_CUSTODIAN', 'AUDITOR'];
+const ROLES: UserRole[] = ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'];
+
+// ─── AppShell ─────────────────────────────────────────────────
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(() =>
@@ -122,7 +129,10 @@ export function AppShell() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState(false);
 
-  const { user, devRole, logout, setDevRole, viewAsRole, setViewAsRole } = useAuthStore();
+  const { user, devRole, logout, setDevRole } = useAuthStore();
+  const activeRole: UserRole = user?.role ?? devRole ?? 'OPERATOR';
+  const allowedRoutes = ROLE_CONFIG[activeRole]?.allowedRoutes ?? [];
+
   const { mode, setMode, resolveTheme, resolved } = useThemeStore();
   const { criticalBanner, unreadCount, addAlert, dismissBanner } = useAlertStore();
   const { updateHealth } = useHealthStore();
@@ -148,6 +158,7 @@ export function AppShell() {
 
   // Start simulator
   useEffect(() => {
+    simulator.start();
     const unsub = simulator.subscribe(event => {
       if (event.type === 'ALERT_NEW') addAlert(event.payload);
       if (event.type === 'HEALTH_UPDATE') updateHealth(event.payload);
@@ -158,17 +169,16 @@ export function AppShell() {
   // Compute Breadcrumb from current path
   const breadcrumbs = useMemo(() => {
     const path = location.pathname;
-    if (path === '/') return [{ label: 'Operations', path: '/' }, { label: 'Command Center', path: '/' }];
+    if (path === '/') return [{ label: 'Tactical Ops', path: '/' }, { label: 'Command Center', path: '/' }];
 
     for (const section of NAV_SECTIONS) {
       for (const item of section.items) {
         if (item.to !== '/' && path.startsWith(item.to)) {
           const crumbs = [
             { label: section.title, path: item.to },
-            { label: item.defaultLabel, path: item.to },
+            { label: item.label, path: item.to },
           ];
 
-          // Sub-item detail check (e.g. /contacts/:id or /alerts/:id)
           const subId = path.replace(item.to, '').replace(/^\//, '');
           if (subId) {
             crumbs.push({ label: subId, path });
@@ -177,13 +187,40 @@ export function AppShell() {
         }
       }
     }
-    return [{ label: 'Platform', path }, { label: path.replace(/^\//, ''), path }];
+    return [{ label: 'Navigation', path }, { label: path.replace(/^\//, ''), path }];
   }, [location.pathname]);
+
+  // Dynamic Sidebar Ordering & Filtering Algorithm (UI_AND_SIDEBAR_NAVIGATION.md)
+  const visibleSections = useMemo(() => {
+    return NAV_SECTIONS
+      .map(section => {
+        const visibleItems = section.items
+          .filter(item => canAccess(activeRole, item.to))
+          .sort((a, b) => {
+            const idxA = allowedRoutes.indexOf(a.to);
+            const idxB = allowedRoutes.indexOf(b.to);
+            return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+          });
+        return { ...section, items: visibleItems };
+      })
+      .filter(section => section.items.length > 0)
+      .sort((a, b) => {
+        const minA = Math.min(...a.items.map(i => {
+          const idx = allowedRoutes.indexOf(i.to);
+          return idx === -1 ? 999 : idx;
+        }));
+        const minB = Math.min(...b.items.map(i => {
+          const idx = allowedRoutes.indexOf(i.to);
+          return idx === -1 ? 999 : idx;
+        }));
+        return minA - minB;
+      });
+  }, [activeRole, allowedRoutes]);
 
   return (
     <Tooltip.Provider delayDuration={200}>
       <div className="flex flex-col h-screen overflow-hidden" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-        {/* ── Skip Link for Keyboard / Accessibility (7F) ── */}
+        {/* ── Skip Link for Keyboard / Accessibility ── */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1.5 focus:bg-[var(--sea-600)] focus:text-white focus:rounded-lg focus:shadow-xl focus:font-bold focus:text-xs"
@@ -245,8 +282,8 @@ export function AppShell() {
                   <div className="font-serif text-base font-bold leading-tight truncate" style={{ color: 'var(--text)' }}>
                     SmartQEye
                   </div>
-                  <div className="text-[11px] font-semibold tracking-wide truncate text-[var(--sea-600)]">
-                    Coastal Police · QW
+                  <div className="text-[11px] font-semibold tracking-wide truncate text-[var(--accent)]">
+                    Coastal Surveillance · QW
                   </div>
                 </div>
               )}
@@ -254,30 +291,27 @@ export function AppShell() {
               {/* Collapse toggle */}
               <button
                 onClick={() => setCollapsed(c => !c)}
-                className="ml-auto p-1.5 rounded-md hover:bg-[var(--surface)] opacity-70 hover:opacity-100 transition-all flex-shrink-0 cursor-pointer"
+                className="ml-auto p-1.5 rounded-md hover:bg-[var(--surface-hover)] opacity-70 hover:opacity-100 transition-all flex-shrink-0 cursor-pointer"
                 title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
-                {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+                {collapsed ? <PanelLeft className="w-4 h-4 text-[var(--text)]" /> : <PanelLeftClose className="w-4 h-4 text-[var(--text)]" />}
               </button>
             </div>
 
             {/* ── Grouped Navigation Sections ── */}
             <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-1 divide-y divide-[var(--line)]">
-              {NAV_SECTIONS.map((section, sIdx) => {
-                const visibleItems = section.items.filter(item => item.roles.includes(devRole));
-                if (visibleItems.length === 0) return null;
-
+              {visibleSections.map(({ title, titleMl, items }, sIdx) => {
                 return (
-                  <div key={section.title} className={cn("py-1.5", sIdx === 0 ? "pt-0" : "")}>
+                  <div key={title} className={cn("py-1.5", sIdx === 0 ? "pt-0" : "")}>
                     {!collapsed && (
                       <div className="px-3 pt-2 pb-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-80">
-                        {language === 'ml' ? section.titleMl : section.title}
+                        {language === 'ml' && titleMl ? titleMl : title}
                       </div>
                     )}
 
-                    {visibleItems.map(item => {
-                      const itemLabel = t(item.labelKey, language) || item.defaultLabel;
+                    {items.map(item => {
+                      const itemLabel = item.labelKey ? (t(item.labelKey, language) || item.label) : item.label;
                       const badgeCount = item.badgeKey === 'alerts' ? unreadCount : item.badgeKey === 'contacts' ? 4 : 0;
 
                       const navElement = (
@@ -290,7 +324,7 @@ export function AppShell() {
                             collapsed ? 'px-0 justify-center h-10' : 'px-3 py-2',
                             isActive
                               ? 'font-semibold shadow-xs'
-                              : 'opacity-75 hover:opacity-100 hover:bg-[var(--surface)]',
+                              : 'opacity-75 hover:opacity-100 hover:bg-[var(--surface-hover)]',
                           )}
                           style={({ isActive }) => ({
                             background: isActive ? 'var(--sea-200)' : 'transparent',
@@ -388,8 +422,11 @@ export function AppShell() {
                     <div className="text-xs font-bold truncate text-[var(--text)]">
                       {user?.fullName ?? 'Kerala Police Officer'}
                     </div>
-                    <div className="text-[10px] font-mono truncate font-semibold opacity-60">
-                      {devRole.replace(/_/g, ' ')}
+                    <div
+                      className="text-[10px] font-mono truncate font-semibold"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      {activeRole.replace(/_/g, ' ')}
                     </div>
                   </div>
                 </div>
@@ -402,7 +439,7 @@ export function AppShell() {
              ══════════════════════════════════════════ */}
           <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
-            {/* ── Harbour Bar Header (7A) ── */}
+            {/* ── Harbour Bar Header ── */}
             <header
               className="flex items-center h-14 px-4 gap-3 flex-shrink-0 border-b z-20"
               style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}
@@ -410,7 +447,7 @@ export function AppShell() {
               {/* 1. Sidebar Toggle */}
               <button
                 onClick={() => setCollapsed(c => !c)}
-                className="p-1.5 rounded-lg border hover:bg-[var(--surface)] transition-colors cursor-pointer opacity-80 hover:opacity-100"
+                className="p-1.5 rounded-lg border hover:bg-[var(--surface-hover)] transition-colors cursor-pointer opacity-80 hover:opacity-100"
                 style={{ borderColor: 'var(--line)' }}
                 title={collapsed ? 'Expand left rail' : 'Collapse left rail'}
               >
@@ -432,7 +469,7 @@ export function AppShell() {
               {/* 3. Global Search Button (Ctrl+K) */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-[var(--surface)] hover:bg-[var(--panel)] transition-all cursor-pointer text-xs"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-[var(--surface-hover)] hover:bg-[var(--panel)] transition-all cursor-pointer text-xs"
                 style={{ borderColor: 'var(--line)' }}
                 title="Search intelligence records, contacts, sorties, and actions (Ctrl+K)"
               >
@@ -446,43 +483,53 @@ export function AppShell() {
               <div className="flex-1" />
 
               {/* 4. Active Mission Selector */}
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild>
-                  <button
-                    className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all hover:opacity-90 max-w-[200px]"
-                    style={{ background: 'var(--sand-200)', borderColor: 'var(--sand-300)', color: 'var(--ink-900)' }}
-                  >
-                    <Anchor className="w-3.5 h-3.5 flex-shrink-0 text-[var(--sea-600)]" />
-                    <span className="truncate">{activeMission?.title ?? 'All Missions'}</span>
-                    <ChevronDown className="w-3 h-3 opacity-60 flex-shrink-0" />
-                  </button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Portal>
-                  <DropdownMenu.Content
-                    className="z-50 min-w-[240px] rounded-xl shadow-2xl p-1 bg-[var(--panel)] border text-xs"
-                    style={{ borderColor: 'var(--line)' }}
-                    sideOffset={6}
-                  >
-                    {missions.map(m => (
-                      <DropdownMenu.Item
-                        key={m.id}
-                        className={cn(
-                          'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors outline-none hover:bg-[var(--surface)]',
-                          m.id === activeMissionId && 'font-semibold',
-                        )}
-                        onSelect={() => setActiveMission(m.id)}
-                      >
-                        <span className={cn('w-2 h-2 rounded-full flex-shrink-0', m.status === 'ACTIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400')} />
-                        <div className="min-w-0">
-                          <div className="truncate font-medium">{m.title}</div>
-                          <div className="text-[10px] opacity-60 font-mono">{m.missionCode}</div>
-                        </div>
-                        {m.id === activeMissionId && <span className="ml-auto text-xs text-[var(--sea-600)]">✓</span>}
-                      </DropdownMenu.Item>
-                    ))}
-                  </DropdownMenu.Content>
-                </DropdownMenu.Portal>
-              </DropdownMenu.Root>
+              {can(activeRole, 'CHANGE_MISSION') ? (
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <button
+                      className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all hover:opacity-90 max-w-[200px]"
+                      style={{ background: 'var(--sand-200)', borderColor: 'var(--sand-300)', color: 'var(--ink-900)' }}
+                    >
+                      <Anchor className="w-3.5 h-3.5 flex-shrink-0 text-[var(--sea-600)]" />
+                      <span className="truncate">{activeMission?.title ?? 'All Missions'}</span>
+                      <ChevronDown className="w-3 h-3 opacity-60 flex-shrink-0" />
+                    </button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content
+                      className="z-50 min-w-[240px] rounded-xl shadow-2xl p-1 bg-[var(--panel)] border text-xs"
+                      style={{ borderColor: 'var(--line)' }}
+                      sideOffset={6}
+                    >
+                      {missions.map(m => (
+                        <DropdownMenu.Item
+                          key={m.id}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors outline-none hover:bg-[var(--surface-hover)]',
+                            m.id === activeMissionId && 'font-semibold',
+                          )}
+                          onSelect={() => setActiveMission(m.id)}
+                        >
+                          <span className={cn('w-2 h-2 rounded-full flex-shrink-0', m.status === 'ACTIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400')} />
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">{m.title}</div>
+                            <div className="text-[10px] opacity-60 font-mono">{m.missionCode}</div>
+                          </div>
+                          {m.id === activeMissionId && <span className="ml-auto text-xs text-[var(--sea-600)]">✓</span>}
+                        </DropdownMenu.Item>
+                      ))}
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
+              ) : (
+                <div
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border max-w-[200px]"
+                  style={{ background: 'var(--sand-200)', borderColor: 'var(--sand-300)', color: 'var(--ink-900)' }}
+                >
+                  <Anchor className="w-3.5 h-3.5 flex-shrink-0 text-[var(--sea-600)]" />
+                  <span className="truncate">{activeMission?.title ?? 'All Missions'}</span>
+                </div>
+              )}
 
               {/* 5. Connectivity & Processing Mode Chip */}
               <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200">
@@ -493,26 +540,28 @@ export function AppShell() {
               {/* 6. Mission Clock (IST) */}
               <ISTClock />
 
-              {/* 7. Active Alert Bell + Drawer Trigger */}
-              <button
-                onClick={() => setIsAlertDrawerOpen(true)}
-                className="relative p-2 rounded-lg transition-colors hover:bg-[var(--surface)] cursor-pointer"
-                aria-label={`Open active alert drawer. ${unreadCount} unread alerts`}
-                title="Active Coastal Alerts Drawer"
-              >
-                <Bell
-                  className="w-5 h-5"
-                  style={{ color: unreadCount > 0 ? 'var(--sev-critical)' : 'var(--text-muted)' }}
-                />
-                {unreadCount > 0 && (
-                  <span
-                    className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center text-white"
-                    style={{ background: 'var(--sev-critical)' }}
-                  >
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </button>
+              {/* 7. Active Alert Bell */}
+              {['OPERATOR', 'SUPERVISOR', 'AUDITOR'].includes(activeRole) && (
+                <button
+                  onClick={() => setIsAlertDrawerOpen(true)}
+                  className="relative p-2 rounded-lg transition-colors hover:bg-[var(--surface-hover)] cursor-pointer"
+                  aria-label={`Open active alert drawer. ${unreadCount} unread alerts`}
+                  title="Active Coastal Alerts Drawer"
+                >
+                  <Bell
+                    className="w-5 h-5"
+                    style={{ color: unreadCount > 0 ? 'var(--sev-critical)' : 'var(--text-muted)' }}
+                  />
+                  {unreadCount > 0 && (
+                    <span
+                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center text-white"
+                      style={{ background: 'var(--sev-critical)' }}
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              )}
 
               {/* 8. Training Sandbox Badge */}
               <TrainingModeBadge />
@@ -520,7 +569,7 @@ export function AppShell() {
               {/* 9. Language Toggle (EN/ML) */}
               <button
                 onClick={() => setLanguage(language === 'en' ? 'ml' : 'en')}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all hover:bg-[var(--surface)] cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all hover:bg-[var(--surface-hover)] cursor-pointer"
                 style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
                 title={language === 'en' ? 'Switch to Malayalam (മലയാളം)' : 'Switch to English'}
                 aria-label="Toggle language"
@@ -534,7 +583,7 @@ export function AppShell() {
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <button
-                    className="p-2 rounded-lg transition-colors hover:bg-[var(--surface)] cursor-pointer"
+                    className="p-2 rounded-lg transition-colors hover:bg-[var(--surface-hover)] cursor-pointer"
                     aria-label="Switch nautical theme"
                   >
                     {resolved === 'dark' ? <Moon className="w-4 h-4 opacity-75" /> : <Sun className="w-4 h-4 opacity-75" />}
@@ -556,7 +605,7 @@ export function AppShell() {
                       <DropdownMenu.Item
                         key={m}
                         className={cn(
-                          'flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors outline-none hover:bg-[var(--surface)]',
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors outline-none hover:bg-[var(--surface-hover)]',
                           mode === m && 'font-semibold',
                         )}
                         onSelect={() => setMode(m)}
@@ -581,7 +630,7 @@ export function AppShell() {
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <button
-                    className="flex items-center gap-2 px-2 py-1 rounded-lg text-xs transition-colors hover:bg-[var(--surface)] cursor-pointer"
+                    className="flex items-center gap-2 px-2 py-1 rounded-lg text-xs transition-colors hover:bg-[var(--surface-hover)] cursor-pointer"
                   >
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-xs"
@@ -591,7 +640,7 @@ export function AppShell() {
                     </div>
                     <div className="text-left hidden sm:block">
                       <div className="text-xs font-semibold leading-tight">{user?.fullName ?? 'Kerala Police'}</div>
-                      <div className="text-[10px] font-mono opacity-50">{devRole.replace(/_/g, ' ')}</div>
+                      <div className="text-[10px] font-mono opacity-50">{activeRole.replace(/_/g, ' ')}</div>
                     </div>
                     <ChevronDown className="w-3 h-3 opacity-40 hidden sm:block" />
                   </button>
@@ -603,13 +652,13 @@ export function AppShell() {
                     sideOffset={6}
                   >
                     <div className="px-3 py-2 border-b mb-1" style={{ borderColor: 'var(--line)' }}>
-                      <div className="font-bold">{user?.fullName}</div>
-                      <div className="text-[10px] font-mono opacity-60">Role: {devRole.replace(/_/g, ' ')}</div>
+                      <div className="font-bold">{user?.fullName ?? 'User'}</div>
+                      <div className="text-[10px] font-mono opacity-60">Role: {activeRole.replace(/_/g, ' ')}</div>
                     </div>
 
                     <DropdownMenu.Item
                       onSelect={() => navigate('/help')}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-[var(--surface)] transition-colors outline-none"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-[var(--surface-hover)] transition-colors outline-none"
                     >
                       <HelpCircle className="w-3.5 h-3.5 opacity-60" />
                       <span>Help Centre & Shortcuts (?)</span>
@@ -617,14 +666,13 @@ export function AppShell() {
 
                     <DropdownMenu.Item
                       onSelect={() => setAboutOpen(true)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-[var(--surface)] transition-colors outline-none"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-[var(--surface-hover)] transition-colors outline-none"
                     >
                       <Info className="w-3.5 h-3.5 opacity-60" />
                       <span>About Platform & Build</span>
                     </DropdownMenu.Item>
 
-                    {/* Dev role switcher */}
-                    {import.meta.env.DEV && (
+                    {SHOW_DEV_ROLE_SWITCHER && (
                       <>
                         <div className="px-3 pt-2 pb-1 text-[10px] font-mono uppercase font-bold opacity-40">
                           Dev · Switch Role
@@ -633,16 +681,17 @@ export function AppShell() {
                           <DropdownMenu.Item
                             key={role}
                             className={cn(
-                              'flex items-center gap-2 px-3 py-1 rounded-lg cursor-pointer text-xs transition-colors outline-none hover:bg-[var(--surface)]',
-                              devRole === role && 'font-semibold',
+                              'flex items-center gap-2 px-3 py-1 rounded-lg cursor-pointer text-xs transition-colors outline-none hover:bg-[var(--surface-hover)]',
+                              activeRole === role && 'font-semibold',
                             )}
                             onSelect={() => setDevRole(role)}
                           >
                             <Shield className="w-3 h-3 opacity-40 flex-shrink-0" />
                             <span>{role.replace(/_/g, ' ')}</span>
-                            {devRole === role && <span className="ml-auto text-[var(--sea-600)]">✓</span>}
+                            {activeRole === role && <span className="ml-auto text-[var(--sea-600)]">✓</span>}
                           </DropdownMenu.Item>
                         ))}
+                        <DropdownMenu.Separator className="my-1 h-px bg-[var(--line)]" />
                       </>
                     )}
 
@@ -660,7 +709,7 @@ export function AppShell() {
             </header>
 
             {/* ── Critical Alert Banner ── */}
-            {criticalBanner && (
+            {criticalBanner && ['OPERATOR', 'SUPERVISOR', 'AUDITOR'].includes(activeRole) && (
               <div
                 className="flex items-center gap-3 px-4 py-2 text-xs border-b flex-shrink-0 animate-pulse"
                 style={{ background: 'var(--sev-critical)', color: 'white', borderColor: 'rgba(0,0,0,0.25)' }}
@@ -668,7 +717,7 @@ export function AppShell() {
                 aria-live="assertive"
               >
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                <span className="font-bold">CRITICAL BREACH</span>
+                <span className="font-bold">CRITICAL</span>
                 <span className="flex-1 truncate">
                   {criticalBanner.alertCode}: {criticalBanner.event.type.replace(/_/g, ' ')}
                 </span>
@@ -676,41 +725,20 @@ export function AppShell() {
                   className="px-2.5 py-0.5 rounded border border-white/40 text-xs font-medium hover:bg-white/20 transition-colors flex-shrink-0 cursor-pointer"
                   onClick={() => navigate(`/alerts/${criticalBanner.id}`)}
                 >
-                  Open Dossier
+                  Open
                 </button>
-                <button
-                  className="px-2.5 py-0.5 rounded border border-white/40 text-xs font-medium hover:bg-white/20 transition-colors flex-shrink-0 cursor-pointer"
-                  onClick={dismissBanner}
-                >
-                  Acknowledge
-                </button>
+                {can(activeRole, 'ACK_ALERT') && (
+                  <button
+                    className="px-2.5 py-0.5 rounded border border-white/40 text-xs font-medium hover:bg-white/20 transition-colors flex-shrink-0 cursor-pointer"
+                    onClick={dismissBanner}
+                  >
+                    Acknowledge
+                  </button>
+                )}
               </div>
             )}
 
-            {/* ── Role Preview Active Banner ── */}
-            {viewAsRole && (
-              <div
-                className="flex items-center justify-between px-4 py-1.5 text-xs font-mono font-bold border-b flex-shrink-0"
-                style={{
-                  background: '#042F2E',
-                  color: '#5EEAD4',
-                  borderColor: 'rgba(94, 234, 212, 0.3)',
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#5EEAD4] animate-pulse" />
-                  <span>ROLE PREVIEW ACTIVE: Viewing platform as &ldquo;{viewAsRole}&rdquo; (Base login: {user?.role || devRole})</span>
-                </div>
-                <button
-                  onClick={() => setViewAsRole(null)}
-                  className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#134E4A] hover:bg-[#115E59] text-white border border-[#2DD4BF]/40 transition-colors cursor-pointer"
-                >
-                  Exit Role Preview
-                </button>
-              </div>
-            )}
-
-            {/* ── Page Content (Target of Skip Link) ── */}
+            {/* ── Page Content ── */}
             <main
               id="main-content"
               tabIndex={-1}
@@ -721,7 +749,7 @@ export function AppShell() {
               </RouteErrorBoundary>
             </main>
 
-            {/* ── Status Tide Bar (7A) ── */}
+            {/* ── Status Tide Bar ── */}
             <footer
               className="flex items-center h-9 px-4 gap-6 text-xs border-t flex-shrink-0 overflow-x-auto"
               style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text-muted)' }}

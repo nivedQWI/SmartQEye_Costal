@@ -28,7 +28,7 @@ export type Modality = 'RGB' | 'THERMAL';
 export type ZoneType = 'RESTRICTED' | 'MONITORED' | 'FISHING' | 'TOURISM' | 'HARBOUR' | 'BEACH' | 'ESTUARY' | 'OPEN_SEA';
 export type MissionStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'ABORTED';
 export type ProcessingMode = 'CENTRAL_GPU' | 'LOCAL_EDGE' | 'COOP_EDGE' | 'UAV_ONBOARD' | 'POST_MISSION';
-export type UserRole = 'OPERATOR' | 'ANALYST' | 'SUPERVISOR' | 'ZONE_ADMIN' | 'SYS_ADMIN' | 'MODEL_CUSTODIAN' | 'AUDITOR';
+export type UserRole = 'OPERATOR' | 'SUPERVISOR' | 'SYS_ADMIN' | 'AUDITOR';
 
 export type Permission =
   | 'VIEW_LIVE'
@@ -65,6 +65,7 @@ export interface Location {
   method: 'DRONE_POSITION' | 'GIMBAL_PROJECTED' | 'MANUAL';
   altitudeM?: number;
   accuracyM?: number;
+  name?: string;
 }
 
 // ─── Zone ───────────────────────────────────────────────────
@@ -141,6 +142,7 @@ export interface TelemetrySample {
   signalStrengthPct?: number;
   satelliteCount?: number;
   telemetryAvailable: boolean;
+  locationName?: string;
 }
 
 // ─── Feed ───────────────────────────────────────────────────

@@ -296,16 +296,13 @@ export const healthApi = {
 
 const MOCK_USERS: User[] = [
   { id: 'u-op1', username: 'op.rajan', fullName: 'Rajan K.', rankTitle: 'HC', role: 'OPERATOR', unitName: 'Vizhinjam Coastal Police Station', email: 'rajan@kp.gov.in' },
-  { id: 'u-an1', username: 'an.meera', fullName: 'Meera S.', rankTitle: 'Analyst', role: 'ANALYST', unitName: 'Coastal Intelligence Cell', email: 'meera@kp.gov.in' },
-  { id: 'u-an2', username: 'an.priya', fullName: 'Priya V.', rankTitle: 'ASI', role: 'ANALYST', unitName: 'Coastal Intelligence Cell' },
   { id: 'u-sup1', username: 'sup.thomas', fullName: 'Thomas K.', rankTitle: 'Dy.SP Coastal', role: 'SUPERVISOR', unitName: 'Coastal Police HQ', email: 'sup.thomas@kp.gov.in' },
   { id: 'u-sup2', username: 'sup.menon', fullName: 'Menon R.', rankTitle: 'SI', role: 'SUPERVISOR', unitName: 'Coastal Police HQ' },
-  { id: 'u-zadm', username: 'zone.nair', fullName: 'Nair K.', rankTitle: 'CI Coastal', role: 'ZONE_ADMIN', unitName: 'Coastal Police HQ', email: 'zone.nair@kp.gov.in' },
-  { id: 'u-zadm2', username: 'za.krishna', fullName: 'Krishna N.', rankTitle: 'CI', role: 'ZONE_ADMIN', unitName: 'Coastal Police HQ' },
+  { id: 'u-an1', username: 'an.meera', fullName: 'Meera S.', rankTitle: 'Supervisor (Intel)', role: 'SUPERVISOR', unitName: 'Coastal Intelligence Cell', email: 'meera@kp.gov.in' },
+  { id: 'u-zadm', username: 'zone.nair', fullName: 'Nair K.', rankTitle: 'CI Coastal', role: 'SUPERVISOR', unitName: 'Coastal Police HQ', email: 'zone.nair@kp.gov.in' },
   { id: 'u-sadm', username: 'sys.admin', fullName: 'System Admin', rankTitle: 'Admin', role: 'SYS_ADMIN', unitName: 'IT Cell', email: 'sys.admin@kp.gov.in' },
   { id: 'u-sadm2', username: 'sa.thomas', fullName: 'Thomas J.', rankTitle: 'IT Admin', role: 'SYS_ADMIN', unitName: 'IT Cell' },
-  { id: 'u-mc1', username: 'model.iyer', fullName: 'Iyer S.', rankTitle: 'Model Custodian', role: 'MODEL_CUSTODIAN', unitName: 'Drone Forensic Lab', email: 'model.iyer@kp.gov.in' },
-  { id: 'u-mc2', username: 'mc.arun', fullName: 'Arun P.', rankTitle: 'Technical Expert', role: 'MODEL_CUSTODIAN', unitName: 'AI Cell' },
+  { id: 'u-mc1', username: 'model.iyer', fullName: 'Iyer S.', rankTitle: 'AI Sys Admin', role: 'SYS_ADMIN', unitName: 'Drone Forensic Lab', email: 'model.iyer@kp.gov.in' },
   { id: 'u-aud1', username: 'aud.george', fullName: 'George V.', rankTitle: 'Auditor', role: 'AUDITOR', unitName: 'Internal Audit', email: 'aud.george@kp.gov.in' },
   { id: 'u-aud2', username: 'aud.seema', fullName: 'Seema M.', rankTitle: 'Superintendent', role: 'AUDITOR', unitName: 'Internal Audit' },
 ];
@@ -804,9 +801,9 @@ const ADMIN_USERS: AdminUser[] = KERALA_POLICE_ROSTER.map((officer, i) => ({
     i === 0 ? 'SYS_ADMIN' :
     i === 1 ? 'SUPERVISOR' :
     i === 2 ? 'OPERATOR' :
-    i === 3 ? 'ZONE_ADMIN' :
-    i === 4 ? 'MODEL_CUSTODIAN' :
-    i === 5 ? 'AUDITOR' : 'ANALYST'
+    i === 3 ? 'SUPERVISOR' :
+    i === 4 ? 'SYS_ADMIN' :
+    i === 5 ? 'AUDITOR' : 'SUPERVISOR'
   ) as UserRole,
   status: 'ACTIVE',
   lastLoginAt: '2026-10-16T08:12:00+05:30',
@@ -975,7 +972,7 @@ const ACTIVE_SESSIONS: ActiveSession[] = [
     id: 'sess-03',
     userId: 'u-zadm',
     userName: 'CI Krishna N.',
-    role: 'ZONE_ADMIN',
+    role: 'SUPERVISOR',
     ipAddress: '10.200.4.8',
     station: 'Coastal Police HQ (Thiruvananthapuram)',
     browser: 'Firefox ESR 115 (Admin Desk)',

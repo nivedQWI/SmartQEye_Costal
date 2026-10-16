@@ -16,11 +16,11 @@ export interface OptionalModuleBannerProps {
 
 export function OptionalModuleBanner({
   moduleName,
-  legalNotice = 'Statutory Authorization Required (Rule 9): Person Re-ID and Plate Watchlists are outside baseline RFP core. Restricted to ANALYST / SUPERVISOR roles with stated purpose.',
+  legalNotice = 'Statutory Authorization Required (Rule 9): Person Re-ID and Plate Watchlists are outside baseline RFP core. Restricted to SUPERVISOR / SYS_ADMIN roles with stated purpose.',
   className,
 }: OptionalModuleBannerProps) {
   const { user } = useAuthStore();
-  const isAuthorized = user?.role === 'ANALYST' || user?.role === 'SUPERVISOR' || user?.role === 'SYS_ADMIN';
+  const isAuthorized = user?.role === 'SUPERVISOR' || user?.role === 'SYS_ADMIN';
 
   return (
     <div

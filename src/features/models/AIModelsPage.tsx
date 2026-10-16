@@ -524,7 +524,7 @@ export default function AIModelsPage() {
     await auditApi.append({
       userId: user?.username || 'officer',
       userName: user?.fullName || 'Kerala Police Officer',
-      userRole: 'MODEL_CUSTODIAN',
+      userRole: 'SYS_ADMIN',
       action: 'AI_MODEL_ROLLBACK_EXECUTED',
       targetType: 'MODEL',
       targetId: model.name,
@@ -560,7 +560,7 @@ export default function AIModelsPage() {
     await auditApi.append({
       userId: user?.username || 'officer',
       userName: user?.fullName || 'Kerala Police Officer',
-      userRole: 'MODEL_CUSTODIAN',
+      userRole: 'SYS_ADMIN',
       action: 'TAXONOMY_CLASS_PROPOSED',
       targetType: 'TAXONOMY',
       targetId: newClass.name,
@@ -600,7 +600,7 @@ export default function AIModelsPage() {
     await auditApi.append({
       userId: user?.username || 'officer',
       userName: user?.fullName || 'Kerala Police Officer',
-      userRole: 'MODEL_CUSTODIAN',
+      userRole: 'SYS_ADMIN',
       action: 'TRAINING_RUN_AUTHORISED',
       targetType: 'TRAINING_PIPELINE',
       targetId: newRun.id,
@@ -625,7 +625,7 @@ export default function AIModelsPage() {
     await auditApi.append({
       userId: user?.username || 'officer',
       userName: user?.fullName || 'Kerala Police Officer',
-      userRole: 'MODEL_CUSTODIAN',
+      userRole: 'SYS_ADMIN',
       action: `FEEDBACK_CURATED_${action}`,
       targetType: 'FEEDBACK_QUEUE',
       targetId: id,

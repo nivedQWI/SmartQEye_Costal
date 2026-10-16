@@ -114,12 +114,9 @@ export const PERMISSION_LIST: PermissionMeta[] = [
 
 export const ALL_ROLES: UserRole[] = [
   'OPERATOR',
-  'ANALYST',
   'SUPERVISOR',
-  'ZONE_ADMIN',
-  'MODEL_CUSTODIAN',
-  'AUDITOR',
   'SYS_ADMIN',
+  'AUDITOR',
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
@@ -128,14 +125,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'VIEW_ARCHIVE',
     'ACKNOWLEDGE_ALERT',
   ],
-  ANALYST: [
-    'VIEW_LIVE',
-    'VIEW_ARCHIVE',
-    'ANALYSE',
-    'ACKNOWLEDGE_ALERT',
-    'EVIDENCE_ACCESS',
-    'EXPORT',
-  ],
   SUPERVISOR: [
     'VIEW_LIVE',
     'VIEW_ARCHIVE',
@@ -143,31 +132,13 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ACKNOWLEDGE_ALERT',
     'EVIDENCE_ACCESS',
     'EXPORT',
-    'MANAGE_ALERT_RULES',
-    'VIEW_AUDIT',
-  ],
-  ZONE_ADMIN: [
-    'VIEW_LIVE',
-    'VIEW_ARCHIVE',
-    'ANALYSE',
-    'ACKNOWLEDGE_ALERT',
-    'EVIDENCE_ACCESS',
     'MANAGE_ZONES',
     'MANAGE_ALERT_RULES',
-  ],
-  MODEL_CUSTODIAN: [
-    'VIEW_LIVE',
-    'VIEW_ARCHIVE',
-    'ANALYSE',
-    'MANAGE_MODELS',
-    'MANAGE_DATASETS',
-    'APPROVE_MODEL',
   ],
   AUDITOR: [
     'VIEW_ARCHIVE',
     'EVIDENCE_ACCESS',
     'EXPORT',
-    'VIEW_AUDIT',
   ],
   SYS_ADMIN: [
     'VIEW_LIVE',

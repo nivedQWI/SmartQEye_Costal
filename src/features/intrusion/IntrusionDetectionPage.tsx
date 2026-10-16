@@ -10,8 +10,8 @@ import {
   Plus, Trash2, Video, Layers, AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
-import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
+import { useAuthStore } from '@/lib/store';
+import { can } from '@/lib/roleConfig';
 import { IntrusionRecord } from '@/types';
 
 // Mock Geofence Zones
@@ -70,7 +70,7 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
     severity: 'CRITICAL',
     dwellTimeSec: 84,
     timestamp: '19:42:10 IST',
-    snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%237f1d1d"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">TARGET-TRK-9041</text></svg>',
+    snapshotUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
     status: 'ACTIVE'
   },
   {
@@ -82,7 +82,7 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
     severity: 'HIGH',
     dwellTimeSec: 210,
     timestamp: '19:15:32 IST',
-    snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%230c4a6e"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">VESSEL-DHOW-09</text></svg>',
+    snapshotUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=150&q=80',
     status: 'DISPATCHED'
   },
   {
@@ -94,7 +94,7 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
     severity: 'MEDIUM',
     dwellTimeSec: 45,
     timestamp: '18:50:18 IST',
-    snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%23b45309"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">TARGET-TRK-8812</text></svg>',
+    snapshotUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
     status: 'RESOLVED'
   },
   {
@@ -106,12 +106,14 @@ const INITIAL_INTRUSIONS: IntrusionRecord[] = [
     severity: 'HIGH',
     dwellTimeSec: 12,
     timestamp: '17:30:45 IST',
-    snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%231e293b"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">VESSEL-KERALA-33</text></svg>',
+    snapshotUrl: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=150&q=80',
     status: 'ACKNOWLEDGED'
   }
 ];
 
 export default function IntrusionDetectionPage() {
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const [zones, setZones] = useState<VirtualZone[]>(INITIAL_ZONES);
   const [intrusions, setIntrusions] = useState<IntrusionRecord[]>(INITIAL_INTRUSIONS);
   const [selectedZone, setSelectedZone] = useState<VirtualZone | null>(INITIAL_ZONES[0]);
@@ -130,7 +132,7 @@ export default function IntrusionDetectionPage() {
       severity: 'CRITICAL',
       dwellTimeSec: 8,
       timestamp: new Date().toLocaleTimeString('en-IN', { hour12: false }) + ' IST',
-      snapshotUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><rect width="150" height="100" fill="%23dc2626"/><text x="75" y="55" fill="%23ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">SIMULATED BREACH</text></svg>',
+      snapshotUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
       status: 'ACTIVE'
     };
     setIntrusions(prev => [newBreach, ...prev]);
@@ -182,13 +184,15 @@ export default function IntrusionDetectionPage() {
             {isSimulatingBreach ? 'SIMULATING BREACH...' : 'Simulate Breach'}
           </button>
 
-          <button
-            onClick={handleExportJson}
-            className="btn-navy text-xs flex items-center gap-1.5 px-3 py-1.5 rounded"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export JSON Audit
-          </button>
+          {can(activeRole, 'EXPORT_DOWNLOAD') && (
+            <button
+              onClick={handleExportJson}
+              className="btn-navy text-xs flex items-center gap-1.5 px-3 py-1.5 rounded"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export JSON Audit
+            </button>
+          )}
         </div>
       </div>
 
@@ -265,15 +269,72 @@ export default function IntrusionDetectionPage() {
               </div>
             </div>
 
-            {/* Live Drone Video Player with Dynamic Zone Overlay & Detections */}
-            <div className="w-full aspect-video rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 flex flex-col">
-              <DroneVideoPlayer
-                sceneName="vizhinjam_patrol"
-                autoPlay={true}
-                loop={true}
-                showControls={true}
-                className="w-full h-full"
-              />
+            {/* Video Canvas with Dynamic SVG Polygons */}
+            <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex flex-col justify-between p-3 select-none">
+              <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                <svg className="w-full h-full" viewBox="0 0 640 400">
+                  <defs>
+                    <pattern id="secGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                    </pattern>
+                  </defs>
+                  <rect width="640" height="400" fill="url(#secGrid)" />
+
+                  {/* Port Jetty Shoreline Outline */}
+                  <path d="M 0 280 L 180 260 L 320 180 L 480 180 L 640 240 L 640 400 L 0 400 Z" fill="#0f172a" stroke="#1e293b" strokeWidth="2" />
+                  <text x="30" y="320" fill="#475569" fontSize="12" fontFamily="serif" fontWeight="bold">VIZHINJAM SHORELINE</text>
+
+                  {/* Zone 1: Prohibited Naval Berth Polygon (Flashing Red) */}
+                  <polygon
+                    points="120,80 340,60 380,220 160,240"
+                    fill="rgba(239, 68, 68, 0.25)"
+                    stroke="#ef4444"
+                    strokeWidth="2.5"
+                    strokeDasharray="6 4"
+                    className="animate-pulse"
+                  />
+                  <rect x="130" y="90" width="160" height="20" fill="rgba(239, 68, 68, 0.9)" rx="3" />
+                  <text x="136" y="104" fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold">ZONE 1: NAVAL BERTH [BREACH]</text>
+
+                  {/* Target 9041 inside Zone 1 */}
+                  <g transform="translate(240, 150)">
+                    <circle cx="0" cy="0" r="16" fill="rgba(239, 68, 68, 0.4)" className="animate-ping" />
+                    <circle cx="0" cy="0" r="7" fill="#ef4444" />
+                    <rect x="10" y="-12" width="120" height="20" fill="#ef4444" rx="2" />
+                    <text x="14" y="2" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">TARGET-TRK-9041 (84s)</text>
+                    <line x1="0" y1="0" x2="-20" y2="15" stroke="#ef4444" strokeWidth="2" />
+                  </g>
+
+                  {/* Zone 2: Cliff Edge Safety Polygon (Yellow) */}
+                  <polygon
+                    points="420,120 600,100 620,250 440,240"
+                    fill="rgba(245, 158, 11, 0.15)"
+                    stroke="#f59e0b"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 4"
+                  />
+                  <rect x="430" y="130" width="140" height="18" fill="rgba(245, 158, 11, 0.85)" rx="2" />
+                  <text x="436" y="143" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">ZONE 2: CLIFF EDGE BUFFER</text>
+                </svg>
+              </div>
+
+              {/* HUD Header */}
+              <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-300">
+                <span className="bg-slate-900/90 px-2.5 py-1 rounded border border-slate-700 flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                  UAV-KL-01 · 30 FPS RTMP
+                </span>
+                <span className="bg-red-950/90 text-red-200 px-2.5 py-1 rounded border border-red-500/50 font-bold flex items-center gap-1.5 animate-pulse">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                  ALARM: INTRUSION ACTIVE IN ZONE 1
+                </span>
+              </div>
+
+              {/* HUD Footer */}
+              <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-300 bg-slate-950/85 p-2 rounded border border-slate-800">
+                <span className="text-emerald-400">GEOFENCE ENGINE: SHAPELY POLYGON INTERSECTION</span>
+                <span className="text-slate-400">LATENCY: 12MS | POLYGON EVAL: 60 HZ</span>
+              </div>
             </div>
           </div>
         </div>
@@ -394,15 +455,15 @@ export default function IntrusionDetectionPage() {
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      {item.status === 'ACTIVE' && (
+                      {item.status === 'ACTIVE' && can(activeRole, 'DISPATCH_INTERCEPTOR') && (
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'DISPATCHED')}
-                          className="px-2 py-1 rounded bg-amber-700 hover:bg-amber-800 text-white font-mono text-[10px] font-bold"
+                          className="px-2 py-1 rounded bg-red-700 hover:bg-red-800 text-white font-mono text-[10px] font-bold"
                         >
-                          Recommend response
+                          Dispatch
                         </button>
                       )}
-                      {item.status === 'DISPATCHED' && (
+                      {item.status === 'DISPATCHED' && can(activeRole, 'RESOLVE_ALERT') && (
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'RESOLVED')}
                           className="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-[10px] font-bold"
@@ -473,14 +534,16 @@ export default function IntrusionDetectionPage() {
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
-              {inspectRecord.status !== 'RESOLVED' ? (
+              {inspectRecord.status !== 'RESOLVED' && can(activeRole, 'RESOLVE_ALERT') ? (
                 <button
                   onClick={() => handleUpdateStatus(inspectRecord.id, 'RESOLVED')}
                   className="px-3 py-1.5 rounded bg-emerald-700 text-white font-mono text-xs font-bold"
                 >
                   Mark Resolved
                 </button>
-              ) : <span className="text-xs text-emerald-700 font-bold">✓ Incident Closed</span>}
+              ) : inspectRecord.status === 'RESOLVED' ? (
+                <span className="text-xs text-emerald-700 font-bold">✓ Incident Closed</span>
+              ) : null}
 
               <button
                 onClick={() => setInspectRecord(null)}
@@ -492,9 +555,6 @@ export default function IntrusionDetectionPage() {
           </div>
         </div>
       )}
-
-      {/* ── Decision-Support Legal Disclaimer Footer (Rule 7) ── */}
-      <HumanInterpretationNote className="mt-4" />
     </div>
   );
 }

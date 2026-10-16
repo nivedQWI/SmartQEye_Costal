@@ -259,9 +259,7 @@ interface MapState {
   layers: {
     zones: boolean;
     drones: boolean;
-    contacts: boolean;
     alerts: boolean;
-    heatmap: boolean;
   };
   dronePositions: Record<string, { lat: number; lon: number; headingDeg: number }>;
   selectedZoneId: string | null;
@@ -273,7 +271,7 @@ interface MapState {
 }
 
 export const useMapStore = create<MapState>((set) => ({
-  layers: { zones: true, drones: true, contacts: true, alerts: true, heatmap: false },
+  layers: { zones: true, drones: true, alerts: true },
   dronePositions: {},
   selectedZoneId: null,
   editingZoneId: null,
@@ -399,7 +397,7 @@ export const TOUR_DEFINITIONS: Record<string, { title: string; steps: TourStep[]
     title: 'User & RBAC Administration Tour',
     steps: [
       { title: 'Kerala Police Officer Profiles', content: 'Manage officer PEN identifiers, coastal police stations, and active duty assignments.', route: '/admin' },
-      { title: 'Granular Role Capability Matrix', content: 'Strictly separate OPERATOR, ANALYST, SUPERVISOR, MODEL_CUSTODIAN, and SYS_ADMIN rights.', route: '/admin' },
+      { title: 'Granular Role Capability Matrix', content: 'Strictly separate OPERATOR, SUPERVISOR, SYS_ADMIN, and AUDITOR rights.', route: '/admin' },
       { title: 'Active Session Termination', content: 'Administrative kill-switch terminates rogue or compromised operator sessions instantly.', route: '/admin' },
     ],
   },

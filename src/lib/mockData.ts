@@ -7,10 +7,8 @@ import type {
   Alert, Contact, Zone, Mission, Uav, Feed, TelemetrySample,
   CoastalEvent, EvidenceItem, SystemHealth, EdgeNode, ServiceStatus,
   ContactClass, Severity, FeedState, ZoneType, ZoneProfile,
-  AttentionLevel, Modality, ContextProfileDetail, AlertRuleConfig,
-  AbandonedObjectRecord,
+  AttentionLevel, Modality, ContextProfileDetail, AlertRuleConfig, AbandonedObjectRecord,
 } from '@/types';
-import { formatMissionId, formatUavCode, formatAlertId } from '@/lib/idGenerator';
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -62,136 +60,156 @@ export const ZONE_PROFILES: ZoneProfile[] = [
   },
 ];
 
+// ─── Kerala Coastal Sectors Definition ────────────────────────
+
+export interface CoastalSector {
+  name: string;
+  lat: number;
+  lon: number;
+  uavCode: string;
+  missionCode: string;
+  missionTitle: string;
+}
+
+export const KERALA_COASTAL_SECTORS: CoastalSector[] = [
+  { name: 'Vizhinjam International Seaport, Thiruvananthapuram', lat: 8.378, lon: 76.977, uavCode: 'UAV-03', missionCode: 'M-2026-0415', missionTitle: 'Vizhinjam Seaport Security Patrol' },
+  { name: 'Kovalam Beach Bay & Lighthouse, Thiruvananthapuram', lat: 8.399, lon: 76.984, uavCode: 'UAV-03', missionCode: 'M-2026-0415', missionTitle: 'Vizhinjam Seaport Security Patrol' },
+  { name: 'Neendakara Fishing Harbour & Port, Kollam', lat: 8.940, lon: 76.540, uavCode: 'UAV-05', missionCode: 'M-2026-0417', missionTitle: 'Alappuzha Coastal Infiltration Watch' },
+  { name: 'Alappuzha Beach & Pier Sector, Alappuzha', lat: 9.493, lon: 76.320, uavCode: 'UAV-05', missionCode: 'M-2026-0417', missionTitle: 'Alappuzha Coastal Infiltration Watch' },
+  { name: 'Kochi Port & Naval Base Channel, Ernakulam', lat: 9.962, lon: 76.228, uavCode: 'UAV-01', missionCode: 'M-2026-0416', missionTitle: 'Kochi Port & Naval Base Surveillance' },
+  { name: 'Fort Kochi & Vypin Channel, Ernakulam', lat: 9.988, lon: 76.218, uavCode: 'UAV-01', missionCode: 'M-2026-0416', missionTitle: 'Kochi Port & Naval Base Surveillance' },
+  { name: 'Ponnani Port & Estuary Sector, Malappuram', lat: 10.776, lon: 75.922, uavCode: 'UAV-01', missionCode: 'M-2026-0416', missionTitle: 'Kochi Port & Naval Base Surveillance' },
+  { name: 'Beypore Deep Harbour & Port, Kozhikode', lat: 11.166, lon: 75.803, uavCode: 'UAV-02', missionCode: 'M-2026-0414', missionTitle: 'Beypore Maritime & Harbour Patrol' },
+  { name: 'Kozhikode South Beach Coastal Approach, Kozhikode', lat: 11.248, lon: 75.772, uavCode: 'UAV-02', missionCode: 'M-2026-0414', missionTitle: 'Beypore Maritime & Harbour Patrol' },
+  { name: 'Azhikkal Port & Valapattanam Estuary, Kannur', lat: 11.936, lon: 75.312, uavCode: 'UAV-04', missionCode: 'M-2026-0418', missionTitle: 'Kannur Azhikkal Estuary Monitoring' },
+  { name: 'Bekal Coastal Zone & Fort Perimeter, Kasaragod', lat: 12.392, lon: 75.031, uavCode: 'UAV-06', missionCode: 'M-2026-0419', missionTitle: 'Bekal Coastal High-Security Sector' },
+  { name: 'Kasaragod Estuary & Marine Sector, Kasaragod', lat: 12.498, lon: 74.982, uavCode: 'UAV-06', missionCode: 'M-2026-0419', missionTitle: 'Bekal Coastal High-Security Sector' },
+];
+
 // ─── Zones ───────────────────────────────────────────────────
 
 export const ZONES: Zone[] = [
   {
-    id: 'z-01', code: 'Z-01', name: 'Vizhinjam Restricted Jetty', type: 'RESTRICTED',
+    id: 'z-01', code: 'Z-01', name: 'Vizhinjam Deepwater Seaport & Approach', type: 'RESTRICTED',
     profileId: 'zp-restricted-24x7', version: 3, color: '#C8352E',
-    geometry: { type: 'Polygon', coordinates: [[[76.980, 8.378], [76.985, 8.378], [76.985, 8.383], [76.980, 8.383], [76.980, 8.378]]] },
+    geometry: { type: 'Polygon', coordinates: [[[76.972, 8.370], [76.986, 8.370], [76.986, 8.384], [76.972, 8.384], [76.972, 8.370]]] },
     createdAt: minutesAgo(14400), updatedAt: minutesAgo(720),
   },
   {
-    id: 'z-02', code: 'Z-02', name: 'Vizhinjam Outer Harbour', type: 'HARBOUR',
-    profileId: 'zp-harbour-patrol', version: 2, color: '#E06A3B',
-    geometry: { type: 'Polygon', coordinates: [[[76.975, 8.374], [76.985, 8.374], [76.988, 8.382], [76.975, 8.382], [76.975, 8.374]]] },
+    id: 'z-02', code: 'Z-02', name: 'Kovalam Beach & Lighthouse Bay', type: 'TOURISM',
+    profileId: 'zp-tourism-evening', version: 2, color: '#3FAE9A',
+    geometry: { type: 'Polygon', coordinates: [[[76.980, 8.390], [76.996, 8.390], [76.996, 8.406], [76.980, 8.406], [76.980, 8.390]]] },
     createdAt: minutesAgo(14400), updatedAt: minutesAgo(1440),
   },
   {
-    id: 'z-03', code: 'Z-03', name: 'Kovalam Beach North', type: 'BEACH',
-    profileId: 'zp-beach-monitor', version: 1, color: '#E0A526',
-    geometry: { type: 'Polygon', coordinates: [[[76.988, 8.396], [76.995, 8.396], [76.995, 8.403], [76.988, 8.403], [76.988, 8.396]]] },
+    id: 'z-03', code: 'Z-03', name: 'Neendakara Fishing Harbour & Port', type: 'HARBOUR',
+    profileId: 'zp-harbour-patrol', version: 2, color: '#E06A3B',
+    geometry: { type: 'Polygon', coordinates: [[[76.530, 8.930], [76.550, 8.930], [76.550, 8.950], [76.530, 8.950], [76.530, 8.930]]] },
     createdAt: minutesAgo(14400), updatedAt: minutesAgo(2880),
   },
   {
-    id: 'z-04', code: 'Z-04', name: 'Lighthouse Beach – Tourism Zone', type: 'TOURISM',
-    profileId: 'zp-tourism-evening', version: 2, color: '#3FAE9A',
-    geometry: { type: 'Polygon', coordinates: [[[76.993, 8.388], [77.000, 8.388], [77.000, 8.395], [76.993, 8.395], [76.993, 8.388]]] },
-    createdAt: minutesAgo(14400), updatedAt: minutesAgo(1440),
+    id: 'z-04', code: 'Z-04', name: 'Alappuzha Beach & Pier Sector', type: 'BEACH',
+    profileId: 'zp-beach-monitor', version: 1, color: '#E0A526',
+    geometry: { type: 'Polygon', coordinates: [[[76.310, 9.482], [76.328, 9.482], [76.328, 9.504], [76.310, 9.504], [76.310, 9.482]]] },
+    createdAt: minutesAgo(14400), updatedAt: minutesAgo(2880),
   },
   {
-    id: 'z-05', code: 'Z-05', name: 'Poovar Estuary', type: 'ESTUARY',
-    profileId: 'zp-estuary-watch', version: 1, color: '#2B7FA6',
-    geometry: { type: 'Polygon', coordinates: [[[76.960, 8.315], [76.972, 8.315], [76.972, 8.325], [76.960, 8.325], [76.960, 8.315]]] },
-    createdAt: minutesAgo(14400), updatedAt: minutesAgo(5760),
-  },
-  {
-    id: 'z-06', code: 'Z-06', name: 'Fishing Zone – Veli Lake', type: 'FISHING',
-    profileId: 'zp-fishing-daytime', version: 1, color: '#3FAE9A',
-    geometry: { type: 'Polygon', coordinates: [[[76.904, 8.479], [76.916, 8.479], [76.916, 8.490], [76.904, 8.490], [76.904, 8.479]]] },
-    createdAt: minutesAgo(14400), updatedAt: minutesAgo(5760),
-  },
-  {
-    id: 'z-07', code: 'Z-07', name: 'Restricted – Vizhinjam Military Approach', type: 'RESTRICTED',
+    id: 'z-05', code: 'Z-05', name: 'Cochin Port & Naval Base Restricted Waters', type: 'RESTRICTED',
     profileId: 'zp-restricted-24x7', version: 4, color: '#C8352E',
-    geometry: { type: 'Polygon', coordinates: [[[76.970, 8.369], [76.978, 8.369], [76.978, 8.376], [76.970, 8.376], [76.970, 8.369]]] },
+    geometry: { type: 'Polygon', coordinates: [[[76.216, 9.950], [76.242, 9.950], [76.242, 9.974], [76.216, 9.974], [76.216, 9.950]]] },
     createdAt: minutesAgo(14400), updatedAt: minutesAgo(360),
   },
   {
-    id: 'z-08', code: 'Z-08', name: 'Shanghumugham Beach', type: 'BEACH',
-    profileId: 'zp-beach-monitor', version: 1, color: '#E0A526',
-    geometry: { type: 'Polygon', coordinates: [[[76.888, 8.479], [76.896, 8.479], [76.896, 8.488], [76.888, 8.488], [76.888, 8.479]]] },
-    createdAt: minutesAgo(14400), updatedAt: minutesAgo(5760),
-  },
-  {
-    id: 'z-09', code: 'Z-09', name: 'Valiyathura Jetty – Monitored', type: 'MONITORED',
+    id: 'z-06', code: 'Z-06', name: 'Vypin Island & Fort Kochi Channel', type: 'MONITORED',
     profileId: 'zp-harbour-patrol', version: 2, color: '#E06A3B',
-    geometry: { type: 'Polygon', coordinates: [[[76.914, 8.480], [76.924, 8.480], [76.924, 8.488], [76.914, 8.488], [76.914, 8.480]]] },
+    geometry: { type: 'Polygon', coordinates: [[[76.206, 9.978], [76.228, 9.978], [76.228, 10.004], [76.206, 10.004], [76.206, 9.978]]] },
     createdAt: minutesAgo(14400), updatedAt: minutesAgo(2880),
   },
   {
-    id: 'z-10', code: 'Z-10', name: 'Anchuthengu – Open Coast Watch', type: 'OPEN_SEA',
-    profileId: 'zp-beach-monitor', version: 1, color: '#6FB7D6',
-    geometry: { type: 'Polygon', coordinates: [[[76.840, 8.610], [76.856, 8.610], [76.856, 8.625], [76.840, 8.625], [76.840, 8.610]]] },
-    createdAt: minutesAgo(14400), updatedAt: minutesAgo(5760),
-  },
-  {
-    id: 'z-11', code: 'Z-11', name: 'Paravur Backwaters', type: 'ESTUARY',
+    id: 'z-07', code: 'Z-07', name: 'Ponnani Port & Bharathappuzha Estuary', type: 'ESTUARY',
     profileId: 'zp-estuary-watch', version: 1, color: '#2B7FA6',
-    geometry: { type: 'Polygon', coordinates: [[[76.765, 8.802], [76.778, 8.802], [76.778, 8.815], [76.765, 8.815], [76.765, 8.802]]] },
+    geometry: { type: 'Polygon', coordinates: [[[75.910, 10.765], [75.930, 10.765], [75.930, 10.788], [75.910, 10.788], [75.910, 10.765]]] },
     createdAt: minutesAgo(14400), updatedAt: minutesAgo(5760),
   },
   {
-    id: 'z-12', code: 'Z-12', name: 'Neendakara Fishing Harbour', type: 'FISHING',
-    profileId: 'zp-fishing-daytime', version: 2, color: '#3FAE9A',
-    geometry: { type: 'Polygon', coordinates: [[[76.553, 9.000], [76.565, 9.000], [76.565, 9.010], [76.553, 9.010], [76.553, 9.000]]] },
+    id: 'z-08', code: 'Z-08', name: 'Beypore Port & Chaliyar Estuary, Kozhikode', type: 'HARBOUR',
+    profileId: 'zp-harbour-patrol', version: 2, color: '#E06A3B',
+    geometry: { type: 'Polygon', coordinates: [[[75.790, 11.155], [75.814, 11.155], [75.814, 11.178], [75.790, 11.178], [75.790, 11.155]]] },
     createdAt: minutesAgo(14400), updatedAt: minutesAgo(2880),
+  },
+  {
+    id: 'z-09', code: 'Z-09', name: 'Azhikkal Port & Valapattanam Sector, Kannur', type: 'MONITORED',
+    profileId: 'zp-harbour-patrol', version: 1, color: '#6FB7D6',
+    geometry: { type: 'Polygon', coordinates: [[[75.300, 11.925], [75.324, 11.925], [75.324, 11.950], [75.300, 11.950], [75.300, 11.925]]] },
+    createdAt: minutesAgo(14400), updatedAt: minutesAgo(5760),
+  },
+  {
+    id: 'z-10', code: 'Z-10', name: 'Bekal Fort & Coastal Surveillance Sector, Kasaragod', type: 'RESTRICTED',
+    profileId: 'zp-restricted-24x7', version: 3, color: '#C8352E',
+    geometry: { type: 'Polygon', coordinates: [[[75.020, 12.380], [75.044, 12.380], [75.044, 12.404], [75.020, 12.404], [75.020, 12.380]]] },
+    createdAt: minutesAgo(14400), updatedAt: minutesAgo(1440),
   },
 ];
 
-// ─── UAVs (Complies with Rule 1D: UAV-KL-01 ... UAV-KL-06) ───
+// ─── UAVs ─────────────────────────────────────────────────────
 
 export const UAVS: Uav[] = [
-  { id: 'u-01', droneCode: 'UAV-KL-01', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-001-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
-  { id: 'u-02', droneCode: 'UAV-KL-02', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-002-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
-  { id: 'u-03', droneCode: 'UAV-KL-03', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-003-KP', adapterType: 'mavlink', hasOnboardCompute: true, isActive: true },
-  { id: 'u-04', droneCode: 'UAV-KL-04', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-004-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
-  { id: 'u-05', droneCode: 'UAV-KL-05', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-005-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
-  { id: 'u-06', droneCode: 'UAV-KL-06', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-006-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
+  { id: 'u-01', droneCode: 'UAV-01', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-001-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
+  { id: 'u-02', droneCode: 'UAV-02', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-002-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
+  { id: 'u-03', droneCode: 'UAV-03', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-003-KP', adapterType: 'mavlink', hasOnboardCompute: true, isActive: true },
+  { id: 'u-04', droneCode: 'UAV-04', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-004-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
+  { id: 'u-05', droneCode: 'UAV-05', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-005-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
+  { id: 'u-06', droneCode: 'UAV-06', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-006-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
 ];
 
-// ─── Missions (Complies with Rule 1D: MSN-YYYYMMDD-HHMM-SS-SQUADRON) ─
+// ─── Missions ─────────────────────────────────────────────────
 
 export const MISSIONS: Mission[] = [
-  { id: 'm-01', missionCode: formatMissionId('VIZHINJAM', '0830', 1), title: 'Vizhinjam Harbour Patrol', profile: 'harbour_patrol', uavId: 'u-03', uavCode: 'UAV-KL-03', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(180), area: 'Vizhinjam' },
-  { id: 'm-02', missionCode: formatMissionId('KOVALAM', '0915', 1), title: 'Kovalam Beach Surveillance', profile: 'beach_patrol', uavId: 'u-01', uavCode: 'UAV-KL-01', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(120), area: 'Kovalam' },
-  { id: 'm-03', missionCode: formatMissionId('POOVAR', '1000', 1), title: 'Poovar Estuary Watch', profile: 'estuary_patrol', uavId: 'u-05', uavCode: 'UAV-KL-05', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(90), area: 'Poovar' },
-  { id: 'm-04', missionCode: formatMissionId('TRIVANDRUM', '0600', 1), title: 'Morning Coastal Survey', profile: 'coastal_survey', uavId: 'u-02', uavCode: 'UAV-KL-02', status: 'COMPLETED', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(480), endedAt: minutesAgo(120), area: 'Thiruvananthapuram Coast' },
-  { id: 'm-05', missionCode: formatMissionId('VALIYATHURA', '1100', 1), title: 'Valiyathura Jetty Monitor', profile: 'harbour_patrol', uavId: 'u-04', uavCode: 'UAV-KL-04', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(60), area: 'Valiyathura' },
-  { id: 'm-06', missionCode: formatMissionId('SHANGHUMUGHAM', '1130', 1), title: 'Shanghumugham Patrol', profile: 'beach_patrol', uavId: 'u-06', uavCode: 'UAV-KL-06', status: 'ACTIVE', processingMode: 'LOCAL_EDGE', startedAt: minutesAgo(45), area: 'Shanghumugham' },
+  { id: 'm-01', missionCode: 'M-2026-0415', title: 'Vizhinjam Seaport Security Patrol', profile: 'harbour_patrol', uavId: 'u-03', uavCode: 'UAV-03', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(180), area: 'Vizhinjam & Kovalam, Thiruvananthapuram' },
+  { id: 'm-02', missionCode: 'M-2026-0416', title: 'Kochi Port & Naval Base Surveillance', profile: 'harbour_patrol', uavId: 'u-01', uavCode: 'UAV-01', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(120), area: 'Kochi Harbour & Vypin Channel, Ernakulam' },
+  { id: 'm-03', missionCode: 'M-2026-0417', title: 'Alappuzha Coastal Infiltration Watch', profile: 'beach_patrol', uavId: 'u-05', uavCode: 'UAV-05', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(90), area: 'Alappuzha Coastline & Pier' },
+  { id: 'm-04', missionCode: 'M-2026-0414', title: 'Beypore Maritime & Harbour Patrol', profile: 'coastal_survey', uavId: 'u-02', uavCode: 'UAV-02', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(480), area: 'Beypore & Kozhikode Beach' },
+  { id: 'm-05', missionCode: 'M-2026-0418', title: 'Kannur Azhikkal Estuary Monitoring', profile: 'estuary_patrol', uavId: 'u-04', uavCode: 'UAV-04', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(60), area: 'Azhikkal Port & Valapattanam, Kannur' },
+  { id: 'm-06', missionCode: 'M-2026-0419', title: 'Bekal Coastal High-Security Sector', profile: 'beach_patrol', uavId: 'u-06', uavCode: 'UAV-06', status: 'ACTIVE', processingMode: 'LOCAL_EDGE', startedAt: minutesAgo(45), area: 'Bekal Coastal Zone, Kasaragod' },
 ];
 
 // ─── Telemetry (initial values) ───────────────────────────────
 
 export const INITIAL_TELEMETRY: Record<string, TelemetrySample> = {
-  'f-01': { feedId: 'f-01', uavCode: 'UAV-KL-03', missionCode: formatMissionId('VIZHINJAM', '0830', 1), timestamp: new Date().toISOString(), lat: 8.380, lon: 76.982, altitudeM: 120, headingDeg: 42, groundSpeedMs: 9.2, batteryPct: 63, flightStatus: 'AUTO', signalStrengthPct: 94, satelliteCount: 14, telemetryAvailable: true },
-  'f-02': { feedId: 'f-02', uavCode: 'UAV-KL-03', missionCode: formatMissionId('VIZHINJAM', '0830', 1), timestamp: new Date().toISOString(), lat: 8.380, lon: 76.982, altitudeM: 120, headingDeg: 42, groundSpeedMs: 9.2, batteryPct: 63, flightStatus: 'AUTO', signalStrengthPct: 94, satelliteCount: 14, telemetryAvailable: true },
-  'f-03': { feedId: 'f-03', uavCode: 'UAV-KL-01', missionCode: formatMissionId('KOVALAM', '0915', 1), timestamp: new Date().toISOString(), lat: 8.400, lon: 76.991, altitudeM: 100, headingDeg: 195, groundSpeedMs: 7.5, batteryPct: 78, flightStatus: 'AUTO', signalStrengthPct: 88, satelliteCount: 13, telemetryAvailable: true },
-  'f-05': { feedId: 'f-05', uavCode: 'UAV-KL-05', missionCode: formatMissionId('POOVAR', '1000', 1), timestamp: new Date().toISOString(), lat: 8.320, lon: 76.965, altitudeM: 80, headingDeg: 320, groundSpeedMs: 5.0, batteryPct: 91, flightStatus: 'AUTO', signalStrengthPct: 82, satelliteCount: 11, telemetryAvailable: true },
-  'f-07': { feedId: 'f-07', uavCode: 'UAV-KL-04', missionCode: formatMissionId('VALIYATHURA', '1100', 1), timestamp: new Date().toISOString(), lat: 8.483, lon: 76.920, altitudeM: 90, headingDeg: 110, groundSpeedMs: 8.1, batteryPct: 55, flightStatus: 'AUTO', signalStrengthPct: 76, satelliteCount: 12, telemetryAvailable: true },
-  'f-09': { feedId: 'f-09', uavCode: 'UAV-KL-06', missionCode: formatMissionId('SHANGHUMUGHAM', '1130', 1), timestamp: new Date().toISOString(), lat: 8.483, lon: 76.892, altitudeM: 110, headingDeg: 270, groundSpeedMs: 6.3, batteryPct: 82, flightStatus: 'AUTO', signalStrengthPct: 91, satelliteCount: 15, telemetryAvailable: true },
+  'f-01': { feedId: 'f-01', uavCode: 'UAV-01', missionCode: 'M-2026-0416', timestamp: new Date().toISOString(), lat: 9.965, lon: 76.230, altitudeM: 120, headingDeg: 45, groundSpeedMs: 9.2, batteryPct: 78, flightStatus: 'AUTO', signalStrengthPct: 94, satelliteCount: 14, telemetryAvailable: true, locationName: 'Kochi Port & Naval Base Sector, Ernakulam' },
+  'f-02': { feedId: 'f-02', uavCode: 'UAV-01', missionCode: 'M-2026-0416', timestamp: new Date().toISOString(), lat: 9.965, lon: 76.230, altitudeM: 120, headingDeg: 45, groundSpeedMs: 9.2, batteryPct: 78, flightStatus: 'AUTO', signalStrengthPct: 94, satelliteCount: 14, telemetryAvailable: true, locationName: 'Kochi Port & Naval Base Sector, Ernakulam' },
+  'f-03': { feedId: 'f-03', uavCode: 'UAV-03', missionCode: 'M-2026-0415', timestamp: new Date().toISOString(), lat: 8.382, lon: 76.980, altitudeM: 100, headingDeg: 195, groundSpeedMs: 7.5, batteryPct: 63, flightStatus: 'AUTO', signalStrengthPct: 88, satelliteCount: 13, telemetryAvailable: true, locationName: 'Vizhinjam International Seaport, Thiruvananthapuram' },
+  'f-04': { feedId: 'f-04', uavCode: 'UAV-03', missionCode: 'M-2026-0415', timestamp: new Date().toISOString(), lat: 8.382, lon: 76.980, altitudeM: 100, headingDeg: 195, groundSpeedMs: 7.5, batteryPct: 63, flightStatus: 'AUTO', signalStrengthPct: 88, satelliteCount: 13, telemetryAvailable: true, locationName: 'Vizhinjam International Seaport, Thiruvananthapuram' },
+  'f-05': { feedId: 'f-05', uavCode: 'UAV-05', missionCode: 'M-2026-0417', timestamp: new Date().toISOString(), lat: 9.492, lon: 76.320, altitudeM: 85, headingDeg: 320, groundSpeedMs: 6.8, batteryPct: 84, flightStatus: 'AUTO', signalStrengthPct: 82, satelliteCount: 11, telemetryAvailable: true, locationName: 'Alappuzha Beach & Pier Sector, Alappuzha' },
+  'f-06': { feedId: 'f-06', uavCode: 'UAV-05', missionCode: 'M-2026-0417', timestamp: new Date().toISOString(), lat: 9.492, lon: 76.320, altitudeM: 85, headingDeg: 320, groundSpeedMs: 6.8, batteryPct: 84, flightStatus: 'AUTO', signalStrengthPct: 82, satelliteCount: 11, telemetryAvailable: true, locationName: 'Alappuzha Beach & Pier Sector, Alappuzha' },
+  'f-07': { feedId: 'f-07', uavCode: 'UAV-04', missionCode: 'M-2026-0418', timestamp: new Date().toISOString(), lat: 11.935, lon: 75.312, altitudeM: 95, headingDeg: 110, groundSpeedMs: 8.1, batteryPct: 69, flightStatus: 'AUTO', signalStrengthPct: 76, satelliteCount: 12, telemetryAvailable: true, locationName: 'Azhikkal Port Sector, Kannur' },
+  'f-08': { feedId: 'f-08', uavCode: 'UAV-04', missionCode: 'M-2026-0418', timestamp: new Date().toISOString(), lat: 11.935, lon: 75.312, altitudeM: 95, headingDeg: 110, groundSpeedMs: 8.1, batteryPct: 69, flightStatus: 'AUTO', signalStrengthPct: 76, satelliteCount: 12, telemetryAvailable: true, locationName: 'Azhikkal Port Sector, Kannur' },
+  'f-09': { feedId: 'f-09', uavCode: 'UAV-06', missionCode: 'M-2026-0419', timestamp: new Date().toISOString(), lat: 12.392, lon: 75.032, altitudeM: 110, headingDeg: 270, groundSpeedMs: 7.3, batteryPct: 82, flightStatus: 'AUTO', signalStrengthPct: 91, satelliteCount: 15, telemetryAvailable: true, locationName: 'Bekal Fort Coastal Sector, Kasaragod' },
+  'f-10': { feedId: 'f-10', uavCode: 'UAV-06', missionCode: 'M-2026-0419', timestamp: new Date().toISOString(), lat: 12.392, lon: 75.032, altitudeM: 110, headingDeg: 270, groundSpeedMs: 7.3, batteryPct: 82, flightStatus: 'AUTO', signalStrengthPct: 91, satelliteCount: 15, telemetryAvailable: true, locationName: 'Bekal Fort Coastal Sector, Kasaragod' },
+  'f-11': { feedId: 'f-11', uavCode: 'UAV-02', missionCode: 'M-2026-0414', timestamp: new Date().toISOString(), lat: 11.168, lon: 75.802, altitudeM: 105, headingDeg: 180, groundSpeedMs: 8.5, batteryPct: 75, flightStatus: 'AUTO', signalStrengthPct: 88, satelliteCount: 13, telemetryAvailable: true, locationName: 'Beypore Deep Harbour Sector, Kozhikode' },
+  'f-12': { feedId: 'f-12', uavCode: 'UAV-02', missionCode: 'M-2026-0414', timestamp: new Date().toISOString(), lat: 11.168, lon: 75.802, altitudeM: 105, headingDeg: 180, groundSpeedMs: 8.5, batteryPct: 75, flightStatus: 'AUTO', signalStrengthPct: 88, satelliteCount: 13, telemetryAvailable: true, locationName: 'Beypore Deep Harbour Sector, Kozhikode' },
 };
 
 // ─── Feeds ────────────────────────────────────────────────────
 
 export const INITIAL_FEEDS: Feed[] = [
-  { id: 'f-01', uavCode: 'UAV-KL-03', missionCode: formatMissionId('VIZHINJAM', '0830', 1), label: 'UAV-KL-03 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 820, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 8.4, droppedFrames: 12, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: true, telemetry: INITIAL_TELEMETRY['f-01'] },
-  { id: 'f-02', uavCode: 'UAV-KL-03', missionCode: formatMissionId('VIZHINJAM', '0830', 1), label: 'UAV-KL-03 Thermal', modality: 'THERMAL', state: 'LIVE', latencyMs: 840, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 4.2, droppedFrames: 8, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: true, telemetry: INITIAL_TELEMETRY['f-02'] },
-  { id: 'f-03', uavCode: 'UAV-KL-01', missionCode: formatMissionId('KOVALAM', '0915', 1), label: 'UAV-KL-01 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 1200, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.8, droppedFrames: 3, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: true, telemetry: INITIAL_TELEMETRY['f-03'] },
-  { id: 'f-04', uavCode: 'UAV-KL-01', missionCode: formatMissionId('KOVALAM', '0915', 1), label: 'UAV-KL-01 Thermal', modality: 'THERMAL', state: 'BUFFERING', latencyMs: 3200, fpsCurrent: 12, fpsTarget: 25, bitrateMbps: 2.1, droppedFrames: 87, lastFrameAt: minutesAgo(0.5), resolution: '640x512', isPinned: true, telemetry: INITIAL_TELEMETRY['f-03'] },
-  { id: 'f-05', uavCode: 'UAV-KL-05', missionCode: formatMissionId('POOVAR', '1000', 1), label: 'UAV-KL-05 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 950, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 6.9, droppedFrames: 0, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-05'] },
-  { id: 'f-06', uavCode: 'UAV-KL-05', missionCode: formatMissionId('POOVAR', '1000', 1), label: 'UAV-KL-05 Thermal', modality: 'THERMAL', state: 'LIVE', latencyMs: 970, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 3.8, droppedFrames: 0, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: false, telemetry: INITIAL_TELEMETRY['f-05'] },
-  { id: 'f-07', uavCode: 'UAV-KL-04', missionCode: formatMissionId('VALIYATHURA', '1100', 1), label: 'UAV-KL-04 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 1100, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.2, droppedFrames: 5, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-07'] },
-  { id: 'f-08', uavCode: 'UAV-KL-04', missionCode: formatMissionId('VALIYATHURA', '1100', 1), label: 'UAV-KL-04 Thermal', modality: 'THERMAL', state: 'LIVE', latencyMs: 1120, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 3.5, droppedFrames: 2, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: false, telemetry: INITIAL_TELEMETRY['f-07'] },
-  { id: 'f-09', uavCode: 'UAV-KL-06', missionCode: formatMissionId('SHANGHUMUGHAM', '1130', 1), label: 'UAV-KL-06 RGB', modality: 'RGB', state: 'LIVE', latencyMs: 780, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 8.1, droppedFrames: 1, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-09'] },
-  { id: 'f-10', uavCode: 'UAV-KL-06', missionCode: formatMissionId('SHANGHUMUGHAM', '1130', 1), label: 'UAV-KL-06 Thermal', modality: 'THERMAL', state: 'EDGE_SYNC_LAG', latencyMs: 8500, fpsCurrent: 8, fpsTarget: 25, bitrateMbps: 1.2, droppedFrames: 143, lastFrameAt: minutesAgo(2), resolution: '640x512', isPinned: false, edgeSyncLagSec: 127 },
-  { id: 'f-11', uavCode: 'UAV-KL-02', missionCode: formatMissionId('TRIVANDRUM', '0600', 1), label: 'UAV-KL-02 RGB', modality: 'RGB', state: 'RECORDED', latencyMs: 0, fpsCurrent: 0, fpsTarget: 25, bitrateMbps: 0, droppedFrames: 0, resolution: '1920x1080', isPinned: false },
-  { id: 'f-12', uavCode: 'UAV-KL-02', missionCode: formatMissionId('TRIVANDRUM', '0600', 1), label: 'UAV-KL-02 Thermal', modality: 'THERMAL', state: 'RECORDED', latencyMs: 0, fpsCurrent: 0, fpsTarget: 25, bitrateMbps: 0, droppedFrames: 0, resolution: '640x512', isPinned: false },
+  { id: 'f-01', uavCode: 'UAV-01', missionCode: 'M-2026-0416', label: 'UAV-01 RGB (Kochi Port)', modality: 'RGB', state: 'LIVE', latencyMs: 820, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 8.4, droppedFrames: 12, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: true, telemetry: INITIAL_TELEMETRY['f-01'] },
+  { id: 'f-02', uavCode: 'UAV-01', missionCode: 'M-2026-0416', label: 'UAV-01 Thermal (Kochi Port)', modality: 'THERMAL', state: 'LIVE', latencyMs: 840, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 4.2, droppedFrames: 8, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: true, telemetry: INITIAL_TELEMETRY['f-02'] },
+  { id: 'f-03', uavCode: 'UAV-03', missionCode: 'M-2026-0415', label: 'UAV-03 RGB (Vizhinjam)', modality: 'RGB', state: 'LIVE', latencyMs: 1200, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.8, droppedFrames: 3, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: true, telemetry: INITIAL_TELEMETRY['f-03'] },
+  { id: 'f-04', uavCode: 'UAV-03', missionCode: 'M-2026-0415', label: 'UAV-03 Thermal (Vizhinjam)', modality: 'THERMAL', state: 'BUFFERING', latencyMs: 3200, fpsCurrent: 12, fpsTarget: 25, bitrateMbps: 2.1, droppedFrames: 87, lastFrameAt: minutesAgo(0.5), resolution: '640x512', isPinned: true, telemetry: INITIAL_TELEMETRY['f-04'] },
+  { id: 'f-05', uavCode: 'UAV-05', missionCode: 'M-2026-0417', label: 'UAV-05 RGB (Alappuzha)', modality: 'RGB', state: 'LIVE', latencyMs: 950, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 6.9, droppedFrames: 0, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-05'] },
+  { id: 'f-06', uavCode: 'UAV-05', missionCode: 'M-2026-0417', label: 'UAV-05 Thermal (Alappuzha)', modality: 'THERMAL', state: 'LIVE', latencyMs: 970, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 3.8, droppedFrames: 0, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: false, telemetry: INITIAL_TELEMETRY['f-06'] },
+  { id: 'f-07', uavCode: 'UAV-04', missionCode: 'M-2026-0418', label: 'UAV-04 RGB (Kannur Azhikkal)', modality: 'RGB', state: 'LIVE', latencyMs: 1100, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.2, droppedFrames: 5, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-07'] },
+  { id: 'f-08', uavCode: 'UAV-04', missionCode: 'M-2026-0418', label: 'UAV-04 Thermal (Kannur Azhikkal)', modality: 'THERMAL', state: 'LIVE', latencyMs: 1120, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 3.5, droppedFrames: 2, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: false, telemetry: INITIAL_TELEMETRY['f-08'] },
+  { id: 'f-09', uavCode: 'UAV-06', missionCode: 'M-2026-0419', label: 'UAV-06 RGB (Bekal Kasaragod)', modality: 'RGB', state: 'LIVE', latencyMs: 780, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 8.1, droppedFrames: 1, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-09'] },
+  { id: 'f-10', uavCode: 'UAV-06', missionCode: 'M-2026-0419', label: 'UAV-06 Thermal (Bekal Kasaragod)', modality: 'THERMAL', state: 'EDGE_SYNC_LAG', latencyMs: 8500, fpsCurrent: 8, fpsTarget: 25, bitrateMbps: 1.2, droppedFrames: 143, lastFrameAt: minutesAgo(2), resolution: '640x512', isPinned: false, edgeSyncLagSec: 127 },
+  { id: 'f-11', uavCode: 'UAV-02', missionCode: 'M-2026-0414', label: 'UAV-02 RGB (Beypore Kozhikode)', modality: 'RGB', state: 'LIVE', latencyMs: 910, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.5, droppedFrames: 1, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false, telemetry: INITIAL_TELEMETRY['f-11'] },
+  { id: 'f-12', uavCode: 'UAV-02', missionCode: 'M-2026-0414', label: 'UAV-02 Thermal (Beypore Kozhikode)', modality: 'THERMAL', state: 'LIVE', latencyMs: 930, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 3.9, droppedFrames: 0, lastFrameAt: new Date().toISOString(), resolution: '640x512', isPinned: false, telemetry: INITIAL_TELEMETRY['f-12'] },
   // Additional feeds (thumbnails strip)
   ...Array.from({ length: 8 }, (_, i) => ({
     id: `f-${13 + i}`,
-    uavCode: formatUavCode((i % 6) + 1),
-    missionCode: formatMissionId('VIZHINJAM', '0830', 1),
+    uavCode: `UAV-0${(i % 6) + 1}`,
+    missionCode: 'M-2026-0415',
     label: `Feed ${13 + i}`,
     modality: (i % 2 === 0 ? 'RGB' : 'THERMAL') as 'RGB' | 'THERMAL',
     state: (['LIVE', 'LIVE', 'LIVE', 'NO_SIGNAL', 'LIVE', 'BUFFERING', 'LIVE', 'LIVE'] as FeedState[])[i],
@@ -208,11 +226,7 @@ export const INITIAL_FEEDS: Feed[] = [
 
 // ─── Contacts ─────────────────────────────────────────────────
 
-const CONTACT_CLASSES: ContactClass[] = [
-  'VESSEL', 'SMALL_CRAFT', 'FISHING_BOAT', 'UNKNOWN_VESSEL',
-  'MECHANISED_TRAWLER', 'MOTORISED_COUNTRY_CRAFT', 'TRADITIONAL_WOODEN_CRAFT',
-  'CANOE_CATAMARAN', 'RECREATIONAL_CRAFT', 'PERSON', 'VEHICLE', 'UNKNOWN'
-];
+const CONTACT_CLASSES: ContactClass[] = ['VESSEL', 'SMALL_CRAFT', 'FISHING_BOAT', 'PERSON', 'VEHICLE', 'UNKNOWN'];
 
 const CONTACT_LOCATIONS = [
   { lat: 8.379, lon: 76.981 }, { lat: 8.397, lon: 76.992 }, { lat: 8.321, lon: 76.963 },
@@ -224,212 +238,38 @@ const CONTACT_LOCATIONS = [
   { lat: 8.360, lon: 76.973 }, { lat: 8.455, lon: 76.912 },
 ];
 
-const CLS_LABELS: Record<ContactClass, string> = {
-  VESSEL: 'Vessel',
-  SMALL_CRAFT: 'Vessel › Small Craft',
-  FISHING_BOAT: 'Vessel › Fishing Boat',
-  UNKNOWN_VESSEL: 'Vessel › Unknown Vessel',
-  MECHANISED_TRAWLER: 'Vessel › Mechanised Trawler',
-  MOTORISED_COUNTRY_CRAFT: 'Vessel › Motorised Country Craft',
-  TRADITIONAL_WOODEN_CRAFT: 'Vessel › Traditional Wooden Craft',
-  CANOE_CATAMARAN: 'Vessel › Canoe / Catamaran',
-  RECREATIONAL_CRAFT: 'Vessel › Recreational Craft',
-  PERSON: 'Person',
-  VEHICLE: 'Vehicle',
-  UNKNOWN: 'Unknown',
-};
-
-const CONTACT_1042: Contact = {
-  id: 'c-1042',
-  code: 'C-1042',
-  class: 'SMALL_CRAFT',
-  classLabel: 'Vessel › Small Craft',
-  isBroadClass: true,
-  broadClassReason: 'Sensor standoff distance 140m; hull superstructure unresolved by RTMDet-Thermal.',
-  fineGrainedType: 'Motorised Country Craft (Hypothesis, 0.74 conf)',
-  classConf: 0.88,
-  continuityConf: 0.71,
-  attentionLevel: 'CRITICAL',
-  attentionFactors: [
-    { factorName: 'Restricted Jetty Boundary', value: 'Breach 45m past buoy', contribution: 'PRIMARY', weight: 0.40, detail: 'Incursion 45m past marked security buoy line' },
-    { factorName: 'Breakwater Loiter Duration', value: '384s loitering', contribution: 'PRIMARY', weight: 0.25, detail: 'Stationary loiter duration: 384s' },
-    { factorName: 'Monsoon Context Multiplier', value: 'Active trawling ban', contribution: 'CONTEXTUAL', weight: 0.15, detail: 'Trawling ban active; non-navigational hours' },
-    { factorName: 'Marine Convergence C-1048', value: '8.4m separation', contribution: 'SUPPORTING', weight: 0.20, detail: 'Closest approach: 8.4m at 08:52 IST' },
-  ],
-  firstSeenAt: minutesAgo(42),
-  lastSeenAt: minutesAgo(1),
-  dwellTotalSec: 1840,
-  evidenceCount: 7,
-  modalitySeen: 'BOTH',
-  observedUavs: ['UAV-KL-03', 'UAV-KL-01'],
-  lastLocation: { lat: 8.3782, lon: 76.9804, method: 'DRONE_POSITION' },
-  lastHeadingDeg: 48,
-  lastSpeedKnots: 2.3,
-  linkedAlertIds: ['a-001', 'a-003'],
-  occlusionEvent: {
-    occurredAt: minutesAgo(18),
-    durationSec: 48,
-    recoveryMethod: 'Course-speed kinematic extrapolation + thermal re-acquisition on breakwater exit',
-    confidenceDrop: 0.24,
-  },
-  behaviourEvents: [
-    {
-      id: 'be-01',
-      type: 'INITIAL_DETECTION',
-      label: 'Initial Detection & Transit',
-      occurredAt: minutesAgo(42),
-      ruleId: 'AR-HARBOUR-TRANSIT',
-      ruleName: 'Standard Harbour Transit',
-      contextProfile: 'CP-FISHING-DAYTIME',
-      attentionLevel: 'RECORD_ONLY',
-      details: 'Vessel entered sector Z-02 heading 042° at 5.2 kn.'
-    },
-    {
-      id: 'be-02',
-      type: 'COURSE_SPEED_CHANGE',
-      label: 'Sudden Course Alteration',
-      occurredAt: minutesAgo(31),
-      ruleId: 'AR-LOITERING-VESSEL',
-      ruleName: 'Anomalous Heading Deviation',
-      contextProfile: 'CP-HARBOUR-PATROL',
-      attentionLevel: 'MONITOR',
-      details: 'Speed reduced from 5.2 kn to 1.8 kn; bearing altered towards breakwater.'
-    },
-    {
-      id: 'be-03',
-      type: 'OCCLUSION_RECOVERY',
-      label: 'Breakwater Occlusion & Track Continuity',
-      occurredAt: minutesAgo(18),
-      ruleId: 'TRACK-PERSISTENCE',
-      ruleName: 'Kalman Course Extrapolation',
-      contextProfile: 'CP-RESTRICTED-JETTY',
-      attentionLevel: 'MONITOR',
-      details: 'Optical line-of-sight occluded for 48s behind rock armour. Re-acquired on exit with continuity drop to 71%.'
-    },
-    {
-      id: 'be-04',
-      type: 'ZONE_BREACH',
-      label: 'Restricted Jetty Boundary Breach',
-      occurredAt: minutesAgo(12),
-      ruleId: 'AR-INTRUSION-RESTRICTED',
-      ruleName: 'Unauthorised Perimeter Intrusion',
-      contextProfile: 'CP-RESTRICTED-JETTY',
-      attentionLevel: 'CRITICAL',
-      details: 'Crossed 100m security perimeter of Vizhinjam fuel berth without AIS transponder.'
-    },
-    {
-      id: 'be-05',
-      type: 'PROXIMITY_CONVERGENCE',
-      label: 'Prolonged Proximity & Rendezvous',
-      occurredAt: minutesAgo(4),
-      ruleId: 'AR-PROLONGED-PROXIMITY',
-      ruleName: 'Marine Convergence / Rendezvous',
-      contextProfile: 'CP-RESTRICTED-JETTY',
-      attentionLevel: 'CRITICAL',
-      details: 'Converged within 8.4m of stationary craft C-1048 for >180s in non-anchorage sector.'
-    }
-  ],
-  relationships: [
-    {
-      relatedContactId: 'c-1048',
-      relatedContactCode: 'C-1048',
-      type: 'convergence',
-      count: 3,
-      lastSeenAt: minutesAgo(4)
-    },
-    {
-      relatedContactId: 'c-1048',
-      relatedContactCode: 'C-1048',
-      type: 'prolonged_proximity',
-      count: 1,
-      lastSeenAt: minutesAgo(4)
-    },
-    {
-      relatedContactId: 'c-1035',
-      relatedContactCode: 'C-1035',
-      type: 'co_travel',
-      count: 2,
-      lastSeenAt: minutesAgo(28)
-    }
-  ],
-  pastMissions: [
-    {
-      missionId: 'm-01-prev',
-      missionCode: 'MSN-20261012-0830-01-ALPHA',
-      date: '12 Oct 2026',
-      craftClass: 'Recreational Craft',
-      peakAttention: 'MONITOR',
-      locationName: 'Vizhinjam Outer Anchorage'
-    },
-    {
-      missionId: 'm-02-prev',
-      missionCode: 'MSN-20261014-1600-02-BRAVO',
-      date: '14 Oct 2026',
-      craftClass: 'Motorised Country Craft',
-      peakAttention: 'ATTENTION',
-      locationName: 'Kovalam South Shoreline'
-    }
-  ]
-};
-
-export const CONTACTS: Contact[] = [
-  CONTACT_1042,
-  ...Array.from({ length: 39 }, (_, i) => {
-    const codeNum = i >= 12 ? 1031 + i : 1030 + i;
-    const cls = CONTACT_CLASSES[i % CONTACT_CLASSES.length];
-    const loc = CONTACT_LOCATIONS[i % CONTACT_LOCATIONS.length];
-    const isSpecialC1048 = codeNum === 1048;
-    const isSpecialC1035 = codeNum === 1035;
-
-    const attentionLevel: AttentionLevel = isSpecialC1048
-      ? 'ATTENTION'
-      : isSpecialC1035
-      ? 'MONITOR'
-      : i % 7 === 0
-      ? 'CRITICAL'
-      : i % 4 === 0
-      ? 'ATTENTION'
-      : i % 3 === 0
-      ? 'MONITOR'
-      : 'RECORD_ONLY';
-
-    const isBroad = i % 4 === 0;
-
-    return {
-      id: `c-${codeNum}`,
-      code: `C-${codeNum}`,
-      class: isSpecialC1048 ? 'MOTORISED_COUNTRY_CRAFT' : isSpecialC1035 ? 'CANOE_CATAMARAN' : cls,
-      classLabel: CLS_LABELS[isSpecialC1048 ? 'MOTORISED_COUNTRY_CRAFT' : isSpecialC1035 ? 'CANOE_CATAMARAN' : cls],
-      isBroadClass: isBroad,
-      broadClassReason: isBroad ? 'Sensor standoff >200m; silhouette unresolved by edge detector' : undefined,
-      classConf: isSpecialC1048 ? 0.84 : 0.74 + ((i * 3) % 23) * 0.01,
-      continuityConf: isSpecialC1048 ? 0.91 : 0.72 + ((i * 5) % 25) * 0.01,
-      attentionLevel,
-      attentionFactors: [
-        { factorName: 'Zone Context Sensitivity', value: 'High surveillance perimeter', contribution: 'PRIMARY' as const, weight: 0.35, detail: 'Operating in active surveillance perimeter' },
-        { factorName: 'Dwell & Course Stability', value: 'Consistent vector', contribution: 'SUPPORTING' as const, weight: 0.25, detail: 'Consistent tracking vector over observation window' },
-      ],
-      firstSeenAt: minutesAgo(20 + i * 5),
-      lastSeenAt: minutesAgo(i < 8 ? 1 : i < 16 ? 4 : 12),
-      dwellTotalSec: 400 + i * 90,
-      evidenceCount: 1 + (i % 5),
-      modalitySeen: (i % 3 === 0 ? 'BOTH' : i % 2 === 0 ? 'THERMAL' : 'RGB') as 'RGB' | 'THERMAL' | 'BOTH',
-      observedUavs: [formatUavCode((i % 6) + 1)],
-      lastLocation: isSpecialC1048
-        ? { lat: 8.3789, lon: 76.9809, method: 'DRONE_POSITION' as const }
-        : isSpecialC1035
-        ? { lat: 8.3775, lon: 76.9790, method: 'DRONE_POSITION' as const }
-        : { lat: loc.lat + ((i % 5) - 2) * 0.001, lon: loc.lon + ((i % 5) - 2) * 0.001, method: 'DRONE_POSITION' as const },
-      lastHeadingDeg: Math.floor((i * 47) % 360),
-      lastSpeedKnots: cls === 'PERSON' || cls === 'VEHICLE' ? undefined : Number((1.5 + (i % 7) * 0.8).toFixed(1)),
-      linkedAlertIds: i < 8 ? [`a-${String(i + 1).padStart(3, '0')}`] : [],
-      relationships: isSpecialC1048 ? [
-        { relatedContactId: 'c-1042', relatedContactCode: 'C-1042', type: 'convergence' as const, count: 3, lastSeenAt: minutesAgo(4) },
-        { relatedContactId: 'c-1042', relatedContactCode: 'C-1042', type: 'prolonged_proximity' as const, count: 1, lastSeenAt: minutesAgo(4) },
-      ] : undefined,
-    };
-  }),
-];
+export const CONTACTS: Contact[] = Array.from({ length: 40 }, (_, i) => {
+  const cls = CONTACT_CLASSES[i % CONTACT_CLASSES.length];
+  const loc = CONTACT_LOCATIONS[i % CONTACT_LOCATIONS.length];
+  const clsLabels: Record<ContactClass, string> = {
+    VESSEL: 'Vessel',
+    SMALL_CRAFT: 'Vessel › Small Craft',
+    FISHING_BOAT: 'Vessel › Fishing Boat',
+    UNKNOWN_VESSEL: 'Vessel › Unknown',
+    MECHANISED_TRAWLER: 'Vessel › Mechanised Trawler',
+    MOTORISED_COUNTRY_CRAFT: 'Vessel › Motorised Country Craft',
+    TRADITIONAL_WOODEN_CRAFT: 'Vessel › Traditional Wooden Craft',
+    CANOE_CATAMARAN: 'Vessel › Canoe / Catamaran',
+    RECREATIONAL_CRAFT: 'Vessel › Recreational Craft',
+    PERSON: 'Person',
+    VEHICLE: 'Vehicle',
+    UNKNOWN: 'Unknown',
+  };
+  return {
+    id: `c-${String(1030 + i).padStart(4, '0')}`,
+    code: `C-${1030 + i}`,
+    class: cls,
+    classLabel: clsLabels[cls],
+    classConf: 0.72 + Math.random() * 0.26,
+    continuityConf: 0.68 + Math.random() * 0.30,
+    firstSeenAt: minutesAgo(30 + i * 7),
+    lastSeenAt: minutesAgo(i < 10 ? 1 : i < 20 ? 5 : 15),
+    lastLocation: { lat: loc.lat + (Math.random() - 0.5) * 0.005, lon: loc.lon + (Math.random() - 0.5) * 0.005, method: 'DRONE_POSITION' },
+    lastHeadingDeg: Math.floor(Math.random() * 360),
+    lastSpeedKnots: cls === 'PERSON' || cls === 'VEHICLE' ? undefined : 1 + Math.random() * 6,
+    linkedAlertIds: i < 8 ? [`a-${String(i + 1).padStart(3, '0')}`] : [],
+  };
+});
 
 // ─── Evidence items ──────────────────────────────────────────
 
@@ -477,21 +317,21 @@ const EVENT_TYPES_BY_SEV: Record<Severity, { type: CoastalEvent['type']; zone?: 
 const SEV_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 
 export const ALERTS: Alert[] = [
-  // Alert 1 - CRITICAL intrusion
+  // Alert 1 - CRITICAL intrusion (Vizhinjam)
   {
-    id: 'a-001', alertCode: formatAlertId(1),
+    id: 'a-001', alertCode: 'ALC-2026-001',
     severity: 'CRITICAL', status: 'NEW',
     createdAt: minutesAgo(1.5), updatedAt: minutesAgo(1.5),
     event: {
       id: 'ev-001', type: 'intrusion', occurredAt: minutesAgo(1.5),
-      uav: { id: 'u-03', code: formatUavCode(3) }, mission: { id: 'm-01', code: formatMissionId('VIZHINJAM', '0830', 1), title: 'Vizhinjam Harbour Patrol' },
-      location: { lat: 8.373, lon: 76.974, method: 'DRONE_POSITION' },
-      zone: { code: 'Z-07', name: 'Restricted – Vizhinjam Military Approach', version: 4, profile: 'Restricted 24×7' },
+      uav: { id: 'u-03', code: 'UAV-03' }, mission: { id: 'm-01', code: 'M-2026-0415', title: 'Vizhinjam Seaport Security Patrol' },
+      location: { lat: 8.378, lon: 76.977, method: 'DRONE_POSITION', name: 'Vizhinjam International Seaport, Thiruvananthapuram' },
+      zone: { code: 'Z-01', name: 'Vizhinjam Deepwater Seaport & Approach', version: 3, profile: 'Restricted 24×7' },
       contact: { code: 'C-1042', class: 'SMALL_CRAFT', classConf: 0.91, continuityConf: 0.93 },
       attention: 'CRITICAL', modality: 'RGB',
       rationale: {
         factors: [
-          { factorName: 'Zone boundary crossed', value: 'Z-07 (Restricted)', contribution: 'PRIMARY' },
+          { factorName: 'Zone boundary crossed', value: 'Z-01 (Restricted)', contribution: 'PRIMARY' },
           { factorName: 'Zone sensitivity', value: 'VERY_HIGH', contribution: 'PRIMARY' },
           { factorName: 'Detector confidence', value: 0.91, threshold: 0.70, unit: 'conf', contribution: 'SUPPORTING' },
           { factorName: 'Continuity confidence', value: 0.93, threshold: 0.60, unit: 'conf', contribution: 'SUPPORTING' },
@@ -501,77 +341,77 @@ export const ALERTS: Alert[] = [
         zoneProfileUsed: 'Restricted 24×7',
         contextCondition: 'Night restriction active',
       },
-      versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.2.0-coastal' },
+      versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.0.3' },
       relatedContacts: [{ code: 'C-1050', class: 'SMALL_CRAFT', relationshipType: 'co_travel' }],
     },
     evidence: makeEvidence('a001'),
     auditTrail: [],
   },
-  // Alert 2 - HIGH repeated approach
+  // Alert 2 - HIGH repeated approach (Kochi)
   {
-    id: 'a-002', alertCode: formatAlertId(2),
+    id: 'a-002', alertCode: 'ALC-2026-002',
     severity: 'HIGH', status: 'ACKNOWLEDGED',
     createdAt: minutesAgo(4.5), updatedAt: minutesAgo(2),
-    acknowledgedAt: minutesAgo(2), acknowledgedBy: 'SI Ananya Ramesh',
+    acknowledgedAt: minutesAgo(2), acknowledgedBy: 'Operator Rajan',
     event: {
       id: 'ev-002', type: 'repeated_shoreline_approach', occurredAt: minutesAgo(4.5),
-      uav: { id: 'u-01', code: formatUavCode(1) }, mission: { id: 'm-02', code: formatMissionId('KOVALAM', '0900', 2), title: 'Kovalam Beach Surveillance' },
-      location: { lat: 8.397, lon: 76.992, method: 'DRONE_POSITION' },
-      zone: { code: 'Z-03', name: 'Kovalam Beach North', version: 1, profile: 'Beach Monitoring' },
+      uav: { id: 'u-01', code: 'UAV-01' }, mission: { id: 'm-02', code: 'M-2026-0416', title: 'Kochi Port & Naval Base Surveillance' },
+      location: { lat: 9.962, lon: 76.228, method: 'DRONE_POSITION', name: 'Kochi Port & Naval Base Channel, Ernakulam' },
+      zone: { code: 'Z-05', name: 'Cochin Port & Naval Base Restricted Waters', version: 4, profile: 'Restricted 24×7' },
       contact: { code: 'C-1031', class: 'SMALL_CRAFT', classConf: 0.88, continuityConf: 0.82 },
       attention: 'ATTENTION', modality: 'RGB',
       rationale: {
         factors: [
           { factorName: 'Shoreline approaches', value: 4, threshold: 3, unit: 'count/11min', contribution: 'PRIMARY' },
-          { factorName: 'Zone profile', value: 'Tourism – Evening', contribution: 'CONTEXTUAL' },
+          { factorName: 'Zone profile', value: 'Restricted 24×7', contribution: 'CONTEXTUAL' },
           { factorName: 'Co-appearance with C-1050', value: 3, unit: 'times', contribution: 'SUPPORTING' },
           { factorName: 'Detector confidence', value: 0.88, threshold: 0.70, unit: 'conf', contribution: 'SUPPORTING' },
         ],
         note: 'Contact approached shoreline 4 times in 11 minutes — exceeds threshold of 3.',
-        zoneProfileUsed: 'Beach Monitoring',
+        zoneProfileUsed: 'Restricted 24×7',
       },
-      versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.2.0-coastal' },
+      versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.0.3' },
     },
     evidence: makeEvidence('a002'),
     auditTrail: [
-      { id: 'au-001', timestamp: minutesAgo(2), userId: 'u-op1', userName: 'SI Ananya Ramesh', userRole: 'OPERATOR', action: 'ACKNOWLEDGED', targetType: 'ALERT', targetId: 'a-002', ipAddress: '10.10.1.5' },
+      { id: 'au-001', timestamp: minutesAgo(2), userId: 'u-op1', userName: 'Operator Rajan', userRole: 'OPERATOR', action: 'ACKNOWLEDGED', targetType: 'ALERT', targetId: 'a-002', ipAddress: '10.10.1.5' },
     ],
   },
-  // Alert 3 - MEDIUM crowd
+  // Alert 3 - MEDIUM crowd (Kovalam)
   {
-    id: 'a-003', alertCode: formatAlertId(3),
+    id: 'a-003', alertCode: 'ALC-2026-003',
     severity: 'MEDIUM', status: 'NEW',
     createdAt: minutesAgo(12), updatedAt: minutesAgo(12),
     event: {
       id: 'ev-003', type: 'crowd_threshold_exceeded', occurredAt: minutesAgo(12),
-      uav: { id: 'u-05', code: formatUavCode(5) }, mission: { id: 'm-03', code: formatMissionId('POOVAR', '0930', 3), title: 'Poovar Estuary Watch' },
-      location: { lat: 8.403, lon: 76.993, method: 'DRONE_POSITION' },
-      zone: { code: 'Z-03', name: 'Kovalam Beach North', version: 1, profile: 'Beach Monitoring' },
+      uav: { id: 'u-03', code: 'UAV-03' }, mission: { id: 'm-01', code: 'M-2026-0415', title: 'Vizhinjam Seaport Security Patrol' },
+      location: { lat: 8.399, lon: 76.984, method: 'DRONE_POSITION', name: 'Kovalam Beach Bay & Lighthouse, Thiruvananthapuram' },
+      zone: { code: 'Z-02', name: 'Kovalam Beach & Lighthouse Bay', version: 2, profile: 'Tourism – Evening' },
       attention: 'MONITOR', modality: 'RGB',
       rationale: {
         factors: [
           { factorName: 'Person count', value: 42, threshold: 40, unit: 'persons', contribution: 'PRIMARY' },
-          { factorName: 'Zone type', value: 'BEACH', contribution: 'CONTEXTUAL' },
+          { factorName: 'Zone type', value: 'TOURISM', contribution: 'CONTEXTUAL' },
           { factorName: 'Time window', value: 'Weekend evening', contribution: 'CONTEXTUAL' },
         ],
-        zoneProfileUsed: 'Beach Monitoring',
+        zoneProfileUsed: 'Tourism – Evening',
       },
-      versions: { appVersion: '1.2.0-coastal', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
+      versions: { appVersion: '1.0.3', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
     },
     evidence: makeEvidence('a003'),
     auditTrail: [],
   },
-  // Alert 4 - HIGH convergence
+  // Alert 4 - HIGH convergence (Alappuzha)
   {
-    id: 'a-004', alertCode: formatAlertId(4),
+    id: 'a-004', alertCode: 'ALC-2026-004',
     severity: 'HIGH', status: 'ASSIGNED',
     createdAt: minutesAgo(18), updatedAt: minutesAgo(10),
-    assignedTo: 'u-sup1', assignedToName: 'CI Saji Varghese',
+    assignedTo: 'u-sup1', assignedToName: 'SI Menon',
     event: {
       id: 'ev-004', type: 'convergence', occurredAt: minutesAgo(18),
-      uav: { id: 'u-03', code: formatUavCode(3) }, mission: { id: 'm-01', code: formatMissionId('VIZHINJAM', '0830', 1) },
-      location: { lat: 8.382, lon: 76.983, method: 'DRONE_POSITION' },
-      zone: { code: 'Z-02', name: 'Vizhinjam Outer Harbour', version: 2, profile: 'Harbour Patrol' },
+      uav: { id: 'u-05', code: 'UAV-05' }, mission: { id: 'm-03', code: 'M-2026-0417', title: 'Alappuzha Coastal Infiltration Watch' },
+      location: { lat: 9.493, lon: 76.320, method: 'DRONE_POSITION', name: 'Alappuzha Beach & Pier Sector, Alappuzha' },
+      zone: { code: 'Z-04', name: 'Alappuzha Beach & Pier Sector', version: 1, profile: 'Beach Monitoring' },
       contact: { code: 'C-1038', class: 'VESSEL', classConf: 0.79, continuityConf: 0.86 },
       relatedContacts: [{ code: 'C-1042', class: 'SMALL_CRAFT', relationshipType: 'convergence' }],
       attention: 'ATTENTION', modality: 'RGB',
@@ -581,48 +421,49 @@ export const ALERTS: Alert[] = [
           { factorName: 'Involved contacts', value: 2, contribution: 'SUPPORTING' },
           { factorName: 'Zone sensitivity', value: 'HIGH', contribution: 'CONTEXTUAL' },
         ],
-        zoneProfileUsed: 'Harbour Patrol',
+        zoneProfileUsed: 'Beach Monitoring',
       },
-      versions: { appVersion: '1.2.0-coastal', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
+      versions: { appVersion: '1.0.3', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
     },
     evidence: makeEvidence('a004'),
     auditTrail: [
-      { id: 'au-002', timestamp: minutesAgo(10), userId: 'u-op2', userName: 'SI Ananya Ramesh', userRole: 'OPERATOR', action: 'ASSIGNED', targetType: 'ALERT', targetId: 'a-004', detail: { assignedTo: 'CI Saji Varghese' }, ipAddress: '10.10.1.6' },
+      { id: 'au-002', timestamp: minutesAgo(10), userId: 'u-op2', userName: 'Operator Priya', userRole: 'OPERATOR', action: 'ASSIGNED', targetType: 'ALERT', targetId: 'a-004', detail: { assignedTo: 'SI Menon' }, ipAddress: '10.10.1.6' },
     ],
   },
-  // Alert 5 - MEDIUM loitering
+  // Alert 5 - MEDIUM loitering (Kannur Azhikkal)
   {
-    id: 'a-005', alertCode: formatAlertId(5),
+    id: 'a-005', alertCode: 'ALC-2026-005',
     severity: 'MEDIUM', status: 'UNDER_REVIEW',
     createdAt: minutesAgo(25), updatedAt: minutesAgo(15),
     event: {
       id: 'ev-005', type: 'loitering', occurredAt: minutesAgo(25), endedAt: minutesAgo(18),
-      uav: { id: 'u-04', code: formatUavCode(4) }, mission: { id: 'm-05', code: formatMissionId('VIZHINJAM', '1015', 5) },
-      location: { lat: 8.390, lon: 76.992, method: 'DRONE_POSITION' },
-      zone: { code: 'Z-04', name: 'Lighthouse Beach – Tourism Zone', version: 2, profile: 'Tourism – Evening' },
+      uav: { id: 'u-04', code: 'UAV-04' }, mission: { id: 'm-05', code: 'M-2026-0418', title: 'Kannur Azhikkal Estuary Monitoring' },
+      location: { lat: 11.936, lon: 75.312, method: 'DRONE_POSITION', name: 'Azhikkal Port & Valapattanam Estuary, Kannur' },
+      zone: { code: 'Z-09', name: 'Azhikkal Port & Valapattanam Sector, Kannur', version: 1, profile: 'Harbour Patrol' },
       contact: { code: 'C-1055', class: 'VESSEL', classConf: 0.83, continuityConf: 0.79 },
       attention: 'MONITOR', modality: 'RGB',
       rationale: {
         factors: [
           { factorName: 'Dwell duration', value: 420, threshold: 300, unit: 'seconds', contribution: 'PRIMARY' },
-          { factorName: 'Zone profile', value: 'Tourism – Evening (HIGH sensitivity)', contribution: 'CONTEXTUAL' },
+          { factorName: 'Zone profile', value: 'Harbour Patrol (HIGH sensitivity)', contribution: 'CONTEXTUAL' },
         ],
-        zoneProfileUsed: 'Tourism – Evening',
+        zoneProfileUsed: 'Harbour Patrol',
       },
-      versions: { appVersion: '1.2.0-coastal', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
+      versions: { appVersion: '1.0.3', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
     },
     evidence: makeEvidence('a005'),
     auditTrail: [],
   },
-  // Alerts 6-20 (varied)
+  // Alerts 6-20 (distributed along Kerala coast)
   ...Array.from({ length: 15 }, (_, i) => {
     const sev = SEV_ORDER[(i + 2) % SEV_ORDER.length];
     const evDefs = EVENT_TYPES_BY_SEV[sev];
     const evDef = evDefs[i % evDefs.length];
     const idx = i + 6;
+    const spot = KERALA_COASTAL_SECTORS[i % KERALA_COASTAL_SECTORS.length];
     return {
       id: `a-${String(idx).padStart(3, '0')}`,
-      alertCode: formatAlertId(idx),
+      alertCode: `ALC-2026-${String(idx).padStart(3, '0')}`,
       severity: sev,
       status: (['NEW', 'ACKNOWLEDGED', 'NEW', 'RESOLVED', 'ASSIGNED'] as Alert['status'][])[i % 5],
       createdAt: minutesAgo(30 + i * 8),
@@ -631,14 +472,14 @@ export const ALERTS: Alert[] = [
         id: `ev-${String(idx).padStart(3, '0')}`,
         type: evDef.type,
         occurredAt: minutesAgo(30 + i * 8),
-        uav: { id: `u-0${(i % 6) + 1}`, code: formatUavCode((i % 6) + 1) },
-        mission: { id: 'm-01', code: formatMissionId('VIZHINJAM', '0830', 1) },
-        location: { lat: 8.380 + (i * 0.005), lon: 76.982 + (i * 0.003), method: 'DRONE_POSITION' as const },
+        uav: { id: `u-${spot.uavCode.replace('UAV-0', '')}`, code: spot.uavCode },
+        mission: { id: `m-${spot.uavCode.replace('UAV-0', '')}`, code: spot.missionCode, title: spot.missionTitle },
+        location: { lat: spot.lat + (Math.sin(i) * 0.003), lon: spot.lon + (Math.cos(i) * 0.003), method: 'DRONE_POSITION' as const, name: spot.name },
         zone: evDef.zone ? { code: evDef.zone, name: evDef.zoneName!, version: 1, profile: 'Beach Monitoring' } : undefined,
         contact: { code: `C-${1030 + i}`, class: CONTACT_CLASSES[i % CONTACT_CLASSES.length], classConf: 0.7 + Math.random() * 0.28, continuityConf: 0.65 + Math.random() * 0.32 },
         attention: (['MONITOR', 'ATTENTION', 'RECORD_ONLY', 'CRITICAL', 'MONITOR'] as AttentionLevel[])[i % 5],
         rationale: { factors: [{ factorName: 'Threshold exceeded', value: 1, threshold: 1, contribution: 'PRIMARY' as const }] },
-        versions: { appVersion: '1.2.0-coastal' },
+        versions: { appVersion: '1.0.3' },
         modality: (i % 2 === 0 ? 'RGB' : 'THERMAL') as 'RGB' | 'THERMAL',
       } as CoastalEvent,
       evidence: makeEvidence(`a${String(idx).padStart(3, '0')}`),
@@ -654,18 +495,19 @@ export const HISTORICAL_EVENTS: CoastalEvent[] = Array.from({ length: 200 }, (_,
   const sev = SEV_ORDER[i % SEV_ORDER.length];
   const evDefs = EVENT_TYPES_BY_SEV[sev];
   const evDef = evDefs[i % evDefs.length];
+  const spot = KERALA_COASTAL_SECTORS[i % KERALA_COASTAL_SECTORS.length];
   return {
     id: `hev-${String(i + 1).padStart(4, '0')}`,
     type: evDef.type,
     occurredAt: new Date(Date.now() - hoursAgo * 3_600_000 - (i % 60) * 60_000).toISOString(),
-    uav: { id: `u-0${(i % 6) + 1}`, code: formatUavCode((i % 6) + 1) },
-    mission: { id: 'm-01', code: [formatMissionId('VIZHINJAM', '0830', 1), formatMissionId('KOVALAM', '0900', 2), formatMissionId('POOVAR', '0930', 3), formatMissionId('SHANGHUMUGHAM', '0745', 4)][i % 4] },
-    location: { lat: 8.350 + (i % 20) * 0.004, lon: 76.960 + (i % 20) * 0.003, method: 'DRONE_POSITION' },
+    uav: { id: `u-${spot.uavCode.replace('UAV-0', '')}`, code: spot.uavCode },
+    mission: { id: 'm-01', code: spot.missionCode, title: spot.missionTitle },
+    location: { lat: spot.lat + (Math.sin(i * 1.5) * 0.005), lon: spot.lon + (Math.cos(i * 1.5) * 0.004), method: 'DRONE_POSITION', name: spot.name },
     zone: evDef.zone ? { code: evDef.zone, name: evDef.zoneName!, version: 1, profile: 'Monitor' } : undefined,
     contact: { code: `C-${1030 + (i % 40)}`, class: CONTACT_CLASSES[i % CONTACT_CLASSES.length], classConf: 0.7 + (i % 10) * 0.025, continuityConf: 0.65 + (i % 10) * 0.03 },
     attention: (['RECORD_ONLY', 'MONITOR', 'ATTENTION', 'CRITICAL', 'RECORD_ONLY'] as AttentionLevel[])[i % 5],
     rationale: { factors: [] },
-    versions: { appVersion: '1.2.0-coastal' },
+    versions: { appVersion: '1.0.3' },
     modality: (i % 3 === 2 ? 'THERMAL' : 'RGB') as Modality,
   };
 });
@@ -732,8 +574,6 @@ export const DRONE_PATHS: Record<string, Array<[number, number]>> = {
     [76.888, 8.479], [76.892, 8.481], [76.893, 8.483], [76.890, 8.484], [76.887, 8.482],
   ],
 };
-
-// ─── Phase 3: Kerala Coastal Context Profiles (5.1.16, 5.1.10) ─────────────
 
 export const CONTEXT_PROFILES: ContextProfileDetail[] = [
   {
@@ -894,7 +734,7 @@ export const CONTEXT_PROFILES: ContextProfileDetail[] = [
   },
 ];
 
-// ─── Phase 3: Alert Rules Configuration (RFP §7) ───────────────────────────
+// G��G��G�� Phase 3: Alert Rules Configuration (RFP -�7) G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��
 
 export const ALERT_RULES: AlertRuleConfig[] = [
   {
@@ -909,7 +749,7 @@ export const ALERT_RULES: AlertRuleConfig[] = [
       dwellSec: 15,
     },
     zoneCodes: ['Z-01', 'Z-07'],
-    schedule: 'Always (24×7)',
+    schedule: 'Always (24+�7)',
     season: 'ALL_SEASONS',
     sensitivity: 'VERY_HIGH',
     priority: 'CRITICAL',
@@ -937,7 +777,7 @@ export const ALERT_RULES: AlertRuleConfig[] = [
       approachCount: 3,
     },
     zoneCodes: ['Z-04', 'Z-05', 'Z-06'],
-    schedule: 'Always (24×7)',
+    schedule: 'Always (24+�7)',
     season: 'ALL_SEASONS',
     sensitivity: 'HIGH',
     priority: 'HIGH',
@@ -965,7 +805,7 @@ export const ALERT_RULES: AlertRuleConfig[] = [
       separationMetres: 20,
     },
     zoneCodes: ['Z-01', 'Z-02', 'Z-07'],
-    schedule: 'Always (24×7)',
+    schedule: 'Always (24+�7)',
     season: 'ALL_SEASONS',
     sensitivity: 'HIGH',
     priority: 'HIGH',
@@ -1020,7 +860,7 @@ export const ALERT_RULES: AlertRuleConfig[] = [
       separationMetres: 25,
     },
     zoneCodes: ['Z-01', 'Z-04', 'Z-05', 'Z-06', 'Z-08'],
-    schedule: 'Always (24×7)',
+    schedule: 'Always (24+�7)',
     season: 'ALL_SEASONS',
     sensitivity: 'HIGH',
     priority: 'MEDIUM',
@@ -1064,7 +904,7 @@ export const ALERT_RULES: AlertRuleConfig[] = [
   },
 ];
 
-// ─── Phase 3: Abandoned & Stationary Objects (RFP Analytics #9) ─────────────
+// G��G��G�� Phase 3: Abandoned & Stationary Objects (RFP Analytics #9) G��G��G��G��G��G��G��G��G��G��G��G��G��
 
 export const ABANDONED_OBJECTS: AbandonedObjectRecord[] = [
   {
