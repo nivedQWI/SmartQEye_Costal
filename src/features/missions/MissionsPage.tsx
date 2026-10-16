@@ -30,8 +30,10 @@ export default function MissionsPage() {
   const [selectedDroneId, setSelectedDroneId] = useState(UAVS[0].id);
   const [videoSourceType, setVideoSourceType] = useState<VideoSourceType>('RTMP');
   const [videoSourceUrl, setVideoSourceUrl] = useState('');
-  const [uploadedVideoFile, setUploadedVideoFile] = useState<string | null>(null);
-  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+  const [stagedVideoFile, setStagedVideoFile] = useState<string | null>(null);
+  const [stagedVideoUrl, setStagedVideoUrl] = useState<string | null>(null);
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [activeVideoTitle, setActiveVideoTitle] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [srtFile, setSrtFile] = useState<string | null>(null);
   const [pilotName, setPilotName] = useState('');
@@ -39,7 +41,6 @@ export default function MissionsPage() {
 
   // Refs for video management and safe object URL lifecycle
   const objectUrlRef = useRef<string | null>(null);
-  const playerFileInputRef = useRef<HTMLInputElement | null>(null);
   const formFileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -106,40 +107,27 @@ export default function MissionsPage() {
     },
   ]);
 
-  // Safe file selector handling (preserves ObjectURL without premature disposal)
-  function handleFileSelect(file: File) {
+  // Video file selected in the New Mission form (staged until Start Mission is clicked)
+  function handleFormFileSelect(file: File) {
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
     }
     const url = URL.createObjectURL(file);
     objectUrlRef.current = url;
-    setUploadedVideoFile(file.name);
-    setUploadedVideoUrl(url);
+    setStagedVideoFile(file.name);
+    setStagedVideoUrl(url);
     setVideoError(null);
-    setVideoSourceType('UPLOAD');
   }
 
-  function handleClearVideo() {
+  function handleClearFormVideo() {
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = null;
     }
-    setUploadedVideoUrl(null);
-    setUploadedVideoFile(null);
+    setStagedVideoFile(null);
+    setStagedVideoUrl(null);
     setVideoError(null);
-    if (playerFileInputRef.current) playerFileInputRef.current.value = '';
     if (formFileInputRef.current) formFileInputRef.current.value = '';
-  }
-
-  function handleLoadSampleVideo() {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-    }
-    setVideoError(null);
-    setUploadedVideoFile('coastal_surveillance_demo.mp4');
-    setUploadedVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
-    setVideoSourceType('UPLOAD');
   }
 
   // Only revoke object URL on actual component unmount
@@ -172,7 +160,7 @@ export default function MissionsPage() {
       droneCode: drone.droneCode,
       squadron,
       videoSourceType,
-      videoSourceUrl: videoSourceType === 'UPLOAD' ? (uploadedVideoFile ?? undefined) : videoSourceUrl,
+      videoSourceUrl: videoSourceType === 'UPLOAD' ? (stagedVideoFile ?? undefined) : videoSourceUrl,
       srtFileName: srtFile ?? undefined,
       pilotName: pilotName.trim() || 'Officer In-Charge',
       location: location.trim() || 'Kerala Coastal Sector',
@@ -186,6 +174,18 @@ export default function MissionsPage() {
       durationMin: 1,
     };
     setActiveMission(newMission);
+
+    // Only start playing the video when Start Mission is clicked
+    if (videoSourceType === 'UPLOAD' && stagedVideoUrl) {
+      setActiveVideoUrl(stagedVideoUrl);
+      setActiveVideoTitle(stagedVideoFile);
+      setVideoError(null);
+    } else {
+      setActiveVideoUrl(null);
+      setActiveVideoTitle(null);
+      setVideoError(null);
+    }
+
     handleRegenerateId();
   }
 
@@ -198,6 +198,9 @@ export default function MissionsPage() {
     };
     setHistoryMissions([completed, ...historyMissions]);
     setActiveMission(null);
+    setActiveVideoUrl(null);
+    setActiveVideoTitle(null);
+    setVideoError(null);
   }
 
   function handleDeleteMission(id: string) {
@@ -437,14 +440,28 @@ export default function MissionsPage() {
                       <input
                         ref={formFileInputRef}
                         type="file"
+                        required={!stagedVideoFile}
                         accept="video/mp4,video/webm,video/quicktime,video/*"
                         onChange={e => {
                           const file = e.target.files?.[0];
-                          if (file) handleFileSelect(file);
+                          if (file) handleFormFileSelect(file);
                         }}
                         className="mt-1 text-xs cursor-pointer"
                       />
-                      {uploadedVideoFile && <p className="text-[11px] font-mono text-emerald-600 mt-1">✓ {uploadedVideoFile}</p>}
+                      {stagedVideoFile && (
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <p className="text-[11px] font-mono text-emerald-600 font-semibold truncate max-w-[200px]" title={stagedVideoFile}>
+                            ✓ {stagedVideoFile}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleClearFormVideo}
+                            className="text-[10px] text-red-500 hover:underline cursor-pointer font-bold"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="border-2 border-dashed rounded-xl p-3 text-center" style={{ borderColor: 'var(--line)' }}>
@@ -456,7 +473,20 @@ export default function MissionsPage() {
                         onChange={e => setSrtFile(e.target.files?.[0]?.name ?? null)}
                         className="mt-1 text-xs cursor-pointer"
                       />
-                      {srtFile && <p className="text-[11px] font-mono text-emerald-600 mt-1">✓ {srtFile}</p>}
+                      {srtFile && (
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <p className="text-[11px] font-mono text-emerald-600 font-semibold truncate max-w-[200px]" title={srtFile}>
+                            ✓ {srtFile}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setSrtFile(null)}
+                            className="text-[10px] text-red-500 hover:underline cursor-pointer font-bold"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -574,7 +604,7 @@ export default function MissionsPage() {
             </div>
           </div>
 
-          {/* ── Uploaded Video Player Panel (Replaces Station Defaults) ── */}
+          {/* ── Mission Video Stream Panel (Plays active mission video) ── */}
           <div
             className="rounded-2xl p-4 border shadow-sm flex flex-col justify-between"
             style={{ background: 'var(--raised)', borderColor: 'var(--line)', minHeight: '300px' }}
@@ -586,10 +616,15 @@ export default function MissionsPage() {
                   Mission Video Stream
                 </h4>
               </div>
-              {uploadedVideoUrl && !videoError ? (
+              {activeMission && activeVideoUrl && !videoError ? (
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  PLAYING
+                  LIVE STREAM
+                </span>
+              ) : activeMission && !videoError ? (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-600 border border-cyan-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+                  INGESTION ACTIVE
                 </span>
               ) : videoError ? (
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-500 border border-red-500/30">
@@ -597,28 +632,21 @@ export default function MissionsPage() {
                 </span>
               ) : (
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded opacity-60" style={{ background: 'var(--sand-200)', color: 'var(--ink-800)' }}>
-                  AWAITING VIDEO
+                  AWAITING MISSION
                 </span>
               )}
             </div>
 
-            {/* Video Canvas / Player Area / Dropzone */}
+            {/* Video Canvas / Player Area */}
             <div
-              onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-              onDrop={e => {
-                e.preventDefault();
-                e.stopPropagation();
-                const file = e.dataTransfer.files?.[0];
-                if (file) handleFileSelect(file);
-              }}
               className="flex-1 rounded-xl overflow-hidden relative flex flex-col items-center justify-center border bg-black/95 min-h-[190px]"
               style={{ borderColor: 'var(--line)' }}
             >
-              {uploadedVideoUrl && !videoError ? (
+              {activeMission && activeVideoUrl && !videoError ? (
                 <video
                   ref={videoRef}
-                  key={uploadedVideoUrl}
-                  src={uploadedVideoUrl}
+                  key={activeVideoUrl}
+                  src={activeVideoUrl}
                   controls
                   autoPlay
                   muted
@@ -635,82 +663,46 @@ export default function MissionsPage() {
                   }}
                   className="w-full h-full max-h-[230px] object-contain rounded-xl"
                 />
-              ) : videoError ? (
+              ) : activeMission && videoError ? (
                 <div className="p-4 text-center flex flex-col items-center justify-center">
                   <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
                   <p className="text-xs text-red-400 font-semibold mb-1">Playback Error</p>
-                  <p className="text-[11px] text-white/70 max-w-[240px] mb-3 leading-relaxed">{videoError}</p>
-                  <button
-                    type="button"
-                    onClick={() => playerFileInputRef.current?.click()}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-                  >
-                    Select Another File (.mp4)
-                  </button>
+                  <p className="text-[11px] text-white/70 max-w-[240px] leading-relaxed">{videoError}</p>
+                </div>
+              ) : activeMission && !activeVideoUrl ? (
+                <div className="flex flex-col items-center justify-center text-center p-4">
+                  <Radio className="w-8 h-8 text-cyan-400 animate-pulse mb-2" />
+                  <p className="text-xs text-white/90 font-semibold">Live Ingestion Feed Active</p>
+                  <p className="text-[11px] font-mono text-cyan-200/80 max-w-[230px] truncate mt-1">
+                    {activeMission.videoSourceUrl || `${activeMission.videoSourceType} Gateway Stream`}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2 text-[10px] font-mono text-emerald-400">
+                    <span>{activeMission.bitrateMbps} Mbps</span>
+                    <span>•</span>
+                    <span>{activeMission.fps} FPS</span>
+                    <span>•</span>
+                    <span>TLS Encrypted</span>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-4">
                   <Video className="w-8 h-8 opacity-40 text-[var(--sea-400)] mb-2" />
-                  <p className="text-xs text-white/90 font-semibold">No video loaded</p>
-                  <p className="text-[11px] text-white/50 max-w-[230px] mt-1 mb-3 leading-normal">
-                    Drag &amp; drop a video file here or select a file to play
+                  <p className="text-xs text-white/90 font-semibold">Awaiting Mission Launch</p>
+                  <p className="text-[11px] text-white/50 max-w-[230px] mt-1 leading-normal">
+                    Uploaded video will play here once you click &ldquo;Start Mission&rdquo;
                   </p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    <button
-                      type="button"
-                      onClick={() => playerFileInputRef.current?.click()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--sea-600)] text-white hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      Upload Video
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleLoadSampleVideo}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 text-white/80 hover:bg-white/10 transition-colors cursor-pointer"
-                    >
-                      <Play className="w-3 h-3" />
-                      Test Sample Video
-                    </button>
-                  </div>
                 </div>
               )}
-
-              {/* Hidden file input directly inside player */}
-              <input
-                ref={playerFileInputRef}
-                type="file"
-                accept="video/mp4,video/webm,video/quicktime,video/*"
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileSelect(file);
-                }}
-                className="hidden"
-              />
             </div>
 
-            {uploadedVideoFile && (
+            {activeMission && (
               <div className="pt-2 mt-2 border-t text-[11px] font-mono flex items-center justify-between" style={{ borderColor: 'var(--line)' }}>
-                <span className="truncate max-w-[200px] text-emerald-600 font-semibold" title={uploadedVideoFile}>
-                  ✓ {uploadedVideoFile}
+                <span className="truncate max-w-[220px] text-emerald-600 font-semibold" title={activeVideoTitle ?? activeMission.name}>
+                  ✓ {activeVideoTitle ? activeVideoTitle : activeMission.name}
                 </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => playerFileInputRef.current?.click()}
-                    className="text-[10px] text-[var(--sea-600)] hover:underline cursor-pointer"
-                  >
-                    Change
-                  </button>
-                  <span className="opacity-30">|</span>
-                  <button
-                    type="button"
-                    onClick={handleClearVideo}
-                    className="text-[10px] text-red-500 hover:underline cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                </div>
+                <span className="text-[10px] opacity-70 font-mono">
+                  {activeMission.droneCode}
+                </span>
               </div>
             )}
           </div>
