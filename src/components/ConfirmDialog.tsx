@@ -104,7 +104,7 @@ export function ConfirmDialog({
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs transition-opacity" />
         <AlertDialog.Content
-          className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-[var(--panel)] p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95"
+          className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-[var(--raised)] text-[var(--text)] p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95"
           style={{ borderColor: 'var(--line)' }}
         >
           <div className="flex items-start gap-3">
@@ -115,7 +115,7 @@ export function ConfirmDialog({
               <AlertDialog.Title className="text-base font-bold font-serif leading-tight">
                 {title}
               </AlertDialog.Title>
-              <AlertDialog.Description className="text-xs opacity-70 mt-1 leading-relaxed">
+              <AlertDialog.Description className="text-xs opacity-70 mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 {description}
               </AlertDialog.Description>
             </div>
@@ -124,7 +124,7 @@ export function ConfirmDialog({
           {/* Reason Capture Input */}
           {requireReason && (
             <div className="space-y-2 pt-1 text-xs">
-              <label className="block font-semibold opacity-80 flex items-center justify-between">
+              <label className="block font-semibold opacity-80 flex items-center justify-between" style={{ color: 'var(--text)' }}>
                 <span>Operational Justification</span>
                 <span className="text-[10px] font-mono opacity-50">Min {minReasonLength} chars</span>
               </label>
@@ -133,7 +133,7 @@ export function ConfirmDialog({
                 value={reason}
                 onChange={e => setReason(e.target.value)}
                 placeholder={reasonPlaceholder}
-                className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-xs outline-none focus:ring-1 focus:ring-[var(--sea-600)] transition-all"
+                className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] text-xs outline-none focus:ring-1 focus:ring-[var(--sea-600)] transition-all"
                 style={{ borderColor: 'var(--line)' }}
               />
 

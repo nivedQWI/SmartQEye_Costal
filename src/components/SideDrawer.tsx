@@ -45,7 +45,7 @@ export function SideDrawer({
         <Dialog.Content
           aria-describedby={description ? 'drawer-description' : undefined}
           className={cn(
-            'fixed inset-y-0 z-50 flex flex-col w-full bg-[var(--panel)] border-l shadow-2xl duration-300 ease-in-out',
+            'fixed inset-y-0 z-50 flex flex-col w-full bg-[var(--raised)] text-[var(--text)] border-l shadow-2xl duration-300 ease-in-out',
             side === 'right' ? 'right-0 data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right' : 'left-0 border-r border-l-0 data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left',
             widthClasses
           )}

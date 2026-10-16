@@ -48,7 +48,7 @@ export function GlobalSearchDialog({ open, onOpenChange }: GlobalSearchDialogPro
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-start justify-center pt-[15vh] p-4 animate-in fade-in">
       <div
-        className="w-full max-w-xl rounded-2xl border bg-[var(--panel)] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95"
+        className="w-full max-w-xl rounded-2xl border bg-[var(--raised)] text-[var(--text)] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95"
         style={{ borderColor: 'var(--line)' }}
       >
         <Command
@@ -58,11 +58,11 @@ export function GlobalSearchDialog({ open, onOpenChange }: GlobalSearchDialogPro
         >
           {/* Search Input Bar */}
           <div className="flex items-center px-4 py-3 border-b gap-3" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
-            <Search className="w-4 h-4 text-[var(--sea-600)] flex-shrink-0" />
+            <Search className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)] flex-shrink-0" />
             <Command.Input
               autoFocus
               placeholder="Search contacts, alerts, missions, zones, drones, routes... (ESC to close)"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400 font-sans"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400 font-sans text-[var(--text)]"
             />
             <kbd className="px-1.5 py-0.5 rounded bg-[var(--panel)] border text-[10px] font-mono opacity-50" style={{ borderColor: 'var(--line)' }}>
               ESC

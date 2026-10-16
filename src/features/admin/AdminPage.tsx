@@ -667,39 +667,39 @@ export default function AdminPage() {
       {/* ── User Edit Drawer Modal ── */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="rounded-2xl p-6 w-full max-w-lg shadow-2xl border space-y-4" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+          <div className="rounded-2xl p-6 w-full max-w-lg shadow-2xl border space-y-4 bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
             <h3 className="font-serif text-lg font-bold">Manage Officer Account</h3>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block font-semibold mb-1">Full Name</label>
+                <label className="block font-semibold mb-1" style={{ color: 'var(--text)' }}>Full Name</label>
                 <input
                   type="text"
                   value={editingUser.fullName}
                   onChange={e => setEditingUser({ ...editingUser, fullName: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border bg-[var(--surface)] outline-none"
+                  className="w-full p-2.5 rounded-xl border bg-[var(--surface)] text-[var(--text)] outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1">Rank / Designation</label>
+                  <label className="block font-semibold mb-1" style={{ color: 'var(--text)' }}>Rank / Designation</label>
                   <input
                     type="text"
                     value={editingUser.rankTitle}
                     onChange={e => setEditingUser({ ...editingUser, rankTitle: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border bg-[var(--surface)] outline-none"
+                    className="w-full p-2.5 rounded-xl border bg-[var(--surface)] text-[var(--text)] outline-none"
                     style={{ borderColor: 'var(--line)' }}
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Badge Number</label>
+                  <label className="block font-semibold mb-1" style={{ color: 'var(--text)' }}>Badge Number</label>
                   <input
                     type="text"
                     value={editingUser.badgeNumber}
                     onChange={e => setEditingUser({ ...editingUser, badgeNumber: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border bg-[var(--surface)] outline-none font-mono"
+                    className="w-full p-2.5 rounded-xl border bg-[var(--surface)] text-[var(--text)] outline-none font-mono"
                     style={{ borderColor: 'var(--line)' }}
                   />
                 </div>
@@ -707,11 +707,11 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1">Active Role</label>
+                  <label className="block font-semibold mb-1" style={{ color: 'var(--text)' }}>Active Role</label>
                   <select
                     value={editingUser.role}
                     onChange={e => setEditingUser({ ...editingUser, role: e.target.value as UserRole })}
-                    className="w-full p-2.5 rounded-xl border bg-[var(--surface)] outline-none font-mono"
+                    className="w-full p-2.5 rounded-xl border bg-[var(--surface)] text-[var(--text)] outline-none font-mono"
                     style={{ borderColor: 'var(--line)' }}
                   >
                     {ALL_ROLES.map(r => (
@@ -720,11 +720,11 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Account Status</label>
+                  <label className="block font-semibold mb-1" style={{ color: 'var(--text)' }}>Account Status</label>
                   <select
                     value={editingUser.status}
                     onChange={e => setEditingUser({ ...editingUser, status: e.target.value as any })}
-                    className="w-full p-2.5 rounded-xl border bg-[var(--surface)] outline-none font-mono"
+                    className="w-full p-2.5 rounded-xl border bg-[var(--surface)] text-[var(--text)] outline-none font-mono"
                     style={{ borderColor: 'var(--line)' }}
                   >
                     <option value="ACTIVE">ACTIVE</option>
@@ -735,12 +735,12 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Station Jurisdiction</label>
+                <label className="block font-semibold mb-1" style={{ color: 'var(--text)' }}>Station Jurisdiction</label>
                 <input
                   type="text"
                   value={editingUser.station}
                   onChange={e => setEditingUser({ ...editingUser, station: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border bg-[var(--surface)] outline-none"
+                  className="w-full p-2.5 rounded-xl border bg-[var(--surface)] text-[var(--text)] outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 />
               </div>
@@ -749,14 +749,14 @@ export default function AdminPage() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setEditingUser(null)}
-                className="px-4 py-2 rounded-xl text-xs border hover:bg-[var(--surface-hover)] transition-colors"
-                style={{ borderColor: 'var(--line)' }}
+                className="px-4 py-2 rounded-xl text-xs border hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+                style={{ borderColor: 'var(--line)', color: 'var(--text)', background: 'var(--surface)' }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveUser}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] transition-colors cursor-pointer"
               >
                 Save Changes
               </button>
@@ -768,20 +768,20 @@ export default function AdminPage() {
       {/* ── Matrix Justification Modal ── */}
       {pendingMatrixChange && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="rounded-2xl p-6 w-full max-w-md shadow-2xl border space-y-4" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+          <div className="rounded-2xl p-6 w-full max-w-md shadow-2xl border space-y-4 bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
             <h3 className="font-serif text-lg font-bold">Modify Permissions Matrix</h3>
             <p className="text-xs opacity-70">
-              {pendingMatrixChange.enabled ? 'Granting' : 'Revoking'} <strong className="font-mono text-[var(--sea-600)]">{pendingMatrixChange.permission}</strong> for role <strong className="font-mono">{pendingMatrixChange.role}</strong>.
+              {pendingMatrixChange.enabled ? 'Granting' : 'Revoking'} <strong className="font-mono text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{pendingMatrixChange.permission}</strong> for role <strong className="font-mono">{pendingMatrixChange.role}</strong>.
             </p>
 
             <div>
-              <label className="block text-xs font-semibold mb-1">Administrative Justification <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text)' }}>Administrative Justification <span className="text-red-500">*</span></label>
               <textarea
                 value={matrixJustification}
                 onChange={e => setMatrixJustification(e.target.value)}
                 placeholder="State security policy or operational rationale (recorded in audit log)…"
                 className="w-full p-3 rounded-xl border text-xs outline-none focus:ring-2 resize-none"
-                style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}
+                style={{ background: 'var(--surface)', borderColor: 'var(--line)', color: 'var(--text)' }}
                 rows={3}
               />
             </div>
@@ -789,15 +789,15 @@ export default function AdminPage() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => { setPendingMatrixChange(null); setMatrixJustification(''); }}
-                className="px-4 py-2 rounded-xl text-xs border hover:bg-[var(--surface-hover)] transition-colors"
-                style={{ borderColor: 'var(--line)' }}
+                className="px-4 py-2 rounded-xl text-xs border hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+                style={{ borderColor: 'var(--line)', color: 'var(--text)', background: 'var(--surface)' }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmMatrixChange}
                 disabled={!matrixJustification.trim()}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] transition-colors disabled:opacity-40"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] transition-colors disabled:opacity-40 cursor-pointer"
               >
                 Confirm &amp; Write Audit Entry
               </button>

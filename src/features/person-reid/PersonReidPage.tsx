@@ -516,7 +516,7 @@ export default function PersonReidPage() {
       {/* ── Contact of Interest / Re-ID Dossier Modal ── */}
       {selectedRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="card-sand max-w-xl w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--border)] max-h-[90vh] overflow-y-auto">
+          <div className="bg-[var(--raised)] text-[var(--text)] max-w-xl w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--line)] rounded-2xl max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
@@ -632,7 +632,7 @@ export default function PersonReidPage() {
                 </button>
                 <button
                   onClick={() => alert(`Face crop embedding exported to evidence repository.`)}
-                  className="btn-navy text-xs px-3 py-1.5 rounded flex items-center gap-1.5"
+                  className="btn-navy text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Save Evidence

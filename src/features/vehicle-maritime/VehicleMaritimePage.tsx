@@ -920,46 +920,46 @@ export default function VehicleMaritimePage() {
       {/* ── Vehicle Inspection Modal ── */}
       {inspectVehicle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="card-sand max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl border border-[var(--border)]">
+          <div className="bg-[var(--raised)] text-[var(--text)] max-w-md w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--line)] rounded-2xl">
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
-                <Car className="w-4 h-4 text-emerald-700" />
+                <Car className="w-5 h-5 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
                 <h3 className="font-serif text-base font-bold text-[var(--text)]">Vehicle Inspection Record</h3>
               </div>
-              <button onClick={() => setInspectVehicle(null)} className="text-lg font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
+              <button onClick={() => setInspectVehicle(null)} className="text-xl font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
             </div>
 
             <div className="flex items-center justify-center py-2">
-              <div className="border-2 border-slate-800 bg-white rounded px-4 py-2 shadow-md font-mono font-black text-slate-900 tracking-widest text-lg flex items-center gap-3">
+              <div className="border-2 border-slate-800 bg-white rounded-lg px-4 py-2 shadow-md font-mono font-black text-slate-900 tracking-widest text-lg flex items-center gap-3">
                 <span className="text-xs bg-sky-700 text-white font-bold px-1.5 py-0.5 rounded">IND</span>
                 <span>{inspectVehicle.plate}</span>
               </div>
             </div>
 
             <div className="space-y-2 text-xs font-mono">
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Vehicle Type:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVehicle.vehicleType}</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Speed Detected:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVehicle.speedKmh} km/h</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>OCR Confidence:</span>
                 <span className="font-bold text-emerald-700 dark:text-emerald-400">{(inspectVehicle.confidence * 100).toFixed(2)}%</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Drone Source:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVehicle.droneCode}</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Location:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVehicle.locationName}</span>
               </div>
               {inspectVehicle.isWatchlistMatch && (
-                <div className="p-3 bg-red-100 border border-red-300 rounded text-red-900 font-sans text-xs mt-2">
-                  <div className="font-bold flex items-center gap-1.5 text-red-800 mb-1">
+                <div className="p-3 bg-red-100 dark:bg-red-950/40 border border-red-300 dark:border-red-700/60 rounded-lg text-red-900 dark:text-red-200 font-sans text-xs mt-2">
+                  <div className="font-bold flex items-center gap-1.5 text-red-800 dark:text-red-300 mb-1">
                     <ShieldAlert className="w-4 h-4" /> AUTHORISED WATCHLIST MATCH · RECOMMEND ATTENTION
                   </div>
                   {inspectVehicle.watchlistReason}
@@ -967,10 +967,10 @@ export default function VehicleMaritimePage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
+            <div className="flex justify-end gap-2 pt-3 border-t" style={{ borderColor: 'var(--line)' }}>
               <button
                 onClick={() => setInspectVehicle(null)}
-                className="btn-navy text-xs px-4 py-2 rounded"
+                className="btn-navy text-xs px-4 py-2 rounded-lg cursor-pointer"
               >
                 Close Inspector
               </button>
@@ -982,43 +982,43 @@ export default function VehicleMaritimePage() {
       {/* ── Vessel Inspection Modal ── */}
       {inspectVessel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="card-sand max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl border" style={{ borderColor: 'var(--line)' }}>
+          <div className="bg-[var(--raised)] text-[var(--text)] max-w-md w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--line)] rounded-2xl">
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
-                <Ship className="w-4 h-4 text-sky-700" />
+                <Ship className="w-5 h-5 text-sky-700 dark:text-sky-400" />
                 <h3 className="font-serif text-base font-bold text-[var(--text)]">Maritime Kinematics Dossier</h3>
               </div>
-              <button onClick={() => setInspectVessel(null)} className="text-lg font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
+              <button onClick={() => setInspectVessel(null)} className="text-xl font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
             </div>
 
             <div className="space-y-2 text-xs font-mono">
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Vessel Code:</span>
                 <span className="font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{inspectVessel.vesselCode}</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Classification:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.vesselClass}</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Speed (Knots):</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.speedKnots} kt</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Heading:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.headingDeg}°</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Motion State:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.motionState}</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Coordinates:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.lat}°N, {inspectVessel.lon}°E</span>
               </div>
               {inspectVessel.proximityWarning && (
-                <div className="p-3 bg-red-100 border border-red-300 rounded text-red-900 font-sans text-xs mt-2">
-                  <div className="font-bold flex items-center gap-1.5 text-red-800 mb-1">
+                <div className="p-3 bg-red-100 dark:bg-red-950/40 border border-red-300 dark:border-red-700/60 rounded-lg text-red-900 dark:text-red-200 font-sans text-xs mt-2">
+                  <div className="font-bold flex items-center gap-1.5 text-red-800 dark:text-red-300 mb-1">
                     <AlertTriangle className="w-4 h-4" /> COLLISION RISK ACTIVE
                   </div>
                   Separation under 90px threshold (Current: {inspectVessel.closestSeparationPx}px). Maritime Police Sector alert dispatched.
@@ -1026,10 +1026,10 @@ export default function VehicleMaritimePage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
+            <div className="flex justify-end gap-2 pt-3 border-t" style={{ borderColor: 'var(--line)' }}>
               <button
                 onClick={() => setInspectVessel(null)}
-                className="btn-navy text-xs px-4 py-2 rounded"
+                className="btn-navy text-xs px-4 py-2 rounded-lg cursor-pointer"
               >
                 Close Dossier
               </button>

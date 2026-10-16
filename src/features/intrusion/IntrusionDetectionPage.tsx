@@ -833,13 +833,13 @@ export default function IntrusionDetectionPage() {
       {/* ── Intrusion Inspection Modal ── */}
       {inspectRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="card-sand max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl border" style={{ borderColor: 'var(--line)' }}>
+          <div className="bg-[var(--raised)] text-[var(--text)] max-w-md w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--line)] rounded-2xl">
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 text-red-600" />
                 <h3 className="font-serif text-base font-bold" style={{ color: 'var(--text)' }}>Perimeter Breach Record</h3>
               </div>
-              <button onClick={() => setInspectRecord(null)} className="text-lg font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
+              <button onClick={() => setInspectRecord(null)} className="text-xl font-bold hover:opacity-80 cursor-pointer" style={{ color: 'var(--text-muted)' }}>×</button>
             </div>
 
             <div className="flex justify-center p-3 bg-slate-950 rounded-lg border border-slate-800">
@@ -851,47 +851,47 @@ export default function IntrusionDetectionPage() {
             </div>
 
             <div className="space-y-2 text-xs font-mono">
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Zone Breached:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectRecord.zoneName}</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Target Code:</span>
                 <span className="font-bold text-red-600 dark:text-red-400">{inspectRecord.targetCode}</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Target Classification:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectRecord.breachType}</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Dwell Duration:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectRecord.dwellTimeSec} seconds</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Breach Timestamp:</span>
                 <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectRecord.timestamp}</span>
               </div>
-              <div className="flex justify-between py-1 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Response Status:</span>
                 <span className="font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{inspectRecord.status}</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
+            <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'var(--line)' }}>
               {inspectRecord.status !== 'RESOLVED' && can(activeRole, 'RESOLVE_ALERT') ? (
                 <button
                   onClick={() => handleUpdateStatus(inspectRecord.id, 'RESOLVED')}
-                  className="px-3 py-1.5 rounded bg-emerald-700 text-white font-mono text-xs font-bold"
+                  className="px-3 py-1.5 rounded-lg bg-emerald-700 text-white font-mono text-xs font-bold cursor-pointer hover:bg-emerald-800 transition-colors"
                 >
                   Mark Resolved
                 </button>
               ) : inspectRecord.status === 'RESOLVED' ? (
-                <span className="text-xs text-emerald-700 font-bold">✓ Incident Closed</span>
+                <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold">✓ Incident Closed</span>
               ) : null}
 
               <button
                 onClick={() => setInspectRecord(null)}
-                className="btn-navy text-xs px-4 py-2 rounded"
+                className="btn-navy text-xs px-4 py-2 rounded-lg cursor-pointer"
               >
                 Close
               </button>

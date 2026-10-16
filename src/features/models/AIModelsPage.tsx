@@ -1403,10 +1403,10 @@ export default function AIModelsPage() {
       {/* ── Propose New Class Modal ── */}
       {isAddClassOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-xl border bg-[var(--panel)] p-5 space-y-4 shadow-2xl" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-md rounded-xl border bg-[var(--raised)] text-[var(--text)] p-5 space-y-4 shadow-2xl" style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
-                <GitBranch className="w-4 h-4 text-[var(--sea-600)]" />
+                <GitBranch className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
                 <h3 className="font-bold text-sm">Propose New Taxonomy Class</h3>
               </div>
               <button onClick={() => setIsAddClassOpen(false)} className="opacity-60 hover:opacity-100 cursor-pointer">
@@ -1416,24 +1416,24 @@ export default function AIModelsPage() {
 
             <form onSubmit={handleAddClassSubmit} className="space-y-3 text-xs">
               <div>
-                <label className="block opacity-70 mb-1 font-semibold">Class Name (e.g. Jet-Ski, Dugout Canoe)</label>
+                <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Class Name (e.g. Jet-Ski, Dugout Canoe)</label>
                 <input
                   type="text"
                   required
                   value={newClassName}
                   onChange={e => setNewClassName(e.target.value)}
                   placeholder="e.g. Mechanised Gillnetter"
-                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] font-medium outline-none focus:ring-1 focus:ring-[var(--sea-600)]"
+                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] font-medium outline-none focus:ring-1 focus:ring-[var(--sea-600)]"
                   style={{ borderColor: 'var(--line)' }}
                 />
               </div>
 
               <div>
-                <label className="block opacity-70 mb-1 font-semibold">Broad Parent Category</label>
+                <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Broad Parent Category</label>
                 <select
                   value={newClassCategory}
                   onChange={e => setNewClassCategory(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] font-medium outline-none"
+                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] font-medium outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 >
                   <option value="VESSEL">VESSEL (Maritime Craft)</option>
@@ -1444,26 +1444,26 @@ export default function AIModelsPage() {
               </div>
 
               <div>
-                <label className="block opacity-70 mb-1 font-semibold">Minimum Required Training Samples</label>
+                <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Minimum Required Training Samples</label>
                 <input
                   type="number"
                   min={500}
                   step={100}
                   value={newClassSamples}
                   onChange={e => setNewClassSamples(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] font-mono outline-none"
+                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] font-mono outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 />
               </div>
 
               <div>
-                <label className="block opacity-70 mb-1 font-semibold">Kerala Context & Recognition Notes</label>
+                <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Kerala Context &amp; Recognition Notes</label>
                 <textarea
                   rows={2}
                   value={newClassNotes}
                   onChange={e => setNewClassNotes(e.target.value)}
                   placeholder="Visual traits, hull shape, typical operational zone in Kerala..."
-                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] outline-none"
+                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 />
               </div>
@@ -1476,7 +1476,7 @@ export default function AIModelsPage() {
                   onChange={e => setNewClassGovApproval(e.target.checked)}
                   className="rounded"
                 />
-                <label htmlFor="govApproval" className="text-[11px] opacity-80 cursor-pointer">
+                <label htmlFor="govApproval" className="text-[11px] opacity-80 cursor-pointer" style={{ color: 'var(--text)' }}>
                   Requires Cyber Division / Drone Forensic Lab Gazette sign-off
                 </label>
               </div>
@@ -1486,6 +1486,7 @@ export default function AIModelsPage() {
                   type="button"
                   onClick={() => setIsAddClassOpen(false)}
                   className="px-3 py-1.5 rounded-lg border hover:bg-[var(--surface)] cursor-pointer"
+                  style={{ borderColor: 'var(--line)', color: 'var(--text)', background: 'var(--surface)' }}
                 >
                   Cancel
                 </button>
@@ -1504,10 +1505,10 @@ export default function AIModelsPage() {
       {/* ── Request Training Run Modal ── */}
       {isScheduleRunOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-xl border bg-[var(--panel)] p-5 space-y-4 shadow-2xl" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-md rounded-xl border bg-[var(--raised)] text-[var(--text)] p-5 space-y-4 shadow-2xl" style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-[var(--sea-600)]" />
+                <Activity className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
                 <h3 className="font-bold text-sm">Schedule Air-Gapped Training Run</h3>
               </div>
               <button onClick={() => setIsScheduleRunOpen(false)} className="opacity-60 hover:opacity-100 cursor-pointer">
@@ -1517,11 +1518,11 @@ export default function AIModelsPage() {
 
             <form onSubmit={handleScheduleRunSubmit} className="space-y-3 text-xs">
               <div>
-                <label className="block opacity-70 mb-1 font-semibold">Target Architecture</label>
+                <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Target Architecture</label>
                 <select
                   value={runModelTarget}
                   onChange={e => setRunModelTarget(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] outline-none"
+                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 >
                   <option value="RTMDet-L (MMDetection)">RTMDet-L (MMDetection) - Central GPU Profile</option>
@@ -1532,11 +1533,11 @@ export default function AIModelsPage() {
               </div>
 
               <div>
-                <label className="block opacity-70 mb-1 font-semibold">Dataset Version</label>
+                <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Dataset Version</label>
                 <select
                   value={runDataset}
                   onChange={e => setRunDataset(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] outline-none"
+                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 >
                   <option value="KL-AUTH-2026.1 + KL-MINE-DIFF-2026.2">KL-AUTH-2026.1 + KL-MINE-DIFF-2026.2 (51,800 frames)</option>
@@ -1547,40 +1548,40 @@ export default function AIModelsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block opacity-70 mb-1 font-semibold">Authorising Officer Name</label>
+                  <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Authorising Officer Name</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. SP Cyber Division"
                     value={runOfficerName}
                     onChange={e => setRunOfficerName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] outline-none"
+                    className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] outline-none"
                     style={{ borderColor: 'var(--line)' }}
                   />
                 </div>
                 <div>
-                  <label className="block opacity-70 mb-1 font-semibold">Officer PEN Number</label>
+                  <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Officer PEN Number</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. PEN: 418290"
                     value={runOfficerPEN}
                     onChange={e => setRunOfficerPEN(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] font-mono outline-none"
+                    className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] font-mono outline-none"
                     style={{ borderColor: 'var(--line)' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block opacity-70 mb-1 font-semibold">Operational Rationale</label>
+                <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Operational Rationale</label>
                 <textarea
                   rows={2}
                   required
                   placeholder="Reason for training run, e.g. monsoon sea clutter adaptation..."
                   value={runRationale}
                   onChange={e => setRunRationale(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] outline-none"
+                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 />
               </div>
@@ -1590,6 +1591,7 @@ export default function AIModelsPage() {
                   type="button"
                   onClick={() => setIsScheduleRunOpen(false)}
                   className="px-3 py-1.5 rounded-lg border hover:bg-[var(--surface)] cursor-pointer"
+                  style={{ borderColor: 'var(--line)', color: 'var(--text)', background: 'var(--surface)' }}
                 >
                   Cancel
                 </button>
@@ -1597,7 +1599,7 @@ export default function AIModelsPage() {
                   type="submit"
                   className="px-4 py-1.5 rounded-lg font-bold bg-[var(--sea-600)] text-white hover:opacity-90 cursor-pointer"
                 >
-                  Authorise & Queue Run
+                  Authorise &amp; Queue Run
                 </button>
               </div>
             </form>
@@ -1608,7 +1610,7 @@ export default function AIModelsPage() {
       {/* ── Model Rollback Modal ── */}
       {isRollbackModalOpen && selectedModelForRollback && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-xl border bg-[var(--panel)] p-5 space-y-4 shadow-2xl" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-md rounded-xl border bg-[var(--raised)] text-[var(--text)] p-5 space-y-4 shadow-2xl" style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-amber-600" />
@@ -1627,14 +1629,14 @@ export default function AIModelsPage() {
               </p>
 
               <div>
-                <label className="block opacity-70 mb-1 font-semibold">Mandatory Audit Justification</label>
+                <label className="block opacity-70 mb-1 font-semibold" style={{ color: 'var(--text-muted)' }}>Mandatory Audit Justification</label>
                 <textarea
                   rows={2}
                   required
                   placeholder="Operational reason for rollback..."
                   value={rollbackReason}
                   onChange={e => setRollbackReason(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] outline-none"
+                  className="w-full px-3 py-2 rounded-lg border bg-[var(--surface)] text-[var(--text)] outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 />
               </div>
@@ -1644,6 +1646,7 @@ export default function AIModelsPage() {
                   type="button"
                   onClick={() => setIsRollbackModalOpen(false)}
                   className="px-3 py-1.5 rounded-lg border hover:bg-[var(--surface)] cursor-pointer"
+                  style={{ borderColor: 'var(--line)', color: 'var(--text)', background: 'var(--surface)' }}
                 >
                   Cancel
                 </button>
