@@ -3,7 +3,7 @@
 // Standardized Drone Mission Management & Video Ingestion
 // ============================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Anchor, Play, Square, RefreshCw, Upload, Video,
   Radio, Shield, Trash2, Clock, AlertCircle, FileText
@@ -32,9 +32,16 @@ export default function MissionsPage() {
   const [videoSourceUrl, setVideoSourceUrl] = useState('');
   const [uploadedVideoFile, setUploadedVideoFile] = useState<string | null>(null);
   const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const [srtFile, setSrtFile] = useState<string | null>(null);
   const [pilotName, setPilotName] = useState('');
   const [location, setLocation] = useState('');
+
+  // Refs for video management and safe object URL lifecycle
+  const objectUrlRef = useRef<string | null>(null);
+  const playerFileInputRef = useRef<HTMLInputElement | null>(null);
+  const formFileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Transmission controls
   const [serverIngestion, setServerIngestion] = useState(true);
@@ -99,14 +106,51 @@ export default function MissionsPage() {
     },
   ]);
 
-  // Clean up object URL when component unmounts
+  // Safe file selector handling (preserves ObjectURL without premature disposal)
+  function handleFileSelect(file: File) {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
+    const url = URL.createObjectURL(file);
+    objectUrlRef.current = url;
+    setUploadedVideoFile(file.name);
+    setUploadedVideoUrl(url);
+    setVideoError(null);
+    setVideoSourceType('UPLOAD');
+  }
+
+  function handleClearVideo() {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setUploadedVideoUrl(null);
+    setUploadedVideoFile(null);
+    setVideoError(null);
+    if (playerFileInputRef.current) playerFileInputRef.current.value = '';
+    if (formFileInputRef.current) formFileInputRef.current.value = '';
+  }
+
+  function handleLoadSampleVideo() {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setVideoError(null);
+    setUploadedVideoFile('coastal_surveillance_demo.mp4');
+    setUploadedVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+    setVideoSourceType('UPLOAD');
+  }
+
+  // Only revoke object URL on actual component unmount
   useEffect(() => {
     return () => {
-      if (uploadedVideoUrl) {
-        URL.revokeObjectURL(uploadedVideoUrl);
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
       }
     };
-  }, [uploadedVideoUrl]);
+  }, []);
 
   function handleRegenerateId(sq = squadron) {
     setMissionId(generateMissionId(sq));
@@ -128,7 +172,7 @@ export default function MissionsPage() {
       droneCode: drone.droneCode,
       squadron,
       videoSourceType,
-      videoSourceUrl: videoSourceType === 'UPLOAD' ? undefined : videoSourceUrl,
+      videoSourceUrl: videoSourceType === 'UPLOAD' ? (uploadedVideoFile ?? undefined) : videoSourceUrl,
       srtFileName: srtFile ?? undefined,
       pilotName: pilotName.trim() || 'Officer In-Charge',
       location: location.trim() || 'Kerala Coastal Sector',
@@ -389,19 +433,14 @@ export default function MissionsPage() {
                   <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="border-2 border-dashed rounded-xl p-3 text-center" style={{ borderColor: 'var(--line)' }}>
                       <Upload className="w-5 h-5 mx-auto mb-1 opacity-50" />
-                      <div className="text-xs font-semibold">Raw Video (MP4 / TS / MKV)</div>
+                      <div className="text-xs font-semibold">Raw Video (MP4 / WebM / MOV)</div>
                       <input
+                        ref={formFileInputRef}
                         type="file"
-                        accept="video/*,.mp4,.ts,.mkv"
+                        accept="video/mp4,video/webm,video/quicktime,video/*"
                         onChange={e => {
                           const file = e.target.files?.[0];
-                          if (file) {
-                            setUploadedVideoFile(file.name);
-                            if (uploadedVideoUrl) {
-                              URL.revokeObjectURL(uploadedVideoUrl);
-                            }
-                            setUploadedVideoUrl(URL.createObjectURL(file));
-                          }
+                          if (file) handleFileSelect(file);
                         }}
                         className="mt-1 text-xs cursor-pointer"
                       />
@@ -538,7 +577,7 @@ export default function MissionsPage() {
           {/* ── Uploaded Video Player Panel (Replaces Station Defaults) ── */}
           <div
             className="rounded-2xl p-4 border shadow-sm flex flex-col justify-between"
-            style={{ background: 'var(--raised)', borderColor: 'var(--line)', minHeight: '260px' }}
+            style={{ background: 'var(--raised)', borderColor: 'var(--line)', minHeight: '300px' }}
           >
             <div className="flex items-center justify-between pb-2 mb-2 border-b" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
@@ -547,10 +586,14 @@ export default function MissionsPage() {
                   Mission Video Stream
                 </h4>
               </div>
-              {uploadedVideoUrl ? (
+              {uploadedVideoUrl && !videoError ? (
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   PLAYING
+                </span>
+              ) : videoError ? (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-500 border border-red-500/30">
+                  CODEC ERROR
                 </span>
               ) : (
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded opacity-60" style={{ background: 'var(--sand-200)', color: 'var(--ink-800)' }}>
@@ -559,42 +602,115 @@ export default function MissionsPage() {
               )}
             </div>
 
-            <div className="flex-1 rounded-xl overflow-hidden relative flex items-center justify-center border bg-black/90 min-h-[190px]" style={{ borderColor: 'var(--line)' }}>
-              {uploadedVideoUrl ? (
+            {/* Video Canvas / Player Area / Dropzone */}
+            <div
+              onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleFileSelect(file);
+              }}
+              className="flex-1 rounded-xl overflow-hidden relative flex flex-col items-center justify-center border bg-black/95 min-h-[190px]"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              {uploadedVideoUrl && !videoError ? (
                 <video
+                  ref={videoRef}
                   key={uploadedVideoUrl}
                   src={uploadedVideoUrl}
                   controls
                   autoPlay
+                  muted
                   loop
                   playsInline
-                  className="w-full h-full max-h-[220px] object-contain rounded-xl"
+                  preload="auto"
+                  onLoadedData={() => {
+                    if (videoRef.current) {
+                      videoRef.current.play().catch(err => console.log('Autoplay deferred:', err));
+                    }
+                  }}
+                  onError={() => {
+                    setVideoError('The browser could not decode this video. Browsers natively support MP4 (H.264), WebM, or MOV formats. Raw .ts/.mkv streams require conversion.');
+                  }}
+                  className="w-full h-full max-h-[230px] object-contain rounded-xl"
                 />
+              ) : videoError ? (
+                <div className="p-4 text-center flex flex-col items-center justify-center">
+                  <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
+                  <p className="text-xs text-red-400 font-semibold mb-1">Playback Error</p>
+                  <p className="text-[11px] text-white/70 max-w-[240px] mb-3 leading-relaxed">{videoError}</p>
+                  <button
+                    type="button"
+                    onClick={() => playerFileInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                  >
+                    Select Another File (.mp4)
+                  </button>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-4">
-                  <Video className="w-8 h-8 opacity-30 text-white mb-2" />
-                  <p className="text-xs text-white/90 font-medium">No video uploaded yet</p>
-                  <p className="text-[11px] text-white/50 max-w-[220px] mt-1 leading-normal">
-                    Upload a video file (MP4/TS/MKV) in the form to play and preview it here
+                  <Video className="w-8 h-8 opacity-40 text-[var(--sea-400)] mb-2" />
+                  <p className="text-xs text-white/90 font-semibold">No video loaded</p>
+                  <p className="text-[11px] text-white/50 max-w-[230px] mt-1 mb-3 leading-normal">
+                    Drag &amp; drop a video file here or select a file to play
                   </p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => playerFileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--sea-600)] text-white hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      Upload Video
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleLoadSampleVideo}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 text-white/80 hover:bg-white/10 transition-colors cursor-pointer"
+                    >
+                      <Play className="w-3 h-3" />
+                      Test Sample Video
+                    </button>
+                  </div>
                 </div>
               )}
+
+              {/* Hidden file input directly inside player */}
+              <input
+                ref={playerFileInputRef}
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime,video/*"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileSelect(file);
+                }}
+                className="hidden"
+              />
             </div>
 
             {uploadedVideoFile && (
               <div className="pt-2 mt-2 border-t text-[11px] font-mono flex items-center justify-between" style={{ borderColor: 'var(--line)' }}>
-                <span className="truncate max-w-[200px] text-emerald-600 font-semibold">✓ {uploadedVideoFile}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (uploadedVideoUrl) URL.revokeObjectURL(uploadedVideoUrl);
-                    setUploadedVideoUrl(null);
-                    setUploadedVideoFile(null);
-                  }}
-                  className="text-[10px] text-red-500 hover:underline cursor-pointer"
-                >
-                  Remove
-                </button>
+                <span className="truncate max-w-[200px] text-emerald-600 font-semibold" title={uploadedVideoFile}>
+                  ✓ {uploadedVideoFile}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => playerFileInputRef.current?.click()}
+                    className="text-[10px] text-[var(--sea-600)] hover:underline cursor-pointer"
+                  >
+                    Change
+                  </button>
+                  <span className="opacity-30">|</span>
+                  <button
+                    type="button"
+                    onClick={handleClearVideo}
+                    className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
             )}
           </div>
