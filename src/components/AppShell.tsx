@@ -12,13 +12,16 @@ import {
   ChevronRight, LogOut, Sun, Moon, Laptop,
   AlertTriangle, Activity, Database, Terminal, PanelLeftClose, PanelLeft,
   Car, ScanFace, ShieldAlert, AlertOctagon, Grid, Sliders, Settings2,
-  Server, Network, ScrollText, CheckSquare, PackageSearch, FolderArchive, Info
+  Server, Network, ScrollText, CheckSquare, PackageSearch, FolderArchive, Info,
+  GraduationCap, HelpCircle
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { cn, formatPct } from '@/lib/utils';
 import { ISTClock } from '@/components/ISTClock';
 import { AboutDialog } from '@/components/AboutDialog';
 import { IdleTimeoutModal } from '@/components/IdleTimeoutModal';
+import { TrainingModeBadge } from '@/components/TrainingModeBadge';
+import { GuidedTour } from '@/components/GuidedTour';
 import { useAlertStore, useAuthStore, useThemeStore, useHealthStore, useMissionStore, useLanguageStore } from '@/lib/store';
 import { t, type TranslationKey } from '@/lib/i18n';
 import { simulator } from '@/lib/simulator';
@@ -96,6 +99,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin',            labelKey: 'nav_admin',          defaultLabel: 'Administration',     icon: Shield,          roles: ALL_ROLES },
       { to: '/audit',            labelKey: 'nav_audit',          defaultLabel: 'Audit Log',          icon: ScrollText,      roles: ALL_ROLES },
       { to: '/acceptance',       labelKey: 'nav_acceptance',     defaultLabel: 'Acceptance Console', icon: CheckSquare,     roles: ALL_ROLES },
+      { to: '/help',             labelKey: 'nav_help',           defaultLabel: 'Help & Training',    icon: GraduationCap,   roles: ALL_ROLES },
     ]
   }
 ];
@@ -376,6 +380,9 @@ export function AppShell() {
             </div>
           )}
 
+          {/* Training Sandbox Mode Badge */}
+          <TrainingModeBadge />
+
           {/* Malayalam / English Language Toggle */}
           <button
             onClick={() => setLanguage(language === 'en' ? 'ml' : 'en')}
@@ -391,6 +398,16 @@ export function AppShell() {
 
           {/* IST Clock */}
           <ISTClock />
+
+          {/* Help Centre Button */}
+          <button
+            onClick={() => navigate('/help')}
+            className="p-2 rounded-lg transition-colors hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]"
+            title="Help Centre & Training (?)"
+            aria-label="Help Centre & Training"
+          >
+            <HelpCircle className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
+          </button>
 
           {/* Alert Bell */}
           <button
@@ -601,6 +618,9 @@ export function AppShell() {
 
       {/* 15-Minute Inactivity Idle Timeout Modal */}
       <IdleTimeoutModal />
+
+      {/* Guided Tour Floating Walkthrough */}
+      <GuidedTour />
     </div>
   );
 }

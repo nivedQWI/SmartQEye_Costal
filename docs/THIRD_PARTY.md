@@ -46,6 +46,8 @@
 | `recharts` | ^3.10.1 | MIT | Real-time charts and telemetry visualisations |
 | `tailwind-merge` | ^3.7.0 | MIT | Tailwind class conflict resolution |
 | `tailwindcss` | ^4.3.3 | MIT | Utility-first design system styling |
+| `jspdf` | ^4.2.1 | MIT | Client-side Section 65B PDF report generator |
+| `jspdf-autotable` | ^5.0.7 | MIT | Tabular layout formatting engine for jsPDF |
 | `zustand` | ^5.0.15 | MIT | Lightweight global state store |
 
 ---

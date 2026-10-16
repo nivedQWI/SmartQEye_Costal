@@ -9,7 +9,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from '@/components/AppShell';
 import { useAuthStore } from '@/lib/store';
 import { RequirePermission } from '@/components/RequirePermission';
-import ComingSoon from '@/components/ComingSoon';
 
 // Lazy-loaded pages
 const LoginPage             = lazy(() => import('@/features/login/LoginPage'));
@@ -45,6 +44,7 @@ const IntegrationsPage      = lazy(() => import('@/features/platform/Integration
 const AdminPage             = lazy(() => import('@/features/admin/AdminPage'));
 const AuditLogPage          = lazy(() => import('@/features/platform/AuditLogPage'));
 const AcceptancePage        = lazy(() => import('@/features/platform/AcceptancePage'));
+const HelpCenterPage        = lazy(() => import('@/features/help/HelpCenterPage'));
 const NotFoundPage          = lazy(() => import('@/features/error/NotFoundPage'));
 
 const queryClient = new QueryClient({
@@ -140,6 +140,14 @@ export default function App() {
                   </RequirePermission>
                 }
               />
+              <Route
+                path="config/models"
+                element={
+                  <RequirePermission permission="MANAGE_MODELS">
+                    <AIModelsPage />
+                  </RequirePermission>
+                }
+              />
 
               {/* Platform */}
               <Route path="deployment" element={<DeploymentPage />} />
@@ -165,6 +173,8 @@ export default function App() {
                 }
               />
               <Route path="acceptance" element={<AcceptancePage />} />
+              <Route path="platform/acceptance" element={<AcceptancePage />} />
+              <Route path="help" element={<HelpCenterPage />} />
 
 
               {/* Auxiliary / Style Guide */}

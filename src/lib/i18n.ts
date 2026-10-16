@@ -30,6 +30,7 @@ export const en = {
   nav_admin: 'Administration',
   nav_audit: 'Audit Log',
   nav_acceptance: 'Acceptance Console',
+  nav_help: 'Help & Training',
 
   // Auth
   auth_title: 'SmartQEye Coastal',
@@ -138,6 +139,7 @@ export const ml: Record<TranslationKey, string> = {
   nav_admin: 'അഡ്മിനിസ്ട്രേഷൻ',
   nav_audit: 'ഓഡിറ്റ് ലോഗ്',
   nav_acceptance: 'സ്വീകാര്യതാ കൺസോൾ',
+  nav_help: 'സഹായം & പരിശീലനം',
 
   // Auth
   auth_title: 'സ്മാർട്ട് ക്യു ഐ കോസ്റ്റൽ',
