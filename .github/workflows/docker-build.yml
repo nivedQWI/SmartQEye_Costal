@@ -1,0 +1,39 @@
+name: Build & Verify Docker Image
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build & Test Docker Container
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: smartqeye-coastal:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Docker Container
+        run: |
+          docker run -d -p 8080:80 --name test-container smartqeye-coastal:latest
+          sleep 5
+
+      - name: Verify Container Health
+        run: |
+          curl --fail http://localhost:8080/healthz || exit 1
+          echo "Health check succeeded!"
