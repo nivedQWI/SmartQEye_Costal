@@ -91,10 +91,11 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfigItem> = {
   },
   AUDITOR: {
     landing: '/history',
-    primary: ['/history', '/alerts', '/missions', '/reports', '/admin'],
+    primary: ['/history', '/audit', '/alerts', '/missions', '/reports', '/admin'],
     demoPassword: 'admin123',
     allowedRoutes: [
       '/history',
+      '/audit',
       '/alerts',
       '/alerts/:id',
       '/missions',
@@ -118,13 +119,13 @@ export const ROLES_LIST: UserRole[] = [
 export function getRoleDisplayName(role: UserRole): string {
   switch (role) {
     case 'OPERATOR':
-      return 'Tactical Operator';
+      return 'Operator';
     case 'SUPERVISOR':
-      return 'Station Duty Officer';
+      return 'Supervisor';
     case 'SYS_ADMIN':
-      return 'Systems & Network Admin';
+      return 'Sys Admin';
     case 'AUDITOR':
-      return 'Police Inspection Auditor';
+      return 'Auditor';
     default:
       return (role as string).replace(/_/g, ' ');
   }

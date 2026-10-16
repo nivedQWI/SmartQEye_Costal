@@ -23,7 +23,7 @@ export const PERMISSION_LIST: PermissionMeta[] = [
   {
     code: 'VIEW_ARCHIVE',
     label: 'View Historical Archive',
-    description: 'Access past mission sorties, historical flight paths, and recorded video',
+    description: 'Access past missions, historical flight paths, and recorded video',
     category: 'OPERATIONS',
   },
   {
@@ -139,6 +139,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'VIEW_ARCHIVE',
     'EVIDENCE_ACCESS',
     'EXPORT',
+    'VIEW_AUDIT',
   ],
   SYS_ADMIN: [
     'VIEW_LIVE',

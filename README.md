@@ -65,7 +65,7 @@ Human Police Interpretation ─────────────────�
 | **Operations** | `/live` | Live Monitor | Multi-stream video wall with telemetry HUD |
 | **Operations** | `/fleet-wall` | Fleet Wall | 20-feed multiview matrix with CFS compute badges |
 | **Operations** | `/map` | Map / GIS | Coastal GIS map with nautical charts, zones, tracks |
-| **Operations** | `/missions` | Missions & Sorties | Sortie scheduler, UAV battery, sector assignments |
+| **Operations** | `/missions` | Mission Control | Mission scheduler, UAV battery, sector assignments |
 | **Operations** | `/alerts` | Alerts | Tactical alert queue with filtering and triage |
 | **Operations** | `/alerts/:id` | Alert Detail | In-depth rationale, keyframe evidence, audit trail |
 | **Intelligence** | `/contacts` | Contacts | Persistent coastal contact registry & Kerala craft taxonomy |

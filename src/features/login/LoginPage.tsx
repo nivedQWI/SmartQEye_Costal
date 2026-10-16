@@ -88,24 +88,13 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen w-full relative flex flex-col items-center justify-center p-4 pt-16 overflow-x-hidden bg-cover bg-center bg-no-repeat"
+      className="min-h-screen w-full relative flex flex-col items-center justify-center p-4 overflow-x-hidden bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: "url('/coastal_harbor_bg.png')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
-      {/* ── Top Classification banner ── */}
-      <div
-        className="fixed top-0 left-0 right-0 z-50 text-center py-1.5 text-xs font-semibold font-mono tracking-widest shadow-md"
-        style={{
-          background: '#13281E',
-          color: '#7FEFA0',
-          borderBottom: '1px solid rgba(127, 239, 160, 0.25)',
-        }}
-      >
-        RESTRICTED — AUTHORISED USE ONLY — ALL ACCESS IS AUDITED AND LOGGED
-      </div>
 
       {/* ── Gradient Color Overlay (matching light yellowish gradient layered over photo) ── */}
       <div

@@ -73,7 +73,7 @@ paths:
         '200':
           description: Officer identity, active role, station jurisdiction, and permission list.
 
-  # ── Missions & Sorties ─────────────────────────────────────
+  # ── Mission Control ─────────────────────────────────────────
   /missions:
     get:
       summary: List Drone Sorties

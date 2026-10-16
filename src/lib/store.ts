@@ -326,7 +326,7 @@ export interface TrainingModule {
 }
 
 export const TRAINING_MODULES: TrainingModule[] = [
-  { id: 'tm-1', name: 'Command Dashboard & KPIs', description: 'Real-time overview of sorties, attention levels, and critical incidents.', targetRoute: '/', tourId: 'dashboard', estimatedMinutes: 3 },
+  { id: 'tm-1', name: 'Command Dashboard & KPIs', description: 'Real-time overview of missions, attention levels, and critical incidents.', targetRoute: '/', tourId: 'dashboard', estimatedMinutes: 3 },
   { id: 'tm-2', name: 'Live Multi-Drone Ingestion', description: 'Monitor RTSP streams, toggle CFS dynamic FPS, and inspect overlays.', targetRoute: '/live', tourId: 'live_monitor', estimatedMinutes: 4 },
   { id: 'tm-3', name: 'Incident Records & ELIR Dossiers', description: 'Investigate evidence frames, tamper seals, and Section 65B custody.', targetRoute: '/incidents', tourId: 'incidents', estimatedMinutes: 5 },
   { id: 'tm-4', name: 'GIS & Maritime Zone Breach', description: 'Geofence boundaries, prohibited zone alerts, and coordinate tracking.', targetRoute: '/map', tourId: 'gis_map', estimatedMinutes: 4 },
@@ -388,7 +388,7 @@ export const TOUR_DEFINITIONS: Record<string, { title: string; steps: TourStep[]
   history: {
     title: 'Historical Playback & Forensic Review Tour',
     steps: [
-      { title: 'Synchronised Timeline Scrubber', content: 'Replay multi-drone sorties frame-by-frame with synchronous telemetry alignment.', route: '/history' },
+      { title: 'Synchronised Timeline Scrubber', content: 'Replay multi-drone missions frame-by-frame with synchronous telemetry alignment.', route: '/history' },
       { title: 'Zone Breach Markers', content: 'Jump directly to attention spikes and boundary breach events on the master timeline.', route: '/history' },
       { title: 'Court-Ready Telemetry CSV Export', content: 'Export GPS coordinates, altitudes, and heading logs for cyber forensic examination.', route: '/history' },
     ],

@@ -106,7 +106,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/health',             label: 'System Health',       labelKey: 'nav_health',         icon: Activity,        roles: ALL_ROLES },
       { to: '/models',             label: 'AI Models Cluster',   labelKey: 'nav_models',         icon: Cpu,             roles: ALL_ROLES },
       { to: '/admin',              label: 'Administration',      labelKey: 'nav_admin',          icon: Shield,          roles: ['SYS_ADMIN', 'SUPERVISOR', 'AUDITOR'] },
-      { to: '/audit',              label: 'Audit Log',           labelKey: 'nav_audit',          icon: ScrollText,      roles: ['SYS_ADMIN'] },
+      { to: '/audit',              label: 'Audit Log',           labelKey: 'nav_audit',          icon: ScrollText,      roles: ['SYS_ADMIN', 'AUDITOR'] },
       { to: '/config/zones',       label: 'Zones & Context',     labelKey: 'nav_config_zones',   icon: Sliders,         roles: ['SUPERVISOR'] },
       { to: '/config/alerts',      label: 'Alert Configuration', labelKey: 'nav_config_alerts',  icon: Settings2,       roles: ['SUPERVISOR', 'SYS_ADMIN'] },
       { to: '/deployment',         label: 'Deployment & Compute',labelKey: 'nav_deployment',     icon: Server,          roles: ['SYS_ADMIN'] },
@@ -471,7 +471,7 @@ export function AppShell() {
                 onClick={() => setIsSearchOpen(true)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-[var(--surface-hover)] hover:bg-[var(--panel)] transition-all cursor-pointer text-xs"
                 style={{ borderColor: 'var(--line)' }}
-                title="Search intelligence records, contacts, sorties, and actions (Ctrl+K)"
+                title="Search intelligence records, contacts, missions, and actions (Ctrl+K)"
               >
                 <Search className="w-3.5 h-3.5 text-[var(--sea-600)]" />
                 <span className="hidden xl:inline opacity-70">Search records...</span>

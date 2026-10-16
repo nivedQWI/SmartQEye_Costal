@@ -1,7 +1,7 @@
 // ============================================================
 // SmartQEye Coastal — GlobalSearchDialog Component (Ctrl+K)
 // Phase 7A: Global Command Palette via `cmdk`
-// Searches Contacts, Incidents, Sorties, Zones, Drones, Pages & Actions
+// Searches Contacts, Incidents, Missions, Zones, Drones, Pages & Actions
 // ============================================================
 
 import React, { useState, useEffect } from 'react';
@@ -61,7 +61,7 @@ export function GlobalSearchDialog({ open, onOpenChange }: GlobalSearchDialogPro
             <Search className="w-4 h-4 text-[var(--sea-600)] flex-shrink-0" />
             <Command.Input
               autoFocus
-              placeholder="Search contacts, alerts, sorties, zones, drones, routes... (ESC to close)"
+              placeholder="Search contacts, alerts, missions, zones, drones, routes... (ESC to close)"
               className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400 font-sans"
             />
             <kbd className="px-1.5 py-0.5 rounded bg-[var(--panel)] border text-[10px] font-mono opacity-50" style={{ borderColor: 'var(--line)' }}>
