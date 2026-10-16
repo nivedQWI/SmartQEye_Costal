@@ -3,7 +3,7 @@
 // Multi-feed wall + Focus mode with canvas overlays + DVR
 // ============================================================
 
-import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Grid2x2, Grid3x3, Maximize2, Minimize2,
@@ -17,11 +17,11 @@ import { CoastalMap } from '@/components/CoastalMap';
 import { useFeedStore, useAlertStore } from '@/lib/store';
 import { simulator } from '@/lib/simulator';
 import { ALERTS, CONTACTS } from '@/lib/mockData';
-import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
+import { CoastalVideoPlayer } from '@/components/CoastalVideoPlayer';
 import { CfsStreamStrip } from '@/components/CfsStreamStrip';
-import type { Feed, TelemetrySample } from '@/types';
+import type { Feed, TelemetrySample, Modality } from '@/types';
 
-// ─── Video tile with DroneVideoPlayer ──────────────────────────
+// ─── Video tile with CoastalVideoPlayer ─────────────────────────
 
 interface FeedTileProps {
   feed: Feed;
@@ -58,12 +58,13 @@ const FeedTile = memo(function FeedTile({ feed, isActive, isFocus: _isFocus, onC
             <div className="text-purple-400/60 font-mono text-xs">{feed.edgeSyncLagSec}s behind</div>
           </div>
         ) : (
-          <DroneVideoPlayer
-            sceneName="vizhinjam_patrol"
-            showControls={false}
+          <CoastalVideoPlayer
+            src={feed.videoSrc || '/videos/RGB_1.mp4'}
+            modality={feed.modality}
             autoPlay={true}
+            muted={true}
             loop={true}
-            initialModality={feed.modality}
+            showHudOverlay={true}
             className="w-full h-full pointer-events-none"
           />
         )}
@@ -85,7 +86,7 @@ const FeedTile = memo(function FeedTile({ feed, isActive, isFocus: _isFocus, onC
       {/* Label */}
       <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10 pointer-events-none">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-xs text-white/90 font-medium">{feed.label}</span>
+          <span className="font-mono text-xs text-white/90 font-medium truncate max-w-[200px]">{feed.label}</span>
           {feed.fpsCurrent !== undefined && feed.fpsCurrent > 0 && (
             <span className="font-mono text-[10px] text-white/50">{Math.round(feed.fpsCurrent)}fps</span>
           )}
@@ -100,20 +101,21 @@ const FeedTile = memo(function FeedTile({ feed, isActive, isFocus: _isFocus, onC
 function FocusMode({ feed, onExit }: { feed: Feed; onExit: () => void }) {
   const { telemetry } = useFeedStore();
   const tele = telemetry[feed.id] ?? feed.telemetry;
+  const [modalityOverride, setModalityOverride] = useState<Modality>(feed.modality);
 
   return (
     <div className="flex h-full overflow-hidden">
       {/* Video + controls */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar with back to grid */}
+        {/* Top bar with back to grid and sensor modality selector */}
         <div
-          className="flex items-center justify-between px-3 py-2 border-b flex-shrink-0"
+          className="flex items-center justify-between px-3 py-2 border-b flex-shrink-0 flex-wrap gap-2"
           style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}
         >
           <div className="flex items-center gap-3">
             <button
               onClick={onExit}
-              className="text-xs px-2.5 py-1 rounded-lg border flex items-center gap-1.5 font-medium transition-colors hover:bg-[var(--raised)]"
+              className="text-xs px-2.5 py-1 rounded-lg border flex items-center gap-1.5 font-medium transition-colors hover:bg-[var(--raised)] cursor-pointer"
               style={{ borderColor: 'var(--line)', color: 'var(--sea-accent)' }}
             >
               <Minimize2 className="w-3.5 h-3.5" /> Grid View
@@ -123,19 +125,46 @@ function FocusMode({ feed, onExit }: { feed: Feed; onExit: () => void }) {
             <span className="font-mono text-xs font-semibold">{feed.label}</span>
             <span className="font-mono text-xs opacity-60">({feed.uavCode})</span>
           </div>
+
+          {/* Interactive Modality Switcher */}
+          <div className="flex items-center gap-1.5 p-0.5 rounded-lg border font-mono text-xs" style={{ background: 'var(--bg)', borderColor: 'var(--line)' }}>
+            <span className="text-[10px] uppercase opacity-50 px-1.5">Sensor Filter:</span>
+            {(['RGB', 'THERMAL', 'NIGHT_VISION'] as const).map(m => (
+              <button
+                key={m}
+                onClick={() => setModalityOverride(m)}
+                className={cn(
+                  'px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer',
+                  modalityOverride === m
+                    ? m === 'THERMAL'
+                      ? 'bg-orange-600 text-white shadow-xs'
+                      : m === 'NIGHT_VISION'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-sky-600 text-white shadow-xs'
+                    : 'opacity-60 hover:opacity-100'
+                )}
+              >
+                {m === 'NIGHT_VISION' ? 'NIGHT VISION' : m}
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center gap-2 font-mono text-xs opacity-60">
             <span>Mission: {feed.missionCode ?? 'MSN-20261016-0830-01-VIZHINJAM'}</span>
           </div>
         </div>
 
-        {/* Video viewport with DroneVideoPlayer */}
+        {/* Video viewport with CoastalVideoPlayer */}
         <div className="flex-1 relative bg-black overflow-hidden flex flex-col">
-          <DroneVideoPlayer
-            sceneName="vizhinjam_patrol"
+          <CoastalVideoPlayer
+            src={feed.videoSrc || '/videos/RGB_1.mp4'}
+            modality={feed.modality}
+            filterOverride={modalityOverride}
             autoPlay={true}
+            muted={true}
             loop={true}
             showControls={true}
-            initialModality={feed.modality}
+            showHudOverlay={true}
             className="flex-1 w-full h-full"
           />
         </div>
@@ -212,6 +241,7 @@ export default function LiveMonitor() {
   const { feeds, activeFeedId, setActiveFeed, gridLayout, setGridLayout } = useFeedStore();
   const [focusMode, setFocusMode] = useState(false);
   const [showOverlays, setShowOverlays] = useState(true);
+  const [selectedModality, setSelectedModality] = useState<'ALL' | Modality>('ALL');
 
   const activeFeed = feeds.find(f => f.id === activeFeedId) ?? feeds[0];
 
@@ -228,7 +258,12 @@ export default function LiveMonitor() {
     return unsub;
   }, []);
 
-  const displayFeeds = feeds.slice(0, gridLayout);
+  const filteredFeeds = useMemo(() => {
+    if (selectedModality === 'ALL') return feeds;
+    return feeds.filter(f => f.modality === selectedModality);
+  }, [feeds, selectedModality]);
+
+  const displayFeeds = filteredFeeds.slice(0, gridLayout);
 
   if (focusMode && activeFeed) {
     return <FocusMode feed={activeFeed} onExit={() => setFocusMode(false)} />;
@@ -238,10 +273,39 @@ export default function LiveMonitor() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Toolbar */}
       <div
-        className="flex items-center gap-3 px-3 py-2 border-b flex-shrink-0"
+        className="flex items-center gap-3 px-3 py-2 border-b flex-shrink-0 flex-wrap"
         style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}
       >
         <span className="font-serif text-sm font-semibold">Live Monitor</span>
+
+        {/* Modality Section Filter Buttons */}
+        <div className="flex rounded-lg overflow-hidden border text-xs font-mono" style={{ borderColor: 'var(--line)' }}>
+          <button
+            onClick={() => setSelectedModality('ALL')}
+            className={cn('px-2.5 py-1 transition-colors cursor-pointer', selectedModality === 'ALL' ? 'bg-[var(--sea-600)] text-white font-bold' : 'opacity-70 hover:opacity-100 bg-[var(--raised)]')}
+          >
+            All Feeds ({feeds.length})
+          </button>
+          <button
+            onClick={() => setSelectedModality('RGB')}
+            className={cn('px-2.5 py-1 transition-colors cursor-pointer', selectedModality === 'RGB' ? 'bg-sky-600 text-white font-bold' : 'opacity-70 hover:opacity-100 bg-[var(--raised)]')}
+          >
+            RGB Optical
+          </button>
+          <button
+            onClick={() => setSelectedModality('THERMAL')}
+            className={cn('px-2.5 py-1 transition-colors cursor-pointer', selectedModality === 'THERMAL' ? 'bg-orange-600 text-white font-bold' : 'opacity-70 hover:opacity-100 bg-[var(--raised)]')}
+          >
+            Thermal Section
+          </button>
+          <button
+            onClick={() => setSelectedModality('NIGHT_VISION')}
+            className={cn('px-2.5 py-1 transition-colors cursor-pointer', selectedModality === 'NIGHT_VISION' ? 'bg-emerald-600 text-white font-bold' : 'opacity-70 hover:opacity-100 bg-[var(--raised)]')}
+          >
+            Night Vision
+          </button>
+        </div>
+
         <div className="flex-1" />
 
         {/* Grid switcher */}

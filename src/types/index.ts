@@ -24,7 +24,7 @@ export type ContactClass =
   | 'PERSON'
   | 'VEHICLE'
   | 'UNKNOWN';
-export type Modality = 'RGB' | 'THERMAL';
+export type Modality = 'RGB' | 'THERMAL' | 'NIGHT_VISION';
 export type ZoneType = 'RESTRICTED' | 'MONITORED' | 'FISHING' | 'TOURISM' | 'HARBOUR' | 'BEACH' | 'ESTUARY' | 'OPEN_SEA';
 export type MissionStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'ABORTED';
 export type ProcessingMode = 'CENTRAL_GPU' | 'LOCAL_EDGE' | 'COOP_EDGE' | 'UAV_ONBOARD' | 'POST_MISSION';
@@ -162,6 +162,8 @@ export interface Feed {
   lastFrameAt?: string;
   resolution?: string;
   streamUrl?: string;
+  videoSrc?: string;
+  filterType?: 'NONE' | 'THERMAL' | 'NIGHT_VISION';
   thumbnailUrl?: string;
   telemetry?: TelemetrySample;
   isPinned?: boolean;

@@ -51,7 +51,7 @@ export function FeedStateChip({ state, size = 'md', className }: FeedStateChipPr
 // ─── Modality chip ────────────────────────────────────────────
 
 interface ModalityChipProps {
-  modality: 'RGB' | 'THERMAL';
+  modality: 'RGB' | 'THERMAL' | 'NIGHT_VISION';
   size?: 'sm' | 'md';
   className?: string;
 }
@@ -60,10 +60,12 @@ export function ModalityChip({ modality, size = 'md', className }: ModalityChipP
   const sizes = { sm: 'px-1.5 py-0 text-xs', md: 'px-2 py-0.5 text-xs' };
   const style = modality === 'RGB'
     ? 'text-sky-700 bg-sky-100 border-sky-300 dark:text-sky-300 dark:bg-sky-900/30 dark:border-sky-700'
-    : 'text-orange-700 bg-orange-100 border-orange-300 dark:text-orange-300 dark:bg-orange-900/30 dark:border-orange-700';
+    : modality === 'THERMAL'
+    ? 'text-orange-700 bg-orange-100 border-orange-300 dark:text-orange-300 dark:bg-orange-900/30 dark:border-orange-700'
+    : 'text-emerald-700 bg-emerald-100 border-emerald-300 dark:text-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-700';
   return (
     <span className={cn('inline-flex items-center font-mono font-medium rounded border', sizes[size], style, className)}>
-      {modality}
+      {modality === 'NIGHT_VISION' ? 'NVG' : modality}
     </span>
   );
 }

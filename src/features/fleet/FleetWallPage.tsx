@@ -3,15 +3,16 @@
 // Virtualised Multi-Stream Grid with Compute Placement & CFS Load Bars
 // ============================================================
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Monitor, Cpu, Radio, Shield, Zap, RefreshCw, Eye,
   Pin, PinOff, Filter, Maximize2, AlertTriangle, Layers,
   Compass, Activity, HardDrive, CheckCircle2, ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CoastalVideoPlayer } from '@/components/CoastalVideoPlayer';
+import { COASTAL_VIDEOS } from '@/lib/videoCatalog';
 import type { FeedState, Modality, AttentionLevel, Severity } from '@/types';
 
 export type ComputePlacement = 'CENTRAL_GPU' | 'LOCAL_EDGE' | 'COOP_WORKER' | 'POST_MISSION';
@@ -23,6 +24,8 @@ export interface FleetFeedItem {
   missionCode: string;
   missionTitle: string;
   modality: Modality;
+  videoSrc?: string;
+  videoName?: string;
   state: FeedState;
   placement: ComputePlacement;
   placementLabel: string;
@@ -57,7 +60,6 @@ const ZONES_LIST = [
 
 export default function FleetWallPage() {
   const navigate = useNavigate();
-  const parentRef = useRef<HTMLDivElement>(null);
 
   // Filter States
   const [targetFeedCount, setTargetFeedCount] = useState<20 | 24 | 32>(20);
@@ -73,11 +75,10 @@ export default function FleetWallPage() {
   ]);
   const [isPriorityQuadActive, setIsPriorityQuadActive] = useState<boolean>(true);
 
-  // Generate 32 feeds for scalable headroom
+  // Generate 32 feeds for scalable headroom mapped to coastal drone video library
   const allFeeds: FleetFeedItem[] = useMemo(() => {
     return Array.from({ length: 32 }, (_, i) => {
-      const uavNum = (i % 8) + 1;
-      const isThermal = i % 2 === 1;
+      const coastalVideo = COASTAL_VIDEOS[i % COASTAL_VIDEOS.length];
       const zone = ZONES_LIST[i % ZONES_LIST.length];
 
       // Realistic state distribution
@@ -121,11 +122,13 @@ export default function FleetWallPage() {
 
       return {
         id: `feed-${String(i + 1).padStart(2, '0')}`,
-        name: `Sector Sentry ${String.fromCharCode(65 + (i % 8))}-${Math.floor(i / 8) + 1}`,
-        uavCode: `UAV-KL-0${uavNum}`,
-        missionCode: `MSN-20261016-${String(Math.floor(i / 4) + 1).padStart(2, '0')}`,
-        missionTitle: `${zone.name} Sortie`,
-        modality: isThermal ? 'THERMAL' : 'RGB',
+        name: coastalVideo.title,
+        uavCode: coastalVideo.uavCode,
+        missionCode: coastalVideo.missionCode,
+        missionTitle: `${coastalVideo.location} Sortie`,
+        modality: coastalVideo.modality,
+        videoSrc: coastalVideo.videoUrl,
+        videoName: coastalVideo.fileName,
         state,
         placement,
         placementLabel,
@@ -134,14 +137,14 @@ export default function FleetWallPage() {
         cfsSavingsPct,
         cfsReason,
         zoneCode: zone.code,
-        zoneName: zone.name,
+        zoneName: coastalVideo.location,
         attention,
         activeAlertCount,
         highestSeverity,
         batteryPct: Math.max(22, 94 - i * 2.1),
         altitudeM: 80 + (i % 6) * 12,
         groundSpeedKnots: 14 + (i % 5) * 3.2,
-        bitrateMbps: state === 'LIVE' ? (isThermal ? 4.8 : 7.2) : 0,
+        bitrateMbps: state === 'LIVE' ? (coastalVideo.modality === 'THERMAL' ? 4.8 : 7.2) : 0,
         packetLossPct: state === 'EDGE_SYNC_LAG' ? 4.2 : 0.02,
         fpsCurrent: state === 'LIVE' ? cfsFps : 0,
         videoOffsetSec: (i * 14) % 120,
@@ -171,23 +174,6 @@ export default function FleetWallPage() {
       prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 4 ? [...prev, id] : [prev[1], prev[2], prev[3], id]
     );
   }
-
-  // Virtualizer for the grid (group into rows of 4 columns)
-  const columnsCount = 4;
-  const gridRows = useMemo(() => {
-    const rows: FleetFeedItem[][] = [];
-    for (let i = 0; i < visibleFeeds.length; i += columnsCount) {
-      rows.push(visibleFeeds.slice(i, i + columnsCount));
-    }
-    return rows;
-  }, [visibleFeeds]);
-
-  const rowVirtualizer = useVirtualizer({
-    count: gridRows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 240, // Height of each row card in px
-    overscan: 2,
-  });
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -281,9 +267,10 @@ export default function FleetWallPage() {
             className="px-2 py-1 rounded-lg border bg-[var(--panel)] outline-none"
             style={{ borderColor: 'var(--line)' }}
           >
-            <option value="ALL">All Modalities</option>
-            <option value="RGB">RGB (Visible)</option>
-            <option value="THERMAL">THERMAL (IR)</option>
+            <option value="ALL">All Modalities (All Feeds)</option>
+            <option value="RGB">RGB (Visible Light)</option>
+            <option value="THERMAL">THERMAL (FLIR Ironbow)</option>
+            <option value="NIGHT_VISION">NIGHT VISION (NVG Green)</option>
           </select>
 
           {/* Compute Placement Filter */}
@@ -320,7 +307,7 @@ export default function FleetWallPage() {
       </div>
 
       {/* ── Scrollable Grid Area ── */}
-      <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Priority Quad View (if active) */}
         {isPriorityQuadActive && priorityQuadFeeds.length > 0 && (
           <div className="space-y-2 mb-4">
@@ -347,41 +334,17 @@ export default function FleetWallPage() {
           </div>
         )}
 
-        {/* Virtualized Main 4-Column Grid */}
-        <div
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
-          {rowVirtualizer.getVirtualItems().map(virtualRow => {
-            const rowItems = gridRows[virtualRow.index] || [];
-            return (
-              <div
-                key={virtualRow.index}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-2 pb-3"
-              >
-                {rowItems.map(feed => (
-                  <FeedTileCard
-                    key={feed.id}
-                    feed={feed}
-                    isPinned={pinnedIds.includes(feed.id)}
-                    onTogglePin={e => togglePin(feed.id, e)}
-                    onFocus={() => navigate(`/live?feedId=${feed.id}`)}
-                  />
-                ))}
-              </div>
-            );
-          })}
+        {/* Main 4-Column Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-2 pb-6">
+          {visibleFeeds.map(feed => (
+            <FeedTileCard
+              key={feed.id}
+              feed={feed}
+              isPinned={pinnedIds.includes(feed.id)}
+              onTogglePin={e => togglePin(feed.id, e)}
+              onFocus={() => navigate(`/live?feedId=${feed.id}`)}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -407,39 +370,48 @@ function FeedTileCard({
       className="rounded-xl border overflow-hidden transition-all hover:shadow-lg cursor-pointer group flex flex-col justify-between"
       style={{ background: 'var(--panel)', borderColor: 'var(--line)', minHeight: '225px' }}
     >
-      {/* Thumbnail + Video Simulation Canvas */}
+      {/* Real-time Coastal Video Canvas */}
       <div className="relative h-28 bg-black overflow-hidden flex items-center justify-center">
-        {/* Simulated canvas background with time-offset pattern */}
-        <div
-          className="absolute inset-0 opacity-70 bg-cover bg-center"
-          style={{
-            backgroundImage: "url('/coastal_harbor_bg.png')",
-            filter: feed.modality === 'THERMAL' ? 'hue-rotate(180deg) invert(1) contrast(1.4)' : 'none',
-          }}
-        />
+        {feed.state === 'NO_SIGNAL' ? (
+          <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-center p-2 z-10">
+            <span className="text-red-400 font-mono text-xs font-bold mb-0.5">NO SIGNAL</span>
+            <span className="text-[10px] font-mono text-white/50">{feed.uavCode}</span>
+          </div>
+        ) : (
+          <CoastalVideoPlayer
+            src={feed.videoSrc || '/videos/RGB_1.mp4'}
+            modality={feed.modality}
+            autoPlay={true}
+            muted={true}
+            loop={true}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+          />
+        )}
 
         {/* Scanline & Reticle Overlay */}
         <div className="absolute inset-0 pointer-events-none border border-cyan-500/20" />
-        <div className="absolute top-2 left-2 text-[10px] font-mono font-bold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs flex items-center gap-1">
+        <div className="absolute top-2 left-2 text-[10px] font-mono font-bold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs flex items-center gap-1 z-10">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span>{feed.uavCode}</span>
         </div>
 
         {/* Top-Right Modality & Pin */}
-        <div className="absolute top-2 right-2 flex items-center gap-1">
+        <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
           <span
             className={cn(
               'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold',
               feed.modality === 'THERMAL'
-                ? 'bg-purple-950/80 text-purple-300 border border-purple-500/40'
+                ? 'bg-orange-950/80 text-orange-300 border border-orange-500/40'
+                : feed.modality === 'NIGHT_VISION'
+                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
                 : 'bg-cyan-950/80 text-cyan-300 border border-cyan-500/40'
             )}
           >
-            {feed.modality}
+            {feed.modality === 'NIGHT_VISION' ? 'NVG' : feed.modality}
           </span>
           <button
             onClick={onTogglePin}
-            className="p-1 rounded bg-black/60 text-white/80 hover:text-white transition-colors"
+            className="p-1 rounded bg-black/60 text-white/80 hover:text-white transition-colors cursor-pointer"
             title={isPinned ? 'Unpin feed' : 'Pin to Priority Quad'}
           >
             {isPinned ? <PinOff className="w-3 h-3 text-amber-400" /> : <Pin className="w-3 h-3" />}
@@ -447,8 +419,8 @@ function FeedTileCard({
         </div>
 
         {/* State Chip in Center if degraded */}
-        {feed.state !== 'LIVE' && (
-          <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-center p-2">
+        {feed.state !== 'LIVE' && feed.state !== 'NO_SIGNAL' && (
+          <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-center p-2 z-10">
             <span
               className={cn(
                 'px-2 py-0.5 rounded text-[10px] font-mono font-bold',
@@ -464,15 +436,22 @@ function FeedTileCard({
 
         {/* Active Alert Badge */}
         {feed.activeAlertCount > 0 && (
-          <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-red-600/90 text-white font-mono text-[9px] font-bold flex items-center gap-1 shadow-sm">
+          <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-red-600/90 text-white font-mono text-[9px] font-bold flex items-center gap-1 shadow-sm z-10">
             <AlertTriangle className="w-2.5 h-2.5" />
             <span>{feed.activeAlertCount} ALERT</span>
           </div>
         )}
 
-        {/* Live FPS */}
-        <div className="absolute bottom-2 right-2 font-mono text-[9px] text-white/80 bg-black/50 px-1 rounded">
-          {feed.fpsCurrent.toFixed(1)} FPS
+        {/* Video File Name & Live FPS */}
+        <div className="absolute bottom-2 right-2 flex items-center gap-1 z-10">
+          {feed.videoName && (
+            <span className="font-mono text-[9px] text-white/80 bg-black/60 px-1 py-0.5 rounded backdrop-blur-xs">
+              {feed.videoName}
+            </span>
+          )}
+          <span className="font-mono text-[9px] text-white/80 bg-black/50 px-1 py-0.5 rounded">
+            {feed.fpsCurrent.toFixed(1)} FPS
+          </span>
         </div>
       </div>
 
