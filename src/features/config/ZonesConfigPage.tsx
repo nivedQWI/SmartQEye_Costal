@@ -532,12 +532,12 @@ export default function ZonesConfigPage() {
       {/* History Modal */}
       {showHistoryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl border p-6 space-y-4 shadow-xl" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-lg rounded-2xl border p-6 space-y-4 shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center justify-between">
               <h3 className="font-serif text-base font-bold">Profile Audit &amp; Version History</h3>
               <button
                 onClick={() => setShowHistoryModal(false)}
-                className="text-xs font-mono p-1 rounded hover:bg-[var(--surface-hover)]"
+                className="text-xs font-mono p-1 rounded hover:bg-[var(--surface-hover)] cursor-pointer"
               >
                 ✕ CLOSE
               </button>
@@ -545,13 +545,13 @@ export default function ZonesConfigPage() {
 
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {activeProfile.history.map((h, idx) => (
-                <div key={idx} className="p-3 rounded-lg border text-xs font-mono space-y-1" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
+                <div key={idx} className="p-3 rounded-lg border text-xs font-mono space-y-1" style={{ background: 'var(--surface)', borderColor: 'var(--line)', color: 'var(--text)' }}>
                   <div className="flex items-center justify-between font-bold">
-                    <span className="text-[var(--sea-600)]">{h.version}</span>
-                    <span className="opacity-60">{new Date(h.changedAt).toLocaleDateString()}</span>
+                    <span className="text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{h.version}</span>
+                    <span className="opacity-70" style={{ color: 'var(--text-muted)' }}>{new Date(h.changedAt).toLocaleDateString()}</span>
                   </div>
-                  <p className="opacity-80">{h.summary}</p>
-                  <span className="text-[10px] opacity-50 block pt-0.5">Signed by: {h.changedBy}</span>
+                  <p className="opacity-90">{h.summary}</p>
+                  <span className="text-[10px] opacity-70 block pt-0.5" style={{ color: 'var(--text-muted)' }}>Signed by: {h.changedBy}</span>
                 </div>
               ))}
             </div>

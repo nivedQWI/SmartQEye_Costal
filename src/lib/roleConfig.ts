@@ -91,14 +91,13 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfigItem> = {
   },
   AUDITOR: {
     landing: '/history',
-    primary: ['/history', '/audit', '/alerts', '/missions', '/reports', '/admin'],
+    primary: ['/history', '/audit', '/alerts', '/reports', '/admin'],
     demoPassword: 'admin123',
     allowedRoutes: [
       '/history',
       '/audit',
       '/alerts',
       '/alerts/:id',
-      '/missions',
       '/reports',
       '/admin',
       '/incidents',

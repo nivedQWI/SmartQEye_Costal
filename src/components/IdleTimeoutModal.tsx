@@ -74,8 +74,8 @@ export function IdleTimeoutModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
       <div
-        className="w-full max-w-md rounded-2xl border p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
-        style={{ background: 'var(--panel)', borderColor: 'var(--sev-high)' }}
+        className="w-full max-w-md rounded-2xl border p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 bg-[var(--raised)] text-[var(--text)]"
+        style={{ borderColor: 'var(--sev-high)' }}
       >
         <div className="flex items-start gap-3">
           <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex-shrink-0">
@@ -83,7 +83,7 @@ export function IdleTimeoutModal() {
           </div>
           <div>
             <h3 className="font-serif text-lg font-bold">Session Security Timeout</h3>
-            <p className="text-xs opacity-70 mt-0.5">
+            <p className="text-xs opacity-70 mt-0.5" style={{ color: 'var(--text-muted)' }}>
               Workstation inactivity detected (Kerala Police 15m Policy)
             </p>
           </div>
@@ -94,7 +94,7 @@ export function IdleTimeoutModal() {
             <Clock className="w-5 h-5 animate-pulse" />
             <span>00:{String(secondsRemaining).padStart(2, '0')}</span>
           </div>
-          <p className="text-xs opacity-75 font-sans leading-relaxed">
+          <p className="text-xs opacity-75 font-sans leading-relaxed" style={{ color: 'var(--text)' }}>
             Your authenticated session will be securely terminated in <strong className="font-mono text-amber-600">{secondsRemaining} seconds</strong> due to inactivity. All operational video buffers will be flushed.
           </p>
         </div>
@@ -102,14 +102,14 @@ export function IdleTimeoutModal() {
         <div className="flex items-center justify-end gap-3 pt-2">
           <button
             onClick={handleLogoutNow}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border hover:bg-[var(--surface-hover)] transition-colors"
-            style={{ borderColor: 'var(--line)' }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+            style={{ borderColor: 'var(--line)', color: 'var(--text)', background: 'var(--surface)' }}
           >
             <LogOut className="w-3.5 h-3.5" /> Logout Now
           </button>
           <button
             onClick={handleExtend}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] transition-colors shadow-sm font-sans"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] transition-colors shadow-sm font-sans cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Extend Session
           </button>

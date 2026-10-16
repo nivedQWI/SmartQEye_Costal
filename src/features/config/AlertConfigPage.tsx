@@ -280,15 +280,15 @@ export default function AlertConfigPage() {
       {/* Rule Edit Modal */}
       {showEditorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-xl rounded-2xl border p-6 space-y-5 shadow-xl" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-xl rounded-2xl border p-6 space-y-5 shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div>
-                <span className="font-mono text-xs font-bold text-[var(--sea-600)]">{selectedRule.code}</span>
+                <span className="font-mono text-xs font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{selectedRule.code}</span>
                 <h3 className="font-serif text-base font-bold">Edit Alert Rule &amp; Dispatch Policy</h3>
               </div>
               <button
                 onClick={() => setShowEditorModal(false)}
-                className="text-xs font-mono p-1 rounded hover:bg-[var(--surface-hover)]"
+                className="text-xs font-mono p-1 rounded hover:bg-[var(--surface-hover)] cursor-pointer"
               >
                 ✕ CLOSE
               </button>
@@ -296,7 +296,7 @@ export default function AlertConfigPage() {
 
             <div className="space-y-4 text-xs font-mono">
               <div className="space-y-1 font-sans">
-                <label className="text-[11px] font-mono uppercase opacity-50 block font-bold">Rule Title</label>
+                <label className="text-[11px] font-mono uppercase opacity-70 block font-bold" style={{ color: 'var(--text-muted)' }}>Rule Title</label>
                 <input
                   type="text"
                   value={editForm.name ?? ''}
@@ -308,7 +308,7 @@ export default function AlertConfigPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono uppercase opacity-50 block font-bold">Severity Level</label>
+                  <label className="text-[10px] font-mono uppercase opacity-70 block font-bold" style={{ color: 'var(--text-muted)' }}>Severity Level</label>
                   <select
                     value={editForm.priority}
                     onChange={e => setEditForm(f => ({ ...f, priority: e.target.value as Severity }))}
@@ -323,7 +323,7 @@ export default function AlertConfigPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono uppercase opacity-50 block font-bold">AI Detector Engine</label>
+                  <label className="text-[10px] font-mono uppercase opacity-70 block font-bold" style={{ color: 'var(--text-muted)' }}>AI Detector Engine</label>
                   <select
                     value={editForm.detectorEngine}
                     onChange={e => setEditForm(f => ({ ...f, detectorEngine: e.target.value as any }))}
@@ -340,7 +340,7 @@ export default function AlertConfigPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-mono uppercase opacity-50 block font-bold">CKFE Evidence Pre/Post Capture Window</label>
+                <label className="text-[10px] font-mono uppercase opacity-70 block font-bold" style={{ color: 'var(--text-muted)' }}>CKFE Evidence Pre/Post Capture Window</label>
                 <div className="flex items-center gap-2">
                   {[30, 45, 60, 90].map(sec => (
                     <button
@@ -348,12 +348,12 @@ export default function AlertConfigPage() {
                       type="button"
                       onClick={() => setEditForm(f => ({ ...f, ckfeCapturePrePostSec: sec }))}
                       className={cn(
-                        'flex-1 py-1.5 rounded-lg border text-xs font-bold',
+                        'flex-1 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors',
                         editForm.ckfeCapturePrePostSec === sec
                           ? 'bg-[var(--sea-600)] text-white border-[var(--sea-600)]'
-                          : 'bg-[var(--surface)] opacity-70'
+                          : 'bg-[var(--surface)] text-[var(--text)]'
                       )}
-                      style={{ borderColor: 'var(--line)' }}
+                      style={{ borderColor: editForm.ckfeCapturePrePostSec === sec ? undefined : 'var(--line)' }}
                     >
                       ±{sec}s
                     </button>
@@ -365,14 +365,14 @@ export default function AlertConfigPage() {
             <div className="flex items-center justify-end gap-2 pt-3 border-t" style={{ borderColor: 'var(--line)' }}>
               <button
                 onClick={() => setShowEditorModal(false)}
-                className="px-3 py-1.5 rounded-lg border text-xs hover:bg-[var(--surface-hover)]"
-                style={{ borderColor: 'var(--line)' }}
+                className="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-[var(--surface-hover)] cursor-pointer"
+                style={{ borderColor: 'var(--line)', color: 'var(--text)', background: 'var(--surface)' }}
               >
                 Cancel
               </button>
               <button
                 onClick={saveEditor}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] shadow-xs"
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] shadow-xs cursor-pointer"
               >
                 Save &amp; Increment Version
               </button>

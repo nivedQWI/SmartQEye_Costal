@@ -783,28 +783,28 @@ export default function IntegrationsPage() {
             {/* Create API Key Modal */}
             {showNewKeyModal && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-xl" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+                <div className="w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
                   <div className="flex items-center justify-between">
                     <h3 className="font-serif text-base font-bold">Issue New API Key</h3>
-                    <button onClick={() => setShowNewKeyModal(false)} className="opacity-60 hover:opacity-100 text-sm">✕</button>
+                    <button onClick={() => setShowNewKeyModal(false)} className="opacity-60 hover:opacity-100 text-sm cursor-pointer">✕</button>
                   </div>
 
                   <form onSubmit={handleCreateKey} className="space-y-4 text-xs">
                     <div>
-                      <label className="block font-semibold mb-1">Client Application Name</label>
+                      <label className="block font-semibold mb-1" style={{ color: 'var(--text)' }}>Client Application Name</label>
                       <input
                         type="text"
                         required
                         value={newKeyName}
                         onChange={e => setNewKeyName(e.target.value)}
                         placeholder="e.g. Neendakara Drone Pilot Field Terminal"
-                        className="w-full p-2.5 rounded-xl border bg-[var(--surface)] text-xs font-sans"
+                        className="w-full p-2.5 rounded-xl border bg-[var(--surface)] text-[var(--text)] text-xs font-sans outline-none focus:ring-1 focus:ring-[var(--sea-600)]"
                         style={{ borderColor: 'var(--line)' }}
                       />
                     </div>
 
                     <div>
-                      <label className="block font-semibold mb-1.5">Assigned Scopes</label>
+                      <label className="block font-semibold mb-1.5" style={{ color: 'var(--text)' }}>Assigned Scopes</label>
                       <div className="space-y-1.5 font-mono">
                         {['read:telemetry', 'write:telemetry', 'read:incidents', 'write:evidence', 'read:contacts', 'admin:models'].map(scope => (
                           <label key={scope} className="flex items-center gap-2 cursor-pointer">
@@ -817,7 +817,7 @@ export default function IntegrationsPage() {
                               }}
                               className="rounded border"
                             />
-                            <span>{scope}</span>
+                            <span style={{ color: 'var(--text)' }}>{scope}</span>
                           </label>
                         ))}
                       </div>
@@ -827,14 +827,14 @@ export default function IntegrationsPage() {
                       <button
                         type="button"
                         onClick={() => setShowNewKeyModal(false)}
-                        className="px-4 py-2 rounded-xl border font-semibold hover:bg-[var(--surface)]"
-                        style={{ borderColor: 'var(--line)' }}
+                        className="px-4 py-2 rounded-xl border font-semibold hover:bg-[var(--surface-hover)] cursor-pointer"
+                        style={{ borderColor: 'var(--line)', color: 'var(--text)', background: 'var(--surface)' }}
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-2 rounded-xl font-bold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)]"
+                        className="px-4 py-2 rounded-xl font-bold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] cursor-pointer"
                       >
                         Generate &amp; Audit Log
                       </button>

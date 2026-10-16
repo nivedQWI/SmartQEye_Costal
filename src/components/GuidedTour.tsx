@@ -42,7 +42,7 @@ export function GuidedTour() {
     <div
       role="region"
       aria-label="Interactive Guided Tour"
-      className="fixed bottom-14 right-6 z-50 w-96 rounded-2xl border shadow-2xl p-5 space-y-3.5 bg-[var(--panel)] animate-in fade-in slide-in-from-bottom-4"
+      className="fixed bottom-14 right-6 z-50 w-96 rounded-2xl border shadow-2xl p-5 space-y-3.5 bg-[var(--raised)] text-[var(--text)] animate-in fade-in slide-in-from-bottom-4"
       style={{ borderColor: 'var(--line)' }}
     >
       {/* Header */}

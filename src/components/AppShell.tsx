@@ -67,7 +67,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/live',               label: 'Live Monitor',        labelKey: 'nav_live',           icon: Monitor,         roles: ALL_ROLES },
       { to: '/fleet',              label: 'Fleet Wall',          labelKey: 'nav_fleet_wall',     icon: Grid,            roles: ALL_ROLES },
       { to: '/alerts',             label: 'Alerts',              labelKey: 'nav_alerts',         icon: Bell,            roles: ALL_ROLES, badgeKey: 'alerts' },
-      { to: '/missions',           label: 'Mission Control',     labelKey: 'nav_missions',       icon: Anchor,          roles: ALL_ROLES },
+      { to: '/missions',           label: 'Mission Control',     labelKey: 'nav_missions',       icon: Anchor,          roles: ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN'] },
       { to: '/map',                label: 'Map / GIS',           labelKey: 'nav_map',            icon: Map,             roles: ALL_ROLES },
       { to: '/history',            label: 'History Playback',    labelKey: 'nav_history',        icon: History,         roles: ALL_ROLES },
     ]

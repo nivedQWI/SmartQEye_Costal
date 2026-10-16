@@ -300,7 +300,7 @@ export default function AbandonedObjectsPage() {
       {/* Mark Cleared Confirmation Modal */}
       {showClearModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-xl" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
             <h3 className="font-serif text-base font-bold">Mark Stationary Object as Cleared</h3>
             <p className="text-xs opacity-70">
               Provide a verified verification reason before archiving this object from the active coastal watch queue.
@@ -316,7 +316,7 @@ export default function AbandonedObjectsPage() {
               ].map(reason => (
                 <label
                   key={reason}
-                  className="flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-[var(--surface-hover)]"
+                  className="flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-[var(--surface-hover)] bg-[var(--surface)] text-[var(--text)] transition-colors"
                   style={{ borderColor: 'var(--line)' }}
                 >
                   <input
@@ -334,14 +334,14 @@ export default function AbandonedObjectsPage() {
             <div className="flex items-center justify-end gap-2 pt-3 border-t" style={{ borderColor: 'var(--line)' }}>
               <button
                 onClick={() => setShowClearModal(false)}
-                className="px-3 py-1.5 rounded-lg border text-xs"
-                style={{ borderColor: 'var(--line)' }}
+                className="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-[var(--surface-hover)] cursor-pointer"
+                style={{ borderColor: 'var(--line)', color: 'var(--text)', background: 'var(--surface)' }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleMarkCleared}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs"
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs cursor-pointer"
               >
                 Confirm Clearance
               </button>
@@ -353,12 +353,12 @@ export default function AbandonedObjectsPage() {
       {/* Threshold Config Drawer */}
       {showConfigDrawer && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-sm h-full p-6 space-y-5 border-l shadow-2xl" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-sm h-full p-6 space-y-5 border-l shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <h3 className="font-serif text-base font-bold">Stationary Dwell Thresholds</h3>
               <button
                 onClick={() => setShowConfigDrawer(false)}
-                className="text-xs font-mono p-1 rounded hover:bg-[var(--surface-hover)]"
+                className="text-xs font-mono p-1 rounded hover:bg-[var(--surface-hover)] cursor-pointer"
               >
                 ✕
               </button>
@@ -371,22 +371,22 @@ export default function AbandonedObjectsPage() {
             <div className="space-y-4 text-xs font-mono">
               <div className="space-y-1">
                 <span className="block opacity-60">Restricted Jetty / Naval Berth:</span>
-                <span className="font-bold text-[var(--sea-600)] block">10 minutes</span>
+                <span className="font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)] block">10 minutes</span>
               </div>
               <div className="space-y-1">
                 <span className="block opacity-60">Lighthouse / Tourist Promenade:</span>
-                <span className="font-bold text-[var(--sea-600)] block">20 minutes</span>
+                <span className="font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)] block">20 minutes</span>
               </div>
               <div className="space-y-1">
                 <span className="block opacity-60">Open Sea / Breakwater Rocks:</span>
-                <span className="font-bold text-[var(--sea-600)] block">30 minutes</span>
+                <span className="font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)] block">30 minutes</span>
               </div>
             </div>
 
             <div className="pt-4 border-t" style={{ borderColor: 'var(--line)' }}>
               <button
                 onClick={() => setShowConfigDrawer(false)}
-                className="w-full py-2 rounded-lg text-xs font-semibold text-white bg-[var(--sea-600)]"
+                className="w-full py-2 rounded-lg text-xs font-semibold text-white bg-[var(--sea-600)] hover:bg-[var(--sea-700)] cursor-pointer"
               >
                 Apply Thresholds
               </button>
