@@ -32,6 +32,7 @@ const VehicleMaritimePage   = lazy(() => import('@/features/vehicle-maritime/Veh
 const PersonReidPage        = lazy(() => import('@/features/person-reid/PersonReidPage'));
 const IntrusionDetectionPage = lazy(() => import('@/features/intrusion/IntrusionDetectionPage'));
 const AnomalyMonitorPage    = lazy(() => import('@/features/anomaly/AnomalyMonitorPage'));
+const OverviewDashboard     = lazy(() => import('@/features/overview/OverviewDashboard'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,6 +100,7 @@ export default function App() {
             }>
               {/* Tactical Operations */}
               <Route index element={<RequireRole path="/"><CommandCenter /></RequireRole>} />
+              <Route path="overview" element={<RequireRole path="/overview"><OverviewDashboard /></RequireRole>} />
               <Route path="live" element={<RequireRole path="/live"><LiveMonitor /></RequireRole>} />
               <Route path="alerts" element={<RequireRole path="/alerts"><AlertQueue /></RequireRole>} />
               <Route path="alerts/:id" element={<RequireRole path="/alerts/:id"><AlertDetail /></RequireRole>} />

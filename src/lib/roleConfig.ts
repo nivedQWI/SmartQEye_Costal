@@ -25,10 +25,11 @@ export type RoleAction =
 
 export const ROLE_CONFIG: Record<UserRole, RoleConfigItem> = {
   OPERATOR: {
-    landing: '/alerts',
-    primary: ['/alerts', '/missions', '/map', '/reports', '/health'],
+    landing: '/overview',
+    primary: ['/overview', '/alerts', '/missions', '/map', '/reports', '/health'],
     demoPassword: 'admin123',
     allowedRoutes: [
+      '/overview',
       '/alerts',
       '/alerts/:id',
       '/missions',
