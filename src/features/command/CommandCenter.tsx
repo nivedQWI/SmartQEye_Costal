@@ -1,5 +1,6 @@
 // ============================================================
 // SmartQEye Coastal — Command Center (Home page)
+// Full Canvas Tactical Map focused on Kerala Coastline
 // ============================================================
 
 import { useState } from 'react';
@@ -7,10 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { Layers, ChevronDown, ChevronUp } from 'lucide-react';
 import { CoastalMap } from '@/components/CoastalMap';
 import { SeverityChip, SeverityDot } from '@/components/SeverityChip';
-import { FeedStateChip, ModalityChip } from '@/components/FeedStateChip';
 import { useAlertStore, useFeedStore, useMapStore, useMissionStore } from '@/lib/store';
-import { cn, formatIST, timeAgo, eventTypeLabel, formatCoords } from '@/lib/utils';
-import { CONTACTS, MISSIONS } from '@/lib/mockData';
+import { formatIST, eventTypeLabel } from '@/lib/utils';
+import { MISSIONS } from '@/lib/mockData';
 
 // ─── Alert Queue (right panel) ────────────────────────────────
 
@@ -66,119 +66,25 @@ function AlertQueue() {
   );
 }
 
-// ─── Feed Wall ────────────────────────────────────────────────
-
-function FeedWall() {
-  const { feeds, pinnedFeedIds, setActiveFeed } = useFeedStore();
-  const navigate = useNavigate();
-  const pinned = feeds.filter(f => pinnedFeedIds.includes(f.id)).slice(0, 4);
-  const rest = feeds.filter(f => !pinnedFeedIds.includes(f.id));
-
-  function openFeed(id: string) {
-    setActiveFeed(id);
-    navigate('/live');
-  }
-
-  return (
-    <div className="p-3 border-t" style={{ borderColor: 'var(--line)' }}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-serif text-base font-semibold">Feed Wall</h3>
-        <button className="text-sm font-medium hover:underline opacity-80 hover:opacity-100" style={{ color: 'var(--sea-accent)' }} onClick={() => navigate('/live')}>
-          Full view →
-        </button>
-      </div>
-      <div className="grid grid-cols-4 gap-1.5 mb-2">
-        {pinned.map(feed => (
-          <button
-            key={feed.id}
-            className="relative aspect-video rounded-lg overflow-hidden border text-left group"
-            style={{
-              borderColor: feed.state === 'LIVE' ? 'var(--feed-live)' : feed.state === 'NO_SIGNAL' ? 'var(--feed-no-signal)' : 'var(--line)',
-              background: 'var(--ink-900)',
-            }}
-            onClick={() => openFeed(feed.id)}
-          >
-            {/* Placeholder video frame */}
-            {feed.state === 'NO_SIGNAL' ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
-                <div className="text-xs text-red-400 font-mono font-bold">NO SIGNAL</div>
-                <div className="w-8 h-0.5 bg-red-600/40 mt-1" />
-              </div>
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center"
-                style={{ background: `linear-gradient(135deg, #0a2233 0%, #1a3a55 100%)` }}
-              >
-                {feed.state === 'LIVE' && (
-                  <div className="absolute top-1 left-1.5 flex items-center gap-1 bg-black/40 px-1 py-0.5 rounded">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[10px] text-white font-mono font-bold">LIVE</span>
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Label */}
-            <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/70">
-              <div className="text-[11px] text-white font-mono font-medium truncate">{feed.label}</div>
-            </div>
-            {/* Modality chip */}
-            <div className="absolute top-1 right-1">
-              <ModalityChip modality={feed.modality} size="sm" />
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Thumbnail strip for remaining feeds */}
-      <div className="flex gap-1 overflow-x-auto">
-        {rest.slice(0, 16).map(feed => (
-          <button
-            key={feed.id}
-            className="flex-shrink-0 w-12 h-8 rounded overflow-hidden border relative"
-            style={{
-              borderColor: feed.state === 'LIVE' ? 'rgba(46,204,113,0.5)' : feed.state === 'NO_SIGNAL' ? 'rgba(200,53,46,0.5)' : 'var(--line)',
-              background: '#0a2233',
-            }}
-            onClick={() => openFeed(feed.id)}
-            title={feed.label}
-          >
-            {feed.state === 'NO_SIGNAL' && (
-              <div className="absolute inset-0 flex items-center justify-center bg-red-950/60">
-                <span className="text-[7px] text-red-400 font-mono">✕</span>
-              </div>
-            )}
-            <div className="absolute bottom-0 left-0 right-0 h-[12px] bg-black/70 flex items-center px-0.5">
-              <span className="text-[7px] text-white/70 font-mono truncate">{feed.uavCode}</span>
-            </div>
-          </button>
-        ))}
-        {rest.length > 16 && (
-          <div className="flex-shrink-0 w-12 h-8 rounded border flex items-center justify-center text-[9px] opacity-50" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
-            +{rest.length - 16}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Mission Stats ────────────────────────────────────────────
+// ─── Mission Stats Box ────────────────────────────────────────
 
 function MissionStats() {
   const { alerts } = useAlertStore();
   const { feeds } = useFeedStore();
+  const { missions, activeMissionId } = useMissionStore();
+
+  const activeMission = missions.find(m => m.id === activeMissionId);
   const activeAlerts = alerts.filter(a => a.status === 'NEW').length;
   const liveFeeds = feeds.filter(f => f.state === 'LIVE').length;
 
   return (
-    <div className="px-3.5 py-3 border-t" style={{ borderColor: 'var(--line)' }}>
-      <h3 className="font-serif text-xs font-semibold mb-2.5 opacity-70 uppercase tracking-wider">Mission Stats</h3>
-      <div className="grid grid-cols-3 gap-2">
-        <StatBox label="Contacts" value={CONTACTS.filter(c => {
-          const mins = (Date.now() - new Date(c.lastSeenAt).getTime()) / 60000;
-          return mins < 30;
-        }).length.toString()} />
+    <div className="p-3 border-t flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
+      <div className="font-serif text-sm font-semibold mb-2 truncate">
+        {activeMission?.title ?? 'Active Operation'}
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs">
         <StatBox label="Active Alerts" value={activeAlerts.toString()} alert={activeAlerts > 0} />
-        <StatBox label="Live Feeds" value={`${liveFeeds}/${feeds.length}`} />
+        <StatBox label="Active UAVs" value={`${liveFeeds}/${feeds.length}`} />
       </div>
     </div>
   );
@@ -195,7 +101,7 @@ function StatBox({ label, value, alert }: { label: string; value: string; alert?
   );
 }
 
-// ─── Layer toggles ────────────────────────────────────────────
+// ─── Layer toggles (Zones, Drones, Alerts) ─────────────────────
 
 function LayerToggles() {
   const { layers, toggleLayer } = useMapStore();
@@ -203,29 +109,30 @@ function LayerToggles() {
 
   return (
     <div
-      className="absolute bottom-4 left-4 rounded-xl border overflow-hidden"
+      className="absolute bottom-5 left-5 rounded-xl border overflow-hidden shadow-xl z-10"
       style={{ background: 'var(--raised)', borderColor: 'var(--line)', boxShadow: 'var(--shadow-md)' }}
     >
       <button
-        className="flex items-center gap-2 px-3.5 py-2 text-sm font-semibold w-full hover:opacity-80 transition-opacity"
+        className="flex items-center gap-2 px-3.5 py-2 text-xs font-mono font-bold uppercase tracking-wider w-full hover:opacity-80 transition-opacity"
+        style={{ color: 'var(--text)' }}
         onClick={() => setOpen(!open)}
       >
-        <Layers className="w-3.5 h-3.5" />
-        Layers
-        {open ? <ChevronDown className="w-3 h-3 ml-auto" /> : <ChevronUp className="w-3 h-3 ml-auto" />}
+        <Layers className="w-3.5 h-3.5 text-[var(--accent)]" />
+        Map Layers
+        {open ? <ChevronDown className="w-3.5 h-3.5 ml-auto" /> : <ChevronUp className="w-3.5 h-3.5 ml-auto" />}
       </button>
       {open && (
-        <div className="border-t px-3 pb-2 pt-1 space-y-1" style={{ borderColor: 'var(--line)' }}>
+        <div className="border-t px-3 pb-2.5 pt-1.5 space-y-1.5" style={{ borderColor: 'var(--line)' }}>
           {(Object.entries(layers) as [keyof typeof layers, boolean][]).map(([key, val]) => (
-            <label key={key} className="flex items-center gap-2 cursor-pointer text-sm font-medium hover:opacity-80">
+            <label key={key} className="flex items-center gap-2.5 cursor-pointer text-xs font-sans font-medium hover:opacity-80">
               <input
                 type="checkbox"
                 checked={val}
                 onChange={() => toggleLayer(key)}
-                className="rounded"
+                className="rounded cursor-pointer"
                 style={{ accentColor: 'var(--sea-600)' }}
               />
-              {key.charAt(0).toUpperCase() + key.slice(1)}
+              <span className="capitalize">{key}</span>
             </label>
           ))}
         </div>
@@ -240,23 +147,16 @@ export default function CommandCenter() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* ── Map (main canvas) ── */}
-      <div className="flex-1 relative min-w-0 flex flex-col">
-        <div className="flex-1 relative">
-          <CoastalMap
-            height="100%"
-            className="absolute inset-0"
-            onAlertClick={id => navigate(`/alerts/${id}`)}
-            onContactClick={id => navigate(`/contacts/${id}`)}
-          />
-          <LayerToggles />
-        </div>
-
-        {/* Feed Wall below map */}
-        <div className="flex-shrink-0 chart-paper" style={{ background: 'var(--panel)', borderTop: '1px solid var(--line)' }}>
-          <FeedWall />
-        </div>
+    <div className="flex h-full w-full overflow-hidden">
+      {/* ── Map (Full main canvas replacing FeedWall) ── */}
+      <div className="flex-1 relative min-w-0 h-full">
+        <CoastalMap
+          height="100%"
+          className="absolute inset-0"
+          showContacts={false}
+          onAlertClick={id => navigate(`/alerts/${id}`)}
+        />
+        <LayerToggles />
       </div>
 
       {/* ── Right panel (alert queue + stats) ── */}

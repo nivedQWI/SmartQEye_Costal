@@ -36,6 +36,7 @@ export interface Location {
   method: 'DRONE_POSITION' | 'GIMBAL_PROJECTED' | 'MANUAL';
   altitudeM?: number;
   accuracyM?: number;
+  name?: string;
 }
 
 // ─── Zone ───────────────────────────────────────────────────
@@ -112,6 +113,7 @@ export interface TelemetrySample {
   signalStrengthPct?: number;
   satelliteCount?: number;
   telemetryAvailable: boolean;
+  locationName?: string;
 }
 
 // ─── Feed ───────────────────────────────────────────────────

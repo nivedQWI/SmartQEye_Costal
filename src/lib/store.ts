@@ -176,9 +176,7 @@ interface MapState {
   layers: {
     zones: boolean;
     drones: boolean;
-    contacts: boolean;
     alerts: boolean;
-    heatmap: boolean;
   };
   dronePositions: Record<string, { lat: number; lon: number; headingDeg: number }>;
   selectedZoneId: string | null;
@@ -190,7 +188,7 @@ interface MapState {
 }
 
 export const useMapStore = create<MapState>((set) => ({
-  layers: { zones: true, drones: true, contacts: true, alerts: true, heatmap: false },
+  layers: { zones: true, drones: true, alerts: true },
   dronePositions: {},
   selectedZoneId: null,
   editingZoneId: null,
