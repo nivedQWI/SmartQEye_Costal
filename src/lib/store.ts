@@ -34,6 +34,7 @@ export const useThemeStore = create<ThemeState>()(
         const next = get().resolved === 'dark' ? 'light' : 'dark';
         set({ mode: next, resolved: next });
         document.documentElement.setAttribute('data-theme', next);
+        document.documentElement.classList.toggle('dark', next === 'dark');
       },
       resolveTheme: () => {
         const { mode } = get();
@@ -45,6 +46,7 @@ export const useThemeStore = create<ThemeState>()(
         }
         set({ resolved });
         document.documentElement.setAttribute('data-theme', resolved);
+        document.documentElement.classList.toggle('dark', resolved === 'dark');
       },
     }),
     { name: 'sqeye-theme' }

@@ -117,20 +117,20 @@ export default function AlertDetail() {
   const ev = alert.event;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
       {/* Disclaimer banner */}
       <div
-        className="flex items-center gap-2 px-4 py-1.5 text-xs border-b flex-shrink-0"
-        style={{ background: 'var(--sand-100)', borderColor: 'var(--sand-300)', color: 'var(--ink-600)' }}
+        className="flex items-center gap-2 px-4 py-2 text-xs border-b flex-shrink-0"
+        style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text-muted)' }}
       >
-        <Shield className="w-3.5 h-3.5 flex-shrink-0" />
-        <span>Describes observed activity only. Interpretation rests with authorised personnel.</span>
+        <Shield className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--sea-accent)' }} />
+        <span>Describes observed activity only. Operational interpretation and action rest with authorised Kerala Police personnel.</span>
       </div>
 
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-3 border-b flex-shrink-0" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
         <button
-          className="flex items-center gap-1 text-xs opacity-60 hover:opacity-100 transition-opacity"
+          className="flex items-center gap-1 text-xs font-semibold opacity-75 hover:opacity-100 transition-opacity cursor-pointer"
           style={{ color: 'var(--sea-accent)' }}
           onClick={() => navigate('/alerts')}
         >
@@ -140,14 +140,16 @@ export default function AlertDetail() {
         <div className="h-4 w-px" style={{ background: 'var(--line)' }} />
 
         <div>
-          <div className="font-mono text-xs opacity-50">Incident {alert.alertCode}</div>
+          <div className="font-mono text-xs font-semibold" style={{ color: 'var(--sea-accent)' }}>Incident {alert.alertCode}</div>
           <div className="flex items-center gap-2 mt-0.5">
             <SeverityChip severity={alert.severity} />
-            <span className="text-xs font-medium">{eventTypeLabel(ev.type)}</span>
+            <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>{eventTypeLabel(ev.type)}</span>
             <span className="text-xs opacity-50">·</span>
-            <span className="text-xs opacity-60">{alert.status.replace(/_/g,' ')}</span>
+            <span className="text-xs px-2 py-0.5 rounded font-mono font-medium border" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}>
+              {alert.status.replace(/_/g,' ')}
+            </span>
             {alert.assignedToName && (
-              <><span className="text-xs opacity-50">·</span><span className="text-xs opacity-60">Assigned: {alert.assignedToName}</span></>
+              <><span className="text-xs opacity-50">·</span><span className="text-xs" style={{ color: 'var(--text-muted)' }}>Assigned: <strong style={{ color: 'var(--text)' }}>{alert.assignedToName}</strong></span></>
             )}
           </div>
         </div>
@@ -155,8 +157,8 @@ export default function AlertDetail() {
         <div className="ml-auto flex items-center gap-2">
           {can(activeRole, 'EXPORT_DOWNLOAD') && (
             <button
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors hover:opacity-80"
-              style={{ borderColor: 'var(--line)' }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors hover:bg-[var(--raised)] cursor-pointer"
+              style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
               onClick={() => setShowExportModal(true)}
             >
               <Download className="w-3.5 h-3.5" /> Export
@@ -164,7 +166,7 @@ export default function AlertDetail() {
           )}
           <button
             onClick={() => navigate('/alerts')}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
             style={{ background: 'var(--sea-600)', color: 'white' }}
           >
             Close
@@ -179,11 +181,16 @@ export default function AlertDetail() {
           {/* Clip player */}
           <div className="border-b flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
             {/* Tab: RGB | THERMAL */}
-            <div className="flex border-b" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex border-b" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
               {(['RGB', 'THERMAL'] as const).map(m => (
                 <button
                   key={m}
-                  className={cn('px-4 py-2 text-xs font-mono font-medium border-b-2 transition-colors', activeTab === m ? 'border-[var(--sea-600)]' : 'border-transparent opacity-50')}
+                  className={cn(
+                    'px-4 py-2 text-xs font-mono font-bold border-b-2 transition-colors cursor-pointer',
+                    activeTab === m
+                      ? 'border-[var(--sea-400)] text-[var(--sea-accent)]'
+                      : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]'
+                  )}
                   onClick={() => setActiveTab(m)}
                 >
                   {m}
@@ -289,8 +296,8 @@ export default function AlertDetail() {
                   ev.modality ? ['Modality', ev.modality] : null,
                 ] as ([string, string] | null)[]).filter((x): x is [string, string] => x !== null).map(([label, value]) => (
                   <div key={label} className="flex flex-col gap-0.5">
-                    <span className="text-xs opacity-50 uppercase tracking-wider">{label}</span>
-                    <span className="text-sm font-medium font-mono">{value}</span>
+                    <span className="text-xs font-mono uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{label}</span>
+                    <span className="text-sm font-semibold font-mono" style={{ color: 'var(--text)' }}>{value}</span>
                   </div>
                 ))}
               </div>
@@ -301,16 +308,16 @@ export default function AlertDetail() {
             {/* Why raised — explainable rationale */}
             <section className="mb-6">
               <h2 className="font-serif text-lg font-semibold mb-1">Why Was This Raised?</h2>
-              <p className="text-xs opacity-50 mb-3">Contributing factors and thresholds used during alert evaluation.</p>
-              <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>Contributing factors and thresholds used during alert evaluation.</p>
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--line)', background: 'var(--raised)' }}>
                 {ev.rationale.factors.map((f, i) => <RationaleFactor key={i} factor={f} />)}
                 {ev.rationale.note && (
-                  <div className="px-3 py-2 text-xs opacity-60 italic">{ev.rationale.note}</div>
+                  <div className="px-3 py-2 text-xs italic" style={{ color: 'var(--text-muted)' }}>{ev.rationale.note}</div>
                 )}
                 {ev.rationale.zoneProfileUsed && (
                   <div className="px-3 py-2 text-xs border-t" style={{ borderColor: 'var(--line)' }}>
-                    <span className="opacity-50">Zone profile used: </span>
-                    <span className="font-mono font-medium">{ev.rationale.zoneProfileUsed}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Zone profile used: </span>
+                    <span className="font-mono font-medium" style={{ color: 'var(--text)' }}>{ev.rationale.zoneProfileUsed}</span>
                   </div>
                 )}
               </div>
@@ -323,7 +330,7 @@ export default function AlertDetail() {
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-serif text-lg font-semibold">Evidence</h2>
                 <button
-                  className="text-xs flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity"
+                  className="text-xs flex items-center gap-1 opacity-75 hover:opacity-100 transition-opacity cursor-pointer font-medium"
                   style={{ color: 'var(--sea-accent)' }}
                   onClick={async () => {
                     const hashes = alert.evidence.map(e => `${e.kind}: ${e.sha256}`).join('\n');
@@ -336,7 +343,7 @@ export default function AlertDetail() {
                   Copy all hashes
                 </button>
               </div>
-              <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
                 {alert.evidence.map(item => <EvidenceRow key={item.id} item={item} />)}
               </div>
             </section>
@@ -344,7 +351,7 @@ export default function AlertDetail() {
             {/* Model / software versions */}
             <section className="mb-6">
               <h2 className="font-serif text-lg font-semibold mb-3">Versions</h2>
-              <div className="rounded-xl border p-4 space-y-1.5" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
+              <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
                 {[
                   ['RGB Detector', ev.versions.rgbDetectorVersion],
                   ['Thermal Detector', ev.versions.thermalDetectorVersion],
@@ -354,8 +361,8 @@ export default function AlertDetail() {
                   ['Application', ev.versions.appVersion],
                 ].filter(([, v]) => v).map(([label, value]) => (
                   <div key={label} className="flex justify-between text-xs">
-                    <span className="opacity-50">{label}</span>
-                    <span className="font-mono font-medium">{value}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+                    <span className="font-mono font-semibold" style={{ color: 'var(--text)' }}>{value}</span>
                   </div>
                 ))}
               </div>

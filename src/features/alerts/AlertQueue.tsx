@@ -41,62 +41,70 @@ function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filt
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 border-b flex-wrap" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
-      <Filter className="w-3.5 h-3.5 opacity-40 flex-shrink-0" />
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b flex-wrap" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
+      <Filter className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--sea-accent)' }} />
       
       {/* Severity filters */}
       <div className="flex items-center gap-1.5">
-        {SEVERITIES.map(sev => (
-          <button
-            key={sev}
-            onClick={() => toggleSev(sev)}
-            className={cn(
-              'px-2 py-0.5 rounded-full text-xs font-medium border transition-all',
-              filters.severity.includes(sev) ? 'opacity-100' : 'opacity-35',
-            )}
-            style={{
-              borderColor: `var(--sev-${sev.toLowerCase()})`,
-              color: filters.severity.includes(sev) ? 'white' : `var(--sev-${sev.toLowerCase()})`,
-              background: filters.severity.includes(sev) ? `var(--sev-${sev.toLowerCase()})` : 'transparent',
-            }}
-          >
-            {SEV_GLYPH[sev]} {sev}
-          </button>
-        ))}
+        {SEVERITIES.map(sev => {
+          const isSelected = filters.severity.includes(sev);
+          return (
+            <button
+              key={sev}
+              onClick={() => toggleSev(sev)}
+              className={cn(
+                'px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer',
+                isSelected ? 'shadow-xs opacity-100' : 'opacity-65 hover:opacity-100',
+              )}
+              style={{
+                borderColor: `var(--sev-${sev.toLowerCase()})`,
+                color: isSelected ? '#FFFFFF' : `var(--sev-${sev.toLowerCase()})`,
+                background: isSelected ? `var(--sev-${sev.toLowerCase()})` : 'transparent',
+              }}
+            >
+              {SEV_GLYPH[sev]} {sev}
+            </button>
+          );
+        })}
       </div>
 
       <div className="h-4 w-px flex-shrink-0" style={{ background: 'var(--line)' }} />
 
       {/* Status filters */}
-      <div className="flex items-center gap-1">
-        {(['NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'ESCALATED'] as AlertStatus[]).map(st => (
-          <button
-            key={st}
-            onClick={() => toggleStatus(st)}
-            className={cn(
-              'px-2 py-0.5 rounded-full text-xs border transition-all',
-              filters.status.includes(st)
-                ? 'font-medium'
-                : 'opacity-40',
-            )}
-            style={{ borderColor: 'var(--line)', background: filters.status.includes(st) ? 'var(--raised)' : 'transparent' }}
-          >
-            {st.replace('_', ' ')}
-          </button>
-        ))}
+      <div className="flex items-center gap-1.5">
+        {(['NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'ESCALATED'] as AlertStatus[]).map(st => {
+          const isSelected = filters.status.includes(st);
+          return (
+            <button
+              key={st}
+              onClick={() => toggleStatus(st)}
+              className={cn(
+                'px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all cursor-pointer',
+                isSelected ? 'font-bold shadow-xs' : 'opacity-65 hover:opacity-100',
+              )}
+              style={{
+                borderColor: isSelected ? 'var(--sea-400)' : 'var(--line)',
+                background: isSelected ? 'var(--sea-600)' : 'transparent',
+                color: isSelected ? '#FFFFFF' : 'var(--text)',
+              }}
+            >
+              {st.replace('_', ' ')}
+            </button>
+          );
+        })}
       </div>
 
       <div className="ml-auto flex items-center gap-2">
         {/* Group by contact */}
-        <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
+        <label className="flex items-center gap-1.5 text-xs font-medium cursor-pointer select-none" style={{ color: 'var(--text)' }}>
           <input
             type="checkbox"
             checked={filters.groupByContact}
             onChange={e => onChange({ ...filters, groupByContact: e.target.checked })}
             style={{ accentColor: 'var(--sea-600)' }}
           />
-          <Users className="w-3 h-3 opacity-50" />
-          Group by contact
+          <Users className="w-3.5 h-3.5" style={{ color: 'var(--sea-accent)' }} />
+          <span>Group by contact</span>
         </label>
       </div>
     </div>
@@ -118,22 +126,29 @@ function AlertRow({
   
   return (
     <tr
+      data-selected={isSelected}
       className={cn(
-        'border-b cursor-pointer transition-colors group',
-        isSelected ? 'bg-[var(--sea-100)] dark:bg-[var(--raised)]' : 'hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)]',
+        'border-b cursor-pointer transition-all group',
         alert.status === 'NEW' && alert.severity === 'CRITICAL' && 'new-alert-pulse',
       )}
-      style={{ borderColor: 'var(--line)' }}
+      style={{
+        borderColor: 'var(--line)',
+        background: isSelected ? 'var(--selected-row-bg)' : undefined,
+        borderLeft: isSelected ? '3px solid var(--selected-row-border)' : '3px solid transparent',
+      }}
       onClick={onClick}
     >
       {/* Severity indicator */}
-      <td className="pl-4 pr-2 py-2.5 w-8">
+      <td className="pl-3 pr-2 py-2.5 w-8">
         <SeverityDot severity={alert.severity} pulse={alert.severity === 'CRITICAL' && alert.status === 'NEW'} />
       </td>
 
       {/* Time */}
       <td className="pr-3 py-2.5 w-20 whitespace-nowrap">
-        <span className="font-mono text-xs tabular" style={{ color: 'var(--text-muted)' }}>
+        <span
+          className="font-mono text-xs tabular font-medium"
+          style={{ color: isSelected ? 'var(--selected-row-text)' : 'var(--text-muted)' }}
+        >
           {formatIST(alert.createdAt)}
         </span>
       </td>
@@ -145,51 +160,97 @@ function AlertRow({
 
       {/* Event type + zone */}
       <td className="pr-3 py-2.5 flex-1">
-        <div className="font-medium text-sm">{eventTypeLabel(alert.event.type)}</div>
-        <div className="text-xs opacity-50 truncate max-w-[220px]">
+        <div
+          className="font-semibold text-sm"
+          style={{ color: isSelected ? 'var(--selected-row-text)' : 'var(--text)' }}
+        >
+          {eventTypeLabel(alert.event.type)}
+        </div>
+        <div
+          className="text-xs truncate max-w-[220px]"
+          style={{
+            color: isSelected ? 'var(--selected-row-text)' : 'var(--text-muted)',
+            opacity: isSelected ? 0.9 : 0.7,
+          }}
+        >
           {alert.event.zone?.name ?? '—'}
         </div>
       </td>
 
       {/* UAV */}
-      <td className="pr-3 py-2.5 w-20 text-xs font-mono">{alert.event.uav.code}</td>
+      <td
+        className="pr-3 py-2.5 w-20 text-xs font-mono font-medium"
+        style={{ color: isSelected ? 'var(--selected-row-text)' : 'var(--text)' }}
+      >
+        {alert.event.uav.code}
+      </td>
 
       {/* Contact */}
-      <td className="pr-3 py-2.5 w-20 text-xs font-mono" style={{ color: 'var(--sea-accent)' }}>
+      <td className="pr-3 py-2.5 w-20 text-xs font-mono font-bold" style={{ color: 'var(--sea-accent)' }}>
         {alert.event.contact?.code ?? '—'}
       </td>
 
       {/* Status */}
       <td className="pr-3 py-2.5 w-28">
-        <span className="text-xs opacity-70">{alert.status.replace(/_/g, ' ')}</span>
+        <span
+          className="text-xs font-medium px-2 py-0.5 rounded-full border inline-block"
+          style={{
+            background: 'var(--raised)',
+            borderColor: 'var(--line)',
+            color: isSelected ? 'var(--selected-row-text)' : 'var(--text)',
+          }}
+        >
+          {alert.status.replace(/_/g, ' ')}
+        </span>
         {alert.acknowledgedBy && (
-          <div className="text-[10px] opacity-40 truncate max-w-[100px]">{alert.acknowledgedBy}</div>
+          <div
+            className="text-[10px] font-mono truncate max-w-[100px] mt-0.5"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {alert.acknowledgedBy}
+          </div>
         )}
       </td>
 
       {/* Actions */}
       <td className="pr-4 py-2.5 w-32">
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            className="px-2 py-0.5 rounded text-xs border hover:bg-[var(--sand-200)] dark:hover:bg-[var(--raised)] transition-colors"
-            style={{ borderColor: 'var(--line)' }}
+            className="px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors cursor-pointer"
+            style={{
+              borderColor: 'var(--line)',
+              background: 'var(--raised)',
+              color: 'var(--text)',
+            }}
             onClick={e => { e.stopPropagation(); navigate(`/alerts/${alert.id}`); }}
           >
             Open
           </button>
           {canAck && alert.status === 'NEW' && (
             <button
-              className="px-2 py-0.5 rounded text-xs border hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-              style={{ borderColor: 'var(--sev-low)', color: 'var(--sev-low)' }}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer"
+              style={{
+                borderColor: 'var(--sev-low)',
+                background: 'rgba(63, 174, 154, 0.15)',
+                color: 'var(--sev-low)',
+              }}
               onClick={e => { e.stopPropagation(); onAck(); }}
-            >Ack</button>
+            >
+              Ack
+            </button>
           )}
           {canEscalate && (
             <button
-              className="px-2 py-0.5 rounded text-xs border hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-              style={{ borderColor: 'var(--sev-high)', color: 'var(--sev-high)' }}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer"
+              style={{
+                borderColor: 'var(--sev-high)',
+                background: 'rgba(224, 106, 59, 0.15)',
+                color: 'var(--sev-high)',
+              }}
               onClick={e => { e.stopPropagation(); onEscalate(); }}
-            >↑</button>
+            >
+              ↑
+            </button>
           )}
         </div>
       </td>
@@ -223,31 +284,47 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
   }
 
   return (
-    <div className="flex flex-col h-full border-l" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+    <div className="flex flex-col h-full border-l shadow-lg" style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
         <div>
-          <div className="font-mono text-xs opacity-50">{alert.alertCode}</div>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="font-mono text-xs font-semibold tracking-wider" style={{ color: 'var(--sea-accent)' }}>
+            {alert.alertCode}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
             <SeverityChip severity={alert.severity} size="sm" />
-            <span className="text-xs opacity-60">{alert.status.replace(/_/g,' ')}</span>
+            <span
+              className="text-xs px-2 py-0.5 rounded font-mono font-medium border"
+              style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}
+            >
+              {alert.status.replace(/_/g,' ')}
+            </span>
           </div>
         </div>
-        <button className="opacity-40 hover:opacity-100 text-lg" onClick={onClose}>×</button>
+        <button
+          className="w-7 h-7 rounded-lg border flex items-center justify-center text-lg hover:bg-[var(--raised)] transition-colors cursor-pointer"
+          style={{ borderColor: 'var(--line)', color: 'var(--text-muted)' }}
+          onClick={onClose}
+          aria-label="Close preview"
+        >
+          ×
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {/* Keyframe carousel placeholder */}
         <div className="px-4 pt-3">
-          <div className="text-xs font-medium opacity-60 mb-2 uppercase tracking-wider">Keyframes</div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="text-xs font-bold font-mono uppercase tracking-wider mb-2" style={{ color: 'var(--sea-accent)' }}>
+            Keyframes
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {[...Array(5)].map((_, i) => (
               <div
                 key={i}
-                className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border flex items-center justify-center text-xs opacity-40"
-                style={{ background: '#0a2233', borderColor: 'var(--line)' }}
+                className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border flex items-center justify-center text-xs font-mono font-medium"
+                style={{ background: '#0a2233', borderColor: 'var(--line)', color: 'var(--sea-200)' }}
               >
-                {i === 0 ? <span style={{ color: 'var(--sea-200)' }}>▶</span> : `KF-${i + 1}`}
+                {i === 0 ? <span className="text-sm">▶</span> : `KF-${i + 1}`}
               </div>
             ))}
           </div>
@@ -255,58 +332,68 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
 
         {/* Summary */}
         <div className="px-4 pt-3">
-          <div className="text-xs font-medium opacity-60 mb-2 uppercase tracking-wider">Summary</div>
-          <div className="space-y-1.5 text-xs">
-            <div className="flex gap-2">
-              <span style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Event</span>
-              <span className="font-medium">{eventTypeLabel(alert.event.type)}</span>
+          <div className="text-xs font-bold font-mono uppercase tracking-wider mb-2" style={{ color: 'var(--sea-accent)' }}>
+            Summary
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex gap-2 items-center">
+              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Event</span>
+              <span className="font-semibold text-xs" style={{ color: 'var(--text)' }}>{eventTypeLabel(alert.event.type)}</span>
             </div>
-            <div className="flex gap-2">
-              <span style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Time</span>
-              <span className="font-mono tabular">{formatIST(alert.event.occurredAt)}</span>
+            <div className="flex gap-2 items-center">
+              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Time</span>
+              <span className="font-mono tabular font-medium" style={{ color: 'var(--text)' }}>{formatIST(alert.event.occurredAt)}</span>
             </div>
-            <div className="flex gap-2">
-              <span style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>UAV</span>
-              <span className="font-mono">{alert.event.uav.code}</span>
+            <div className="flex gap-2 items-center">
+              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>UAV</span>
+              <span className="font-mono font-semibold" style={{ color: 'var(--text)' }}>{alert.event.uav.code}</span>
             </div>
             {alert.event.zone && (
-              <div className="flex gap-2">
-                <span style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Zone</span>
-                <span className="truncate">{alert.event.zone.name} <span className="opacity-50">v{alert.event.zone.version}</span></span>
+              <div className="flex gap-2 items-center">
+                <span className="font-mono text-xs" style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Zone</span>
+                <span className="truncate font-medium" style={{ color: 'var(--text)' }}>
+                  {alert.event.zone.name} <span className="font-mono text-[11px]" style={{ color: 'var(--text-muted)' }}>v{alert.event.zone.version}</span>
+                </span>
               </div>
             )}
             {alert.event.contact && (
-              <div className="flex gap-2">
-                <span style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Contact</span>
-                <span className="font-mono" style={{ color: 'var(--sea-accent)' }}>{alert.event.contact.code}</span>
-                <span className="opacity-50">{(alert.event.contact.classConf * 100).toFixed(0)}% conf</span>
+              <div className="flex gap-2 items-center">
+                <span className="font-mono text-xs" style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Contact</span>
+                <span className="font-mono font-bold" style={{ color: 'var(--sea-accent)' }}>{alert.event.contact.code}</span>
+                <span className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded border" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text-muted)' }}>
+                  {(alert.event.contact.classConf * 100).toFixed(0)}% conf
+                </span>
               </div>
             )}
-            <div className="flex gap-2">
-              <span style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Location</span>
-              <span className="font-mono text-[10px]">{formatCoords(alert.event.location.lat, alert.event.location.lon)}</span>
+            <div className="flex gap-2 items-center">
+              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)', width: '80px', flexShrink: 0 }}>Location</span>
+              <span className="font-mono text-[11px] font-semibold" style={{ color: 'var(--text)' }}>
+                {formatCoords(alert.event.location.lat, alert.event.location.lon)}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Why raised */}
         <div className="px-4 pt-3">
-          <div className="text-xs font-medium opacity-60 mb-2 uppercase tracking-wider">Why was this raised?</div>
-          <div className="rounded-xl p-3 space-y-1.5" style={{ background: 'var(--raised)', border: '1px solid var(--line)' }}>
+          <div className="text-xs font-bold font-mono uppercase tracking-wider mb-2" style={{ color: 'var(--sea-accent)' }}>
+            Why was this raised?
+          </div>
+          <div className="rounded-xl p-3 space-y-2 border shadow-xs" style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}>
             {alert.event.rationale.factors.slice(0, 4).map((f, i) => (
               <div key={i} className="flex items-start gap-2 text-xs">
-                <span className="opacity-40 flex-shrink-0 mt-0.5">•</span>
-                <div>
-                  <span className="font-medium">{f.factorName}:</span>{' '}
-                  <span className="font-mono">{f.value}{f.unit ? ` ${f.unit}` : ''}</span>
+                <span className="font-bold flex-shrink-0 mt-0.5" style={{ color: 'var(--sea-accent)' }}>•</span>
+                <div className="flex-1">
+                  <span className="font-semibold" style={{ color: 'var(--text)' }}>{f.factorName}:</span>{' '}
+                  <span className="font-mono font-bold" style={{ color: 'var(--text)' }}>{f.value}{f.unit ? ` ${f.unit}` : ''}</span>
                   {f.threshold !== undefined && (
-                    <span className="opacity-50"> (th: {f.threshold}{f.unit ? ` ${f.unit}` : ''})</span>
+                    <span className="font-mono text-[11px]" style={{ color: 'var(--text-muted)' }}> (th: {f.threshold}{f.unit ? ` ${f.unit}` : ''})</span>
                   )}
                 </div>
               </div>
             ))}
             {alert.event.rationale.note && (
-              <div className="text-xs opacity-60 mt-1 pt-1 border-t" style={{ borderColor: 'var(--line)' }}>
+              <div className="text-xs mt-2 pt-2 border-t font-sans" style={{ borderColor: 'var(--line)', color: 'var(--text-muted)' }}>
                 {alert.event.rationale.note}
               </div>
             )}
@@ -315,70 +402,82 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
       </div>
 
       {/* Actions */}
-      <div className="px-4 py-3 border-t space-y-2 flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
+      <div className="px-4 py-3 border-t space-y-2 flex-shrink-0" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
         <button
-          className="w-full py-2 rounded-xl text-sm font-medium transition-colors"
-          style={{ background: 'var(--sea-600)', color: 'white' }}
+          className="w-full py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
+          style={{ background: 'var(--sea-600)', color: '#FFFFFF' }}
           onClick={() => navigate(`/alerts/${alert.id}`)}
         >
-          <ExternalLink className="w-3.5 h-3.5 inline mr-1.5" />
-          Open Full Record
+          <ExternalLink className="w-3.5 h-3.5" />
+          <span>Open Full Record</span>
         </button>
         {(canAck || canEscalate) && (
           <div className="flex gap-2">
             {canAck && alert.status === 'NEW' && (
               <button
-                className="flex-1 py-1.5 rounded-xl text-xs border font-medium transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                style={{ borderColor: 'var(--sev-low)', color: 'var(--sev-low)' }}
+                className="flex-1 py-2 rounded-xl text-xs border font-bold transition-colors cursor-pointer"
+                style={{
+                  borderColor: 'var(--sev-low)',
+                  color: 'var(--sev-low)',
+                  background: 'rgba(63, 174, 154, 0.12)',
+                }}
                 onClick={handleAck}
               >
-                <CheckCheck className="w-3 h-3 inline mr-1" />Acknowledge
+                <CheckCheck className="w-3.5 h-3.5 inline mr-1" />Acknowledge
               </button>
             )}
             {canEscalate && (
               <button
-                className="flex-1 py-1.5 rounded-xl text-xs border font-medium transition-colors hover:bg-orange-50 dark:hover:bg-orange-900/20"
-                style={{ borderColor: 'var(--sev-high)', color: 'var(--sev-high)' }}
+                className="flex-1 py-2 rounded-xl text-xs border font-bold transition-colors cursor-pointer"
+                style={{
+                  borderColor: 'var(--sev-high)',
+                  color: 'var(--sev-high)',
+                  background: 'rgba(224, 106, 59, 0.12)',
+                }}
                 onClick={() => alert.event.type && console.log('escalate')}
               >
-                <ArrowUpCircle className="w-3 h-3 inline mr-1" />Escalate
+                <ArrowUpCircle className="w-3.5 h-3.5 inline mr-1" />Escalate
               </button>
             )}
           </div>
         )}
         {canResolve && (
           <button
-            className="w-full py-1.5 rounded-xl text-xs border opacity-60 hover:opacity-100 transition-opacity"
-            style={{ borderColor: 'var(--line)' }}
+            className="w-full py-2 rounded-xl text-xs border font-medium transition-colors cursor-pointer hover:bg-[var(--raised)]"
+            style={{ borderColor: 'var(--line)', background: 'transparent', color: 'var(--text-muted)' }}
             onClick={() => setShowFalseAlertModal(true)}
           >
-            <XCircle className="w-3 h-3 inline mr-1" />Mark False Alert
+            <XCircle className="w-3.5 h-3.5 inline mr-1" />Mark False Alert
           </button>
         )}
 
         {/* False alert modal */}
         {showFalseAlertModal && canResolve && (
-          <div className="rounded-xl p-3 border" style={{ background: 'var(--raised)', borderColor: 'var(--sev-medium)' }}>
-            <div className="text-xs font-medium mb-2">Reason (required)</div>
+          <div className="rounded-xl p-3 border shadow-lg" style={{ background: 'var(--raised)', borderColor: 'var(--sev-medium)' }}>
+            <div className="text-xs font-semibold mb-2" style={{ color: 'var(--text)' }}>Reason (required)</div>
             <textarea
               value={falseAlertReason}
               onChange={e => setFalseAlertReason(e.target.value)}
-              className="w-full rounded-lg text-xs p-2 border resize-none outline-none"
-              style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)', minHeight: '64px' }}
+              className="w-full rounded-lg text-xs p-2.5 border resize-none outline-none focus:ring-1 focus:ring-[var(--sea-400)]"
+              style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)', minHeight: '68px' }}
               placeholder="Explain why this alert is a false positive…"
             />
             <div className="flex gap-2 mt-2">
               <button
-                className="flex-1 py-1 rounded-lg text-xs font-medium transition-colors"
-                style={{ background: 'var(--sev-medium)', color: 'white' }}
+                className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                style={{ background: 'var(--sev-medium)', color: '#FFFFFF' }}
                 onClick={handleFalseAlert}
                 disabled={!falseAlertReason.trim()}
-              >Confirm</button>
+              >
+                Confirm
+              </button>
               <button
-                className="flex-1 py-1 rounded-lg text-xs border transition-colors"
-                style={{ borderColor: 'var(--line)' }}
+                className="flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer hover:bg-[var(--panel)]"
+                style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
                 onClick={() => { setShowFalseAlertModal(false); setFalseAlertReason(''); }}
-              >Cancel</button>
+              >
+                Cancel
+              </button>
             </div>
           </div>
         )}
@@ -452,37 +551,51 @@ export default function AlertQueue() {
       {/* Content: table + preview pane */}
       <div className="flex flex-1 overflow-hidden">
         {/* Table */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto" style={{ background: 'var(--bg)' }}>
           {/* Keyboard shortcuts hint */}
-          <div className="px-4 py-1.5 text-[10px] border-b flex items-center gap-3" style={{ borderColor: 'var(--line)', color: 'var(--text-muted)', background: 'var(--panel)' }}>
-            <span><kbd className="font-mono bg-black/10 px-1 rounded">J</kbd>/<kbd className="font-mono bg-black/10 px-1 rounded">K</kbd> navigate</span>
+          <div className="px-4 py-2 text-[11px] border-b flex items-center gap-3 font-mono" style={{ borderColor: 'var(--line)', color: 'var(--text-muted)', background: 'var(--panel)' }}>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 rounded text-[10px] border font-mono font-semibold" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}>J</kbd>
+              /
+              <kbd className="px-1.5 py-0.5 rounded text-[10px] border font-mono font-semibold" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}>K</kbd>
+              <span className="font-sans text-xs ml-0.5">navigate</span>
+            </span>
             {can(activeRole, 'ACK_ALERT') && (
-              <span><kbd className="font-mono bg-black/10 px-1 rounded">A</kbd> acknowledge</span>
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded text-[10px] border font-mono font-semibold" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}>A</kbd>
+                <span className="font-sans text-xs ml-0.5">acknowledge</span>
+              </span>
             )}
             {can(activeRole, 'ESCALATE_ALERT') && (
-              <span><kbd className="font-mono bg-black/10 px-1 rounded">E</kbd> escalate</span>
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded text-[10px] border font-mono font-semibold" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}>E</kbd>
+                <span className="font-sans text-xs ml-0.5">escalate</span>
+              </span>
             )}
-            <span><kbd className="font-mono bg-black/10 px-1 rounded">↵</kbd> open</span>
-            <span className="ml-auto">{filtered.length} alerts</span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 rounded text-[10px] border font-mono font-semibold" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}>↵</kbd>
+              <span className="font-sans text-xs ml-0.5">open</span>
+            </span>
+            <span className="ml-auto font-sans text-xs font-bold" style={{ color: 'var(--text)' }}>{filtered.length} alerts</span>
           </div>
 
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 gap-2" style={{ color: 'var(--text-muted)' }}>
-              <CheckCheck className="w-8 h-8 opacity-30" />
-              <span className="text-sm">No alerts match your filters</span>
+              <CheckCheck className="w-8 h-8 opacity-40" />
+              <span className="text-sm font-medium">No alerts match your filters</span>
             </div>
           ) : (
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-wider border-b sticky top-0 z-10" style={{ borderColor: 'var(--line)', background: 'var(--panel)', color: 'var(--text-muted)' }}>
-                  <th className="pl-4 pr-2 py-2 w-8" />
-                  <th className="pr-3 py-2 w-20">Time</th>
-                  <th className="pr-3 py-2 w-24">Severity</th>
-                  <th className="pr-3 py-2">Event / Zone</th>
-                  <th className="pr-3 py-2 w-20">UAV</th>
-                  <th className="pr-3 py-2 w-20">Contact</th>
-                  <th className="pr-3 py-2 w-28">Status</th>
-                  <th className="pr-4 py-2 w-32">Actions</th>
+                <tr className="text-left text-xs uppercase tracking-wider border-b sticky top-0 z-10 font-mono font-semibold" style={{ borderColor: 'var(--line)', background: 'var(--panel)', color: 'var(--text-muted)' }}>
+                  <th className="pl-3 pr-2 py-2.5 w-8" />
+                  <th className="pr-3 py-2.5 w-20">Time</th>
+                  <th className="pr-3 py-2.5 w-24">Severity</th>
+                  <th className="pr-3 py-2.5">Event / Zone</th>
+                  <th className="pr-3 py-2.5 w-20">UAV</th>
+                  <th className="pr-3 py-2.5 w-20">Contact</th>
+                  <th className="pr-3 py-2.5 w-28">Status</th>
+                  <th className="pr-4 py-2.5 w-32">Actions</th>
                 </tr>
               </thead>
               <tbody>

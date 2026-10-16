@@ -4,6 +4,7 @@
    ============================================================ */
 
 @import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
 @import "@fontsource/fraunces/index.css";
 @import "@fontsource/manrope/index.css";
 @import "@fontsource/jetbrains-mono/index.css";
@@ -56,6 +57,10 @@
   --accent: var(--sand-200);
   --sea-accent: var(--sea-400);
   --primary: var(--sea-600);
+  --selected-row-bg: #E3F3FA;
+  --selected-row-border: #2B7FA6;
+  --selected-row-text: #12303F;
+  --hover-row-bg: #F5ECD3;
 
   /* Feed state colours */
   --feed-live: #2ECC71;
@@ -98,6 +103,10 @@
   --sand-accent: #E8D59A;
   --sea-accent: #8FD0EC;
   --primary: #8FD0EC;
+  --selected-row-bg: rgba(43, 127, 166, 0.28);
+  --selected-row-border: #8FD0EC;
+  --selected-row-text: #FFFFFF;
+  --hover-row-bg: rgba(255, 255, 255, 0.05);
 
   --shadow-sm: 0 0 0 1px rgba(143, 208, 236, 0.06);
   --shadow-md: 0 0 0 1px rgba(143, 208, 236, 0.08), 0 4px 16px rgba(0,0,0,0.4);
