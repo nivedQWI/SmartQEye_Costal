@@ -21,6 +21,9 @@ RUN npm run build
 # ─── Stage 2: Hardened Nginx Runner ───────────────────────────
 FROM nginx:alpine AS runner
 
+# Remove default entrypoint scripts and conf to prevent unprivileged permission errors
+RUN rm -rf /docker-entrypoint.d/* /etc/nginx/conf.d/default.conf
+
 # Create temporary directories for unprivileged execution
 RUN mkdir -p /tmp/client_temp /tmp/proxy_temp_path /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && \
     chown -R nginx:nginx /tmp && \
