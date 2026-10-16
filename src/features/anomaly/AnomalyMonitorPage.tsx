@@ -3,107 +3,169 @@
 // As specified in Costal Police .docx
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   AlertTriangle, ShieldAlert, Play, Pause, RotateCcw,
   Download, Filter, Search, CheckCircle, Clock,
-  Video, Eye, AlertOctagon, TrendingUp, Sliders
+  Video, Eye, AlertOctagon, TrendingUp, Sliders,
+  Volume2, VolumeX, Maximize2
 } from 'lucide-react';
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { AnomalyRecord, AnomalyType } from '@/types';
 import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
-import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 
-// Mock anomalies
+// Real-Time Behavioral Outlier Ledger: All Anomaly Types set to ERRATIC SPEEDING
 const INITIAL_ANOMALIES: AnomalyRecord[] = [
   {
     id: 'anom-01',
-    category: 'PERSON',
-    anomalyType: 'LOITERING',
-    riskScore: 88,
-    droneCode: 'UAV-KL-01',
+    category: 'MARINE',
+    anomalyType: 'ERRATIC_SPEEDING',
+    riskScore: 92,
+    droneCode: 'UAV-KL-02',
     timestamp: '19:42:15 IST',
-    clipReplaySec: 30,
-    description: 'Subject lingering stationary beside fuel storage perimeter fence for >14 minutes without authorized activity.',
+    clipReplaySec: 20,
+    description: 'Track #01: High-speed yacht accelerating abruptly to 38.6 knots in restricted coastal fairway zone.',
     status: 'NEW'
   },
   {
     id: 'anom-02',
     category: 'TRAFFIC',
-    anomalyType: 'WRONG_WAY_DRIVING',
-    riskScore: 94,
+    anomalyType: 'ERRATIC_SPEEDING',
+    riskScore: 96,
     droneCode: 'UAV-KL-02',
     timestamp: '19:35:40 IST',
     clipReplaySec: 20,
-    description: 'Vehicle KL-16-J-8812 proceeding against one-way port exit flow at 48 km/h.',
+    description: 'Vehicle KL-16-J-8812 proceeding at erratic high speed of 84 km/h in harbor access terminal bypass.',
     status: 'ESCALATED'
   },
   {
     id: 'anom-03',
     category: 'PERSON',
-    anomalyType: 'SUDDEN_FALL',
-    riskScore: 76,
-    droneCode: 'UAV-KL-03',
+    anomalyType: 'ERRATIC_SPEEDING',
+    riskScore: 88,
+    droneCode: 'UAV-KL-02',
     timestamp: '19:12:05 IST',
-    clipReplaySec: 15,
-    description: 'Pedestrian collapsed near Samudra North rocky slope. Rapid body velocity deceleration detected.',
+    clipReplaySec: 20,
+    description: 'Individual on high-speed motorized watercraft zig-zagging erratically in swimmer safety buffer.',
     status: 'REVIEWED'
   },
   {
     id: 'anom-04',
     category: 'MARINE',
     anomalyType: 'ERRATIC_SPEEDING',
-    riskScore: 91,
+    riskScore: 94,
     droneCode: 'UAV-KL-02',
     timestamp: '18:55:18 IST',
-    clipReplaySec: 30,
-    description: 'Unidentified speedboat zig-zagging abruptly within 50m of commercial cargo fairway.',
+    clipReplaySec: 20,
+    description: 'Track #04: Unidentified vessel zig-zagging at 46.6 knots within 50m of commercial cargo fairway.',
     status: 'ESCALATED'
   },
   {
     id: 'anom-05',
     category: 'PERSON',
-    anomalyType: 'FLEEING',
-    riskScore: 82,
-    droneCode: 'UAV-KL-01',
+    anomalyType: 'ERRATIC_SPEEDING',
+    riskScore: 90,
+    droneCode: 'UAV-KL-02',
     timestamp: '18:20:10 IST',
-    clipReplaySec: 25,
-    description: 'Two individuals sprinted abruptly away upon sight of coastal patrol boat approach.',
+    clipReplaySec: 20,
+    description: 'Erratic speeding jet-ski operated dangerously close to Kovalam rocky slope shoreline.',
     status: 'REVIEWED'
   },
   {
     id: 'anom-06',
     category: 'TRAFFIC',
-    anomalyType: 'ABRUPT_STOP',
-    riskScore: 65,
-    droneCode: 'UAV-KL-01',
+    anomalyType: 'ERRATIC_SPEEDING',
+    riskScore: 85,
+    droneCode: 'UAV-KL-02',
     timestamp: '17:40:55 IST',
-    clipReplaySec: 10,
-    description: 'White sedan made abrupt emergency stop on active coastal highway lane without hazard beacons.',
+    clipReplaySec: 20,
+    description: 'White sedan clocked in erratic high-speed acceleration reaching 92 km/h on coastal road.',
     status: 'FALSE_POSITIVE'
   }
 ];
 
-// 24h timeline frequency
-const TIMELINE_DATA = [
-  { time: '04:00', count: 1, person: 1, traffic: 0, marine: 0 },
-  { time: '07:00', count: 3, person: 1, traffic: 2, marine: 0 },
-  { time: '10:00', count: 6, person: 4, traffic: 1, marine: 1 },
-  { time: '13:00', count: 4, person: 2, traffic: 1, marine: 1 },
-  { time: '16:00', count: 9, person: 5, traffic: 3, marine: 1 },
-  { time: '18:00', count: 14, person: 8, traffic: 4, marine: 2 },
-  { time: '19:45', count: 11, person: 6, traffic: 3, marine: 2 },
+// Telemetry timeline from 16331642_3840_2160_60fps_0m00s_to_0m20s_analytics.json
+const VIDEO_ANALYTICS_TIMELINE = [
+  { second: '00:00', speeding: 38, proximity: 140, erratic: 22, loitering: 0, total: 200, maxSpeed: 108.6 },
+  { second: '00:01', speeding: 40, proximity: 173, erratic: 21, loitering: 0, total: 234, maxSpeed: 66.7 },
+  { second: '00:02', speeding: 32, proximity: 193, erratic: 18, loitering: 0, total: 243, maxSpeed: 56.4 },
+  { second: '00:03', speeding: 56, proximity: 240, erratic: 4, loitering: 0, total: 300, maxSpeed: 46.6 },
+  { second: '00:04', speeding: 54, proximity: 240, erratic: 19, loitering: 30, total: 343, maxSpeed: 95.7 },
+  { second: '00:05', speeding: 53, proximity: 240, erratic: 9, loitering: 60, total: 362, maxSpeed: 77.0 },
+  { second: '00:06', speeding: 69, proximity: 230, erratic: 22, loitering: 49, total: 370, maxSpeed: 42.8 },
+  { second: '00:07', speeding: 249, proximity: 152, erratic: 1, loitering: 0, total: 402, maxSpeed: 124.6 },
+  { second: '00:08', speeding: 106, proximity: 71, erratic: 4, loitering: 0, total: 181, maxSpeed: 52.5 },
+  { second: '00:09', speeding: 99, proximity: 42, erratic: 15, loitering: 0, total: 156, maxSpeed: 97.0 },
+  { second: '00:10', speeding: 73, proximity: 20, erratic: 35, loitering: 0, total: 128, maxSpeed: 104.9 },
+  { second: '00:11', speeding: 57, proximity: 8, erratic: 37, loitering: 0, total: 102, maxSpeed: 101.8 },
+  { second: '00:12', speeding: 20, proximity: 4, erratic: 39, loitering: 0, total: 63, maxSpeed: 51.0 },
+  { second: '00:13', speeding: 22, proximity: 0, erratic: 36, loitering: 0, total: 58, maxSpeed: 51.1 },
+  { second: '00:14', speeding: 24, proximity: 0, erratic: 36, loitering: 0, total: 60, maxSpeed: 58.9 },
+  { second: '00:15', speeding: 83, proximity: 0, erratic: 21, loitering: 0, total: 104, maxSpeed: 68.3 },
+  { second: '00:16', speeding: 105, proximity: 0, erratic: 9, loitering: 0, total: 114, maxSpeed: 95.0 },
+  { second: '00:17', speeding: 104, proximity: 0, erratic: 11, loitering: 0, total: 115, maxSpeed: 69.4 },
+  { second: '00:18', speeding: 107, proximity: 4, erratic: 6, loitering: 0, total: 117, maxSpeed: 182.0 },
+  { second: '00:19', speeding: 104, proximity: 0, erratic: 7, loitering: 0, total: 111, maxSpeed: 205.9 }
 ];
 
 export default function AnomalyMonitorPage() {
   const [anomalies, setAnomalies] = useState<AnomalyRecord[]>(INITIAL_ANOMALIES);
   const [selectedAnomaly, setSelectedAnomaly] = useState<AnomalyRecord>(INITIAL_ANOMALIES[0]);
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'PERSON' | 'TRAFFIC' | 'MARINE'>('ALL');
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackTime, setPlaybackTime] = useState(12);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+
+  // Auto-play recovery on mount / anomaly selection
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.defaultMuted = true;
+    video.muted = true;
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => setIsVideoPlaying(true))
+        .catch(() => setIsVideoPlaying(false));
+    }
+  }, [selectedAnomaly]);
+
+  function toggleVideoPlay() {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setIsVideoPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsVideoPlaying(false);
+    }
+  }
+
+  function toggleMute() {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsMuted(videoRef.current.muted);
+  }
+
+  function restartVideo() {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = 0;
+    videoRef.current.play().catch(() => {});
+    setIsVideoPlaying(true);
+  }
+
+  function toggleFullscreen() {
+    if (!videoRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      videoRef.current.requestFullscreen?.();
+    }
+  }
+
 
   const filteredAnomalies = anomalies.filter(a => {
     if (categoryFilter !== 'ALL' && a.category !== categoryFilter) return false;
@@ -241,15 +303,77 @@ export default function AnomalyMonitorPage() {
               </span>
             </div>
 
-            {/* Drone Video Player with Built-in Scrubber & CFS State */}
-            <div className="w-full aspect-video rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 flex flex-col">
-              <DroneVideoPlayer
-                sceneName="vizhinjam_patrol"
-                autoPlay={isPlaying}
-                loop={true}
-                showControls={true}
-                className="w-full h-full"
+            {/* Instant Clip Replay — Anomaly Detection Video */}
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 flex items-center justify-center select-none group">
+              <video
+                ref={videoRef}
+                src="/videos/Anomaly_detection_video.mp4"
+                autoPlay
+                muted={isMuted}
+                loop
+                playsInline
+                preload="auto"
+                className="w-full h-full object-cover"
+                onPlay={() => setIsVideoPlaying(true)}
+                onPause={() => setIsVideoPlaying(false)}
+                onLoadedData={() => {
+                  if (videoRef.current) {
+                    videoRef.current.muted = true;
+                    videoRef.current.play().catch(() => {});
+                  }
+                }}
               />
+
+              {!isVideoPlaying && (
+                <div
+                  onClick={toggleVideoPlay}
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs cursor-pointer group transition-all"
+                >
+                  <div className="p-3 rounded-full bg-red-600/90 text-white shadow-xl group-hover:scale-110 transition-transform flex items-center justify-center">
+                    <Play className="w-6 h-6 ml-0.5" />
+                  </div>
+                  <span className="mt-2 text-[10px] font-mono font-bold text-white bg-black/70 px-2.5 py-0.5 rounded border border-white/20">
+                    CLICK TO PLAY ANOMALY REPLAY
+                  </span>
+                </div>
+              )}
+
+              {/* Bottom controls bar (hidden until hover) */}
+              <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-between text-[10px] font-mono text-slate-200 bg-slate-950/85 backdrop-blur-xs p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={toggleVideoPlay}
+                    className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                    title={isVideoPlaying ? 'Pause' : 'Play'}
+                  >
+                    {isVideoPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={toggleMute}
+                    className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                    title={isMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={restartVideo}
+                    className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                    title="Restart"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-red-400 hidden sm:inline">ANOMALY FORENSIC REPLAY · 60 FPS</span>
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                    title="Fullscreen"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Description & Action Bar */}
@@ -293,29 +417,42 @@ export default function AnomalyMonitorPage() {
           </div>
         </div>
 
-        {/* Right Column (5 cols): 24h Anomaly Occurrence Frequency Area Chart */}
+        {/* Right Column (5 cols): Video Analytics Anomaly Distribution Trend */}
         <div className="lg:col-span-5 flex flex-col gap-4">
           <div className="card-sand p-4 flex flex-col gap-3">
-            <div>
-              <h3 className="font-serif text-sm font-bold text-[var(--text)]">
-                24-Hour Anomaly Distribution Trend
-              </h3>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Occurrence frequency breakdown across person, vehicle, and marine categories
-              </p>
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="font-serif text-sm font-bold text-[var(--text)]">
+                  Video Analytics Anomaly Distribution Trend
+                </h3>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  From detection analytics JSON (00:00–00:20 · 3,763 Total Events)
+                </p>
+              </div>
+              <span className="badge-navy text-[10px] px-2 py-0.5 rounded font-mono font-bold">
+                15/20 ANOMALOUS
+              </span>
             </div>
 
             <div className="h-60 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={TIMELINE_DATA}>
+                <AreaChart data={VIDEO_ANALYTICS_TIMELINE} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="anomGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.0} />
+                    <linearGradient id="speedingGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05} />
+                    </linearGradient>
+                    <linearGradient id="proximityGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.05} />
+                    </linearGradient>
+                    <linearGradient id="erraticGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
-                  <XAxis dataKey="time" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                  <XAxis dataKey="second" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                   <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                   <Tooltip
                     contentStyle={{
@@ -325,32 +462,56 @@ export default function AnomalyMonitorPage() {
                       fontSize: '11px',
                       color: 'var(--text)'
                     }}
+                    formatter={(val: any, name: any) => [`${val} events`, name]}
+                    labelFormatter={(label: any) => `Time: ${label}s`}
                   />
+                  <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
                   <Area
                     type="monotone"
-                    dataKey="count"
+                    dataKey="speeding"
                     stroke="#ef4444"
                     strokeWidth={2}
                     fillOpacity={1}
-                    fill="url(#anomGrad)"
-                    name="Total Anomalies"
+                    fill="url(#speedingGrad)"
+                    name="Speeding"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="proximity"
+                    stroke="#f59e0b"
+                    strokeWidth={1.5}
+                    fillOpacity={1}
+                    fill="url(#proximityGrad)"
+                    name="Proximity Risk"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="erratic"
+                    stroke="#8b5cf6"
+                    strokeWidth={1.5}
+                    fillOpacity={1}
+                    fill="url(#erraticGrad)"
+                    name="Erratic Course"
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)] text-center text-xs font-mono">
-              <div className="p-2 bg-[var(--surface-muted)] rounded">
-                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>PERSON</div>
-                <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>28</div>
+              <div className="p-2 bg-[var(--surface-muted)] rounded border border-[var(--border)]">
+                <div className="text-[10px] text-red-600 font-bold">SPEEDING</div>
+                <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>1,495</div>
+                <div className="text-[9px] text-[var(--text-muted)]">&gt;16kt limit</div>
               </div>
-              <div className="p-2 bg-[var(--surface-muted)] rounded">
-                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>TRAFFIC</div>
-                <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>14</div>
+              <div className="p-2 bg-[var(--surface-muted)] rounded border border-[var(--border)]">
+                <div className="text-[10px] text-amber-600 font-bold">PROXIMITY RISK</div>
+                <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>1,757</div>
+                <div className="text-[9px] text-[var(--text-muted)]">&lt;18m buffer</div>
               </div>
-              <div className="p-2 bg-[var(--surface-muted)] rounded">
-                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>MARINE</div>
-                <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>6</div>
+              <div className="p-2 bg-[var(--surface-muted)] rounded border border-[var(--border)]">
+                <div className="text-[10px] text-purple-600 font-bold">ERRATIC COURSE</div>
+                <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>372</div>
+                <div className="text-[9px] text-[var(--text-muted)]">Angular delta</div>
               </div>
             </div>
           </div>

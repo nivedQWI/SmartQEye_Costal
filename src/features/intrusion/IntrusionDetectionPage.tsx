@@ -221,7 +221,6 @@ export default function IntrusionDetectionPage() {
   // Video Stream Controls
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [showPolygons, setShowPolygons] = useState(true);
 
   // Auto-play recovery on mount
   useEffect(() => {
@@ -475,51 +474,7 @@ export default function IntrusionDetectionPage() {
                 </div>
               )}
 
-              {/* Dynamic SVG Tripwire & Geofence Overlay */}
-              {showPolygons && (
-                <div className="absolute inset-0 pointer-events-none">
-                  <svg className="w-full h-full" viewBox="0 0 640 400" preserveAspectRatio="none">
-                    <defs>
-                      <pattern id="secGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                      </pattern>
-                    </defs>
-                    <rect width="640" height="400" fill="url(#secGrid)" />
 
-                    {/* Zone 1: Prohibited Naval Berth Polygon (Flashing Red) */}
-                    <polygon
-                      points="100,90 380,70 430,280 140,300"
-                      fill="rgba(239, 68, 68, 0.16)"
-                      stroke="#ef4444"
-                      strokeWidth="2"
-                      strokeDasharray="6 4"
-                      className="animate-pulse"
-                    />
-                    <rect x="110" y="100" width="180" height="20" fill="rgba(239, 68, 68, 0.9)" rx="3" />
-                    <text x="116" y="114" fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold">ZONE 1: NAVAL BERTH [BREACH]</text>
-
-                    {/* Target Tracking Bounding Box corresponding to real detection snapshot */}
-                    <g transform="translate(260, 175)">
-                      <circle cx="0" cy="0" r="16" fill="rgba(239, 68, 68, 0.35)" className="animate-ping" />
-                      <circle cx="0" cy="0" r="6" fill="#ef4444" />
-                      <rect x="10" y="-12" width="150" height="20" fill="#ef4444" rx="2" />
-                      <text x="14" y="2" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">#13 SHIP 80% [DWELL 84s]</text>
-                      <line x1="0" y1="0" x2="-20" y2="15" stroke="#ef4444" strokeWidth="2" />
-                    </g>
-
-                    {/* Zone 2: Cliff Edge Safety Polygon (Yellow) */}
-                    <polygon
-                      points="440,90 620,75 635,260 455,250"
-                      fill="rgba(245, 158, 11, 0.12)"
-                      stroke="#f59e0b"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                    />
-                    <rect x="450" y="100" width="155" height="18" fill="rgba(245, 158, 11, 0.85)" rx="2" />
-                    <text x="456" y="113" fill="#ffffff" fontSize="8.5" fontFamily="monospace" fontWeight="bold">ZONE 2: CLIFF EDGE BUFFER</text>
-                  </svg>
-                </div>
-              )}
 
               {/* HUD Header */}
               <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-200">
@@ -556,17 +511,6 @@ export default function IntrusionDetectionPage() {
                     title="Restart Video"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setShowPolygons(p => !p)}
-                    className={cn(
-                      'ml-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer',
-                      showPolygons
-                        ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40'
-                        : 'bg-slate-800 text-slate-400 border-slate-700'
-                    )}
-                  >
-                    {showPolygons ? 'Tripwires: ON' : 'Tripwires: OFF'}
                   </button>
                 </div>
                 <div className="flex items-center gap-3">

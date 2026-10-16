@@ -59,7 +59,12 @@ export default defineConfig({
           if (!fs.existsSync(filePath)) {
             // Check intrusion detection directory as well
             const altPath = path.join(path.resolve(__dirname, '../Intrusion_detection'), fileName)
-            if (fs.existsSync(altPath)) filePath = altPath
+            if (fs.existsSync(altPath)) {
+              filePath = altPath
+            } else {
+              const rootPath = path.join(path.resolve(__dirname, '..'), fileName)
+              if (fs.existsSync(rootPath)) filePath = rootPath
+            }
           }
           const ext = path.extname(filePath).toLowerCase()
           const mime = ext === '.png' ? 'image/png' : 'video/mp4'

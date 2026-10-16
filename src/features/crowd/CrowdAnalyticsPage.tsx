@@ -3,11 +3,11 @@
 // As specified in Costal Police .docx
 // ============================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Users, TrendingUp, TrendingDown, AlertTriangle,
-  Download, Eye, EyeOff, Layers, Activity, Clock,
-  FileText, ShieldAlert, Sparkles, MapPin
+  Download, Activity, Sparkles,
+  Play, Pause, Volume2, VolumeX, Maximize2, RotateCcw
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis,
@@ -15,33 +15,83 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
-import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 
 export default function CrowdAnalyticsPage() {
   const [selectedDrone, setSelectedDrone] = useState('UAV-KL-02');
   const [selectedModel, setSelectedModel] = useState<'CSRNet Part A' | 'CSRNet Part B' | 'DM-Count' | 'RTMDet-Crowd'>('CSRNet Part A');
-  const [showHeatmap, setShowHeatmap] = useState(true);
+  // Video stream state and controls
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+
+  // Auto-play recovery on mount
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.defaultMuted = true;
+    video.muted = true;
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => setIsPlaying(true))
+        .catch(() => setIsPlaying(false));
+    }
+  }, []);
+
+  function togglePlay() {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }
+
+  function toggleMute() {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsMuted(videoRef.current.muted);
+  }
+
+  function restartVideo() {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = 0;
+    videoRef.current.play().catch(() => {});
+    setIsPlaying(true);
+  }
+
+  function toggleFullscreen() {
+    if (!videoRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      videoRef.current.requestFullscreen?.();
+    }
+  }
 
   // Live KPI values
-  const [currentCount, setCurrentCount] = useState(1420);
-  const [peakCount] = useState({ count: 2180, time: '17:45 IST' });
+  const [currentCount, setCurrentCount] = useState(200);
+  const [peakCount] = useState({ count: 500, time: '17:45 IST' });
   const [activeAlerts, setActiveAlerts] = useState(2);
   const [densityRating, setDensityRating] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('HIGH');
-  const [densityPpm2, setDensityPpm2] = useState(3.4);
+  const [densityPpm2, setDensityPpm2] = useState(1.4);
   const [isIncreasing, setIsIncreasing] = useState(true);
 
-  // 24-hour crowd trend timeline
+  // Crowd Analysis trend timeline (Range: 0–200, curve starts at 200, peaks at 500, gradually decreases to 100)
   const [trendData] = useState(() => [
-    { time: '06:00', count: 320, threshold: 1800 },
-    { time: '08:00', count: 680, threshold: 1800 },
-    { time: '10:00', count: 1140, threshold: 1800 },
-    { time: '12:00', count: 1490, threshold: 1800 },
-    { time: '14:00', count: 1280, threshold: 1800 },
-    { time: '16:00', count: 1820, threshold: 1800 },
-    { time: '17:00', count: 2180, threshold: 1800 },
-    { time: '18:00', count: 1960, threshold: 1800 },
-    { time: '19:00', count: 1540, threshold: 1800 },
-    { time: '20:00', count: 1420, threshold: 1800 },
+    { range: 0, count: 200 },
+    { range: 20, count: 240 },
+    { range: 40, count: 310 },
+    { range: 60, count: 405 },
+    { range: 80, count: 475 },
+    { range: 100, count: 500 },
+    { range: 120, count: 440 },
+    { range: 140, count: 325 },
+    { range: 160, count: 230 },
+    { range: 180, count: 160 },
+    { range: 200, count: 100 },
   ]);
 
   // Zone distribution
@@ -63,12 +113,12 @@ export default function CrowdAnalyticsPage() {
   useEffect(() => {
     const id = setInterval(() => {
       setCurrentCount(c => {
-        const delta = Math.floor(Math.random() * 21) - 10;
-        const next = Math.max(800, c + delta);
+        const delta = Math.floor(Math.random() * 11) - 5;
+        const next = Math.max(100, Math.min(500, c + delta));
         setIsIncreasing(delta >= 0);
-        setDensityPpm2(parseFloat((next / 420).toFixed(2)));
-        if (next > 1800) setDensityRating('CRITICAL');
-        else if (next > 1300) setDensityRating('HIGH');
+        setDensityPpm2(parseFloat((next / 140).toFixed(2)));
+        if (next > 400) setDensityRating('CRITICAL');
+        else if (next > 250) setDensityRating('HIGH');
         else setDensityRating('MEDIUM');
         return next;
       });
@@ -223,7 +273,7 @@ export default function CrowdAnalyticsPage() {
           MIDDLE: 60% LIVE CAMERA + 40% 24H AREA CHART
          ══════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {/* Left (60% / 3 cols): Live Camera Stream with Density Heatmap overlay */}
+        {/* Left (60% / 3 cols): Live Drone Video Stream — UAV-KL-02 */}
         <div
           className="lg:col-span-3 rounded-2xl p-4 border shadow-sm flex flex-col justify-between"
           style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
@@ -235,62 +285,111 @@ export default function CrowdAnalyticsPage() {
                 Live Drone Video Stream — {selectedDrone}
               </h3>
             </div>
-            <button
-              onClick={() => setShowHeatmap(!showHeatmap)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border transition-colors',
-                showHeatmap
-                  ? 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40'
-                  : 'bg-[var(--panel)] border-[var(--line)] opacity-70'
-              )}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              {showHeatmap ? 'Heatmap: ACTIVE' : 'Heatmap: OFF'}
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping"></span>
+                STREAM 1080P @ 30 FPS
+              </span>
+            </div>
           </div>
 
-          {/* Live Drone Video Player with Heatmap Layer */}
-          <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border flex flex-col" style={{ borderColor: 'var(--line)' }}>
-            <DroneVideoPlayer
-              sceneName="vizhinjam_patrol"
-              compactControls={true}
-              className="w-full h-full"
+          {/* Live Drone Video Player (Clean video without overlays) */}
+          <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-950 border flex items-center justify-center select-none group" style={{ borderColor: 'var(--line)' }}>
+            <video
+              ref={videoRef}
+              src="/videos/Crowd_Video.mp4"
+              autoPlay
+              muted={isMuted}
+              loop
+              playsInline
+              preload="auto"
+              className="w-full h-full object-cover"
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onLoadedData={() => {
+                if (videoRef.current) {
+                  videoRef.current.muted = true;
+                  videoRef.current.play().catch(() => {});
+                }
+              }}
             />
 
-            {/* Neural Heatmap Overlay Simulation */}
-            {showHeatmap && (
+            {/* Click to start if browser blocked autoplay */}
+            {!isPlaying && (
               <div
-                className="absolute inset-0 pointer-events-none mix-blend-color-dodge transition-opacity duration-500"
-                style={{
-                  background: 'radial-gradient(ellipse 65% 55% at 50% 65%, rgba(239, 68, 68, 0.75) 0%, rgba(245, 158, 11, 0.55) 45%, rgba(56, 189, 248, 0.25) 80%, transparent 100%)',
-                }}
-              />
+                onClick={togglePlay}
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs cursor-pointer group transition-all"
+              >
+                <div className="p-3 rounded-full bg-sky-600/90 text-white shadow-xl group-hover:scale-110 transition-transform flex items-center justify-center">
+                  <Play className="w-6 h-6 ml-0.5" />
+                </div>
+                <span className="mt-2 text-[10px] font-mono font-bold text-white bg-black/70 px-2.5 py-0.5 rounded border border-white/20">
+                  CLICK TO START STREAM
+                </span>
+              </div>
             )}
+
+            {/* Bottom controls bar (hidden until hover) */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-between text-[10px] font-mono text-slate-200 bg-slate-950/85 backdrop-blur-xs p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={togglePlay}
+                  className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                  title={isPlaying ? 'Pause' : 'Play'}
+                >
+                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  onClick={toggleMute}
+                  className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                  title={isMuted ? 'Unmute' : 'Mute'}
+                >
+                  {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  onClick={restartVideo}
+                  className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                  title="Restart"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sky-400 hidden sm:inline">CROWD STREAM — {selectedDrone}</span>
+                <button
+                  onClick={toggleFullscreen}
+                  className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                  title="Fullscreen"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right (40% / 2 cols): Crowd Density Area Chart (24h Trend) */}
+        {/* Right (40% / 2 cols): Crowd Analysis Area Chart */}
         <div
           className="lg:col-span-2 rounded-2xl p-4 border shadow-sm flex flex-col justify-between"
           style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
         >
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-serif text-sm font-bold">24h Crowd Trend Curve</h3>
-            <span className="text-[11px] font-mono text-red-600 font-bold">Threshold: 1,800</span>
+            <h3 className="font-serif text-sm font-bold">Crowd Analysis</h3>
+            <span className="text-[11px] font-mono text-sky-600 dark:text-sky-400 font-bold">Range: 0–200 | Peak: 500</span>
           </div>
 
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
+              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="crowdAreaGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2B7FA6" stopOpacity={0.6} />
-                    <stop offset="95%" stopColor="#2B7FA6" stopOpacity={0.0} />
+                    <stop offset="95%" stopColor="#2B7FA6" stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                <XAxis dataKey="time" stroke="#888888" fontSize={10} />
-                <YAxis stroke="#888888" fontSize={10} />
+                <XAxis dataKey="range" stroke="#888888" fontSize={10} domain={[0, 200]} />
+                <YAxis stroke="#888888" fontSize={10} domain={[0, 500]} ticks={[0, 100, 200, 300, 400, 500]} />
                 <Tooltip
                   contentStyle={{
                     background: 'var(--raised)',
@@ -298,14 +397,24 @@ export default function CrowdAnalyticsPage() {
                     borderRadius: 12,
                     fontSize: 12,
                   }}
+                  formatter={(value: any) => [`${value} persons`, 'Crowd Density']}
+                  labelFormatter={(label: any) => `Range: ${label}`}
                 />
-                <Area type="monotone" dataKey="count" stroke="#2B7FA6" strokeWidth={2.5} fillOpacity={1} fill="url(#crowdAreaGrad)" />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#2B7FA6"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#crowdAreaGrad)"
+                  name="Crowd Density"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
           <p className="text-[11px] opacity-65 font-mono text-center mt-2">
-            Observed evening congregation spikes correlate with sunset tourist departures
+            Crowd Analysis (Range: 0–200 | Initial: 200 → Peak: 500 → Dispersal: 100)
           </p>
         </div>
       </div>

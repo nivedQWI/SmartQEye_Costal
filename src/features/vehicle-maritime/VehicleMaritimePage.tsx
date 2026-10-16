@@ -3,15 +3,17 @@
 // As specified in Costal Police .docx
 // ============================================================
 
-import { useState, useId } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Car, Ship, AlertTriangle, ShieldAlert, Download,
   Search, Video, CheckCircle, Navigation,
-  Gauge, Compass, ArrowUpRight, Radio, Filter, Zap
+  Gauge, ArrowUpRight, Radio, Filter,
+  Play, Pause, Volume2, VolumeX, Maximize2, RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
-import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
+
+
 import { VehicleAnprRecord, MaritimeTrackRecord } from '@/types';
 
 // Mock initial ANPR data
@@ -181,9 +183,114 @@ export default function VehicleMaritimePage() {
   const { devRole } = useAuthStore();
   const isAuthorizedRole = ['ANALYST', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'].includes(devRole);
 
-  const seaPatternId = useId();
-  const rawGridPatternId = useId();
-  const annoGridPatternId = useId();
+
+
+
+
+  // Maritime video player state
+  const maritimeVideoRef = useRef<HTMLVideoElement>(null);
+  const [isMaritimePlaying, setIsMaritimePlaying] = useState(false);
+  const [isMaritimeMuted, setIsMaritimeMuted] = useState(true);
+
+  // Auto-play maritime video when Maritime Vessel tab is active
+  useEffect(() => {
+    if (activeTab !== 'MARITIME_VESSEL') return;
+    const video = maritimeVideoRef.current;
+    if (!video) return;
+    video.defaultMuted = true;
+    video.muted = true;
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => setIsMaritimePlaying(true))
+        .catch(() => setIsMaritimePlaying(false));
+    }
+  }, [activeTab]);
+
+  function toggleMaritimePlay() {
+    if (!maritimeVideoRef.current) return;
+    if (maritimeVideoRef.current.paused) {
+      maritimeVideoRef.current.play().catch(() => {});
+      setIsMaritimePlaying(true);
+    } else {
+      maritimeVideoRef.current.pause();
+      setIsMaritimePlaying(false);
+    }
+  }
+  function toggleMaritimeMute() {
+    if (!maritimeVideoRef.current) return;
+    maritimeVideoRef.current.muted = !maritimeVideoRef.current.muted;
+    setIsMaritimeMuted(maritimeVideoRef.current.muted);
+  }
+  function restartMaritimeVideo() {
+    if (!maritimeVideoRef.current) return;
+    maritimeVideoRef.current.currentTime = 0;
+    maritimeVideoRef.current.play().catch(() => {});
+    setIsMaritimePlaying(true);
+  }
+  function toggleMaritimeFullscreen() {
+    if (!maritimeVideoRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      maritimeVideoRef.current.requestFullscreen?.();
+    }
+  }
+
+  // Vehicle feed video player state
+  const vehicle1Ref = useRef<HTMLVideoElement>(null);
+  const vehicle2Ref = useRef<HTMLVideoElement>(null);
+  const [isVehicle1Playing, setIsVehicle1Playing] = useState(false);
+  const [isVehicle1Muted, setIsVehicle1Muted] = useState(true);
+  const [isVehicle2Playing, setIsVehicle2Playing] = useState(false);
+  const [isVehicle2Muted, setIsVehicle2Muted] = useState(true);
+
+  // Auto-play vehicle videos when VEHICLE_ANPR tab is active
+  useEffect(() => {
+    if (activeTab !== 'VEHICLE_ANPR') return;
+    [vehicle1Ref, vehicle2Ref].forEach((ref) => {
+      const video = ref.current;
+      if (!video) return;
+      video.defaultMuted = true;
+      video.muted = true;
+      const p = video.play();
+      if (p !== undefined) p.catch(() => {});
+    });
+  }, [activeTab]);
+
+  function makeVehicleControls(
+    ref: React.RefObject<HTMLVideoElement | null>,
+    isPlaying: boolean,
+    setPlaying: (v: boolean) => void,
+    isMuted: boolean,
+    setMuted: (v: boolean) => void
+  ) {
+    return {
+      togglePlay() {
+        if (!ref.current) return;
+        if (ref.current.paused) { ref.current.play().catch(() => {}); setPlaying(true); }
+        else { ref.current.pause(); setPlaying(false); }
+      },
+      toggleMute() {
+        if (!ref.current) return;
+        ref.current.muted = !ref.current.muted;
+        setMuted(ref.current.muted);
+      },
+      restart() {
+        if (!ref.current) return;
+        ref.current.currentTime = 0;
+        ref.current.play().catch(() => {});
+        setPlaying(true);
+      },
+      fullscreen() {
+        if (!ref.current) return;
+        if (document.fullscreenElement) document.exitFullscreen();
+        else ref.current.requestFullscreen?.();
+      },
+    };
+  }
+  const v1Ctrl = makeVehicleControls(vehicle1Ref, isVehicle1Playing, setIsVehicle1Playing, isVehicle1Muted, setIsVehicle1Muted);
+  const v2Ctrl = makeVehicleControls(vehicle2Ref, isVehicle2Playing, setIsVehicle2Playing, isVehicle2Muted, setIsVehicle2Muted);
 
   // Filtered vehicles
   const filteredVehicles = vehicles.filter(v => {
@@ -403,74 +510,93 @@ export default function VehicleMaritimePage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Left: Synchronised Drone Video Player */}
-              <div className="rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex flex-col">
-                <DroneVideoPlayer
-                  sceneName="vizhinjam_patrol"
-                  compactControls={true}
-                  className="w-full h-full"
+              {/* Left: Vehicle Detection Feed 1 */}
+              <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex items-center justify-center select-none group">
+                <video
+                  ref={vehicle1Ref}
+                  src="/videos/Vehicle1.mp4"
+                  autoPlay
+                  muted={isVehicle1Muted}
+                  loop
+                  playsInline
+                  preload="auto"
+                  className="w-full h-full object-cover"
+                  onPlay={() => setIsVehicle1Playing(true)}
+                  onPause={() => setIsVehicle1Playing(false)}
+                  onLoadedData={() => {
+                    if (vehicle1Ref.current) {
+                      vehicle1Ref.current.muted = true;
+                      vehicle1Ref.current.play().catch(() => {});
+                    }
+                  }}
                 />
+                {!isVehicle1Playing && (
+                  <div onClick={v1Ctrl.togglePlay} className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs cursor-pointer group transition-all">
+                    <div className="p-3 rounded-full bg-sky-600/90 text-white shadow-xl group-hover:scale-110 transition-transform flex items-center justify-center">
+                      <Play className="w-6 h-6 ml-0.5" />
+                    </div>
+                    <span className="mt-2 text-[10px] font-mono font-bold text-white bg-black/70 px-2.5 py-0.5 rounded border border-white/20">CLICK TO START</span>
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-between text-[10px] font-mono text-slate-200 bg-slate-950/85 backdrop-blur-xs p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="flex items-center gap-1">
+                    <button onClick={v1Ctrl.togglePlay} className="p-1 rounded hover:bg-white/10 cursor-pointer" title={isVehicle1Playing ? 'Pause' : 'Play'}>
+                      {isVehicle1Playing ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                    </button>
+                    <button onClick={v1Ctrl.toggleMute} className="p-1 rounded hover:bg-white/10 cursor-pointer" title={isVehicle1Muted ? 'Unmute' : 'Mute'}>
+                      {isVehicle1Muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                    </button>
+                    <button onClick={v1Ctrl.restart} className="p-1 rounded hover:bg-white/10 cursor-pointer" title="Restart"><RotateCcw className="w-3 h-3" /></button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sky-400 hidden sm:inline">VEHICLE FEED 1</span>
+                    <button onClick={v1Ctrl.fullscreen} className="p-1 rounded hover:bg-white/10 cursor-pointer" title="Fullscreen"><Maximize2 className="w-3 h-3" /></button>
+                  </div>
+                </div>
               </div>
 
-              {/* Right: AI-Annotated Stream (RTMDet-x + PaddleOCR) */}
-              <div className="relative rounded-lg overflow-hidden border-2 border-emerald-500/50 bg-slate-950 aspect-video flex flex-col justify-between p-3 select-none">
-                {/* Simulated AI Road Backdrop with Bounding Boxes */}
-                <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                  <svg className="w-full h-full" viewBox="0 0 600 340">
-                    <defs>
-                      <pattern id={annoGridPatternId} width="40" height="40" patternUnits="userSpaceOnUse">
-                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(16,185,129,0.08)" strokeWidth="1" />
-                      </pattern>
-                    </defs>
-                    <rect width="600" height="340" fill={`url(#${annoGridPatternId})`} />
-                    {/* Highway Road curves */}
-                    <path d="M 50 340 L 250 120 L 350 120 L 550 340 Z" fill="#0f172a" />
-                    <line x1="300" y1="120" x2="300" y2="340" stroke="#facc15" strokeWidth="2" strokeDasharray="10 10" />
-
-                    {/* Car 1: Flagged Car */}
-                    <g transform="translate(180, 200)">
-                      <rect x="0" y="0" width="130" height="90" fill="rgba(239, 68, 68, 0.15)" stroke="#ef4444" strokeWidth="2" rx="4" />
-                      {/* Label badge */}
-                      <rect x="0" y="-22" width="130" height="20" fill="#ef4444" rx="2" />
-                      <text x="6" y="-8" fill="#ffffff" fontSize="10" fontFamily="monospace" fontWeight="bold">CAR: KL-01-CB-4092</text>
-                      {/* OCR Plate tag */}
-                      <rect x="25" y="45" width="80" height="22" fill="#ffffff" stroke="#ef4444" strokeWidth="1.5" rx="2" />
-                      <text x="32" y="60" fill="#0f172a" fontSize="10" fontFamily="monospace" fontWeight="bold">KL-01-CB-4092</text>
-                      <text x="6" y="80" fill="#fca5a5" fontSize="8" fontFamily="sans-serif">OBSERVED: HARBOR PERIMETER DWELL</text>
-                    </g>
-
-                    {/* Car 2: Normal Auto-Rickshaw */}
-                    <g transform="translate(350, 160)">
-                      <rect x="0" y="0" width="90" height="70" fill="rgba(16, 185, 129, 0.1)" stroke="#10b981" strokeWidth="1.5" rx="3" />
-                      <rect x="0" y="-18" width="90" height="16" fill="#10b981" rx="2" />
-                      <text x="4" y="-6" fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold">AUTO [99.1%]</text>
-                      <rect x="15" y="35" width="60" height="18" fill="#ffffff" stroke="#10b981" strokeWidth="1" rx="2" />
-                      <text x="18" y="48" fill="#0f172a" fontSize="8" fontFamily="monospace" fontWeight="bold">KL-01-AZ-9901</text>
-                    </g>
-
-                    {/* Car 3: Truck */}
-                    <g transform="translate(250, 130)">
-                      <rect x="0" y="0" width="60" height="45" fill="rgba(56, 189, 248, 0.1)" stroke="#38bdf8" strokeWidth="1" rx="2" />
-                      <rect x="0" y="-14" width="60" height="12" fill="#0284c7" rx="1" />
-                      <text x="3" y="-5" fill="#ffffff" fontSize="7" fontFamily="monospace">TRUCK 32km/h</text>
-                    </g>
-                  </svg>
-                </div>
-
-                {/* HUD Top Bar */}
-                <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-emerald-300">
-                  <span className="bg-slate-900/90 px-2 py-0.5 rounded border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5">
-                    <Zap className="w-3 h-3 text-emerald-400" /> RTMDet-x + PaddleOCR (GPU-0)
-                  </span>
-                  <span className="bg-red-950/80 text-red-300 px-2 py-0.5 rounded border border-red-500/40 font-bold animate-pulse">
-                    HOTLIST HIT: 1
-                  </span>
-                </div>
-
-                {/* HUD Bottom Status */}
-                <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-300 bg-slate-950/80 p-1.5 rounded border border-slate-800">
-                  <span className="text-emerald-400">FPS: 31.4 | INFERENCE LATENCY: 18.2ms</span>
-                  <span className="text-slate-400">TRACKS ACTIVE: 4 VEHICLES</span>
+              {/* Right: Vehicle Detection Feed 2 */}
+              <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex items-center justify-center select-none group">
+                <video
+                  ref={vehicle2Ref}
+                  src="/videos/Vehicle2.mp4"
+                  autoPlay
+                  muted={isVehicle2Muted}
+                  loop
+                  playsInline
+                  preload="auto"
+                  className="w-full h-full object-cover"
+                  onPlay={() => setIsVehicle2Playing(true)}
+                  onPause={() => setIsVehicle2Playing(false)}
+                  onLoadedData={() => {
+                    if (vehicle2Ref.current) {
+                      vehicle2Ref.current.muted = true;
+                      vehicle2Ref.current.play().catch(() => {});
+                    }
+                  }}
+                />
+                {!isVehicle2Playing && (
+                  <div onClick={v2Ctrl.togglePlay} className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs cursor-pointer group transition-all">
+                    <div className="p-3 rounded-full bg-sky-600/90 text-white shadow-xl group-hover:scale-110 transition-transform flex items-center justify-center">
+                      <Play className="w-6 h-6 ml-0.5" />
+                    </div>
+                    <span className="mt-2 text-[10px] font-mono font-bold text-white bg-black/70 px-2.5 py-0.5 rounded border border-white/20">CLICK TO START</span>
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-between text-[10px] font-mono text-slate-200 bg-slate-950/85 backdrop-blur-xs p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="flex items-center gap-1">
+                    <button onClick={v2Ctrl.togglePlay} className="p-1 rounded hover:bg-white/10 cursor-pointer" title={isVehicle2Playing ? 'Pause' : 'Play'}>
+                      {isVehicle2Playing ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                    </button>
+                    <button onClick={v2Ctrl.toggleMute} className="p-1 rounded hover:bg-white/10 cursor-pointer" title={isVehicle2Muted ? 'Unmute' : 'Mute'}>
+                      {isVehicle2Muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                    </button>
+                    <button onClick={v2Ctrl.restart} className="p-1 rounded hover:bg-white/10 cursor-pointer" title="Restart"><RotateCcw className="w-3 h-3" /></button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sky-400 hidden sm:inline">VEHICLE FEED 2</span>
+                    <button onClick={v2Ctrl.fullscreen} className="p-1 rounded hover:bg-white/10 cursor-pointer" title="Fullscreen"><Maximize2 className="w-3 h-3" /></button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -699,90 +825,76 @@ export default function VehicleMaritimePage() {
               </div>
             </div>
 
-            {/* Maritime Tactical Canvas with Vectors & Collision Warnings */}
-            <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-21/9 min-h-[360px] flex flex-col justify-between p-4 select-none">
-              {/* Nautical Radar Waves & Sector lines */}
-              <div className="absolute inset-0 bg-radial from-slate-900 to-slate-950">
-                <svg className="w-full h-full" viewBox="0 0 900 400">
-                  <defs>
-                    <pattern id={seaPatternId} width="60" height="60" patternUnits="userSpaceOnUse">
-                      <path d="M 0 30 Q 15 20 30 30 T 60 30" fill="none" stroke="rgba(14, 165, 233, 0.08)" strokeWidth="1" />
-                    </pattern>
-                  </defs>
-                  <rect width="900" height="400" fill={`url(#${seaPatternId})`} />
+            {/* Maritime Detection Video Stream */}
+            <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video min-h-[360px] flex items-center justify-center select-none group">
+              <video
+                ref={maritimeVideoRef}
+                src="/videos/Maritime_detection_video.mp4"
+                autoPlay
+                muted={isMaritimeMuted}
+                loop
+                playsInline
+                preload="auto"
+                className="w-full h-full object-cover"
+                onPlay={() => setIsMaritimePlaying(true)}
+                onPause={() => setIsMaritimePlaying(false)}
+                onLoadedData={() => {
+                  if (maritimeVideoRef.current) {
+                    maritimeVideoRef.current.muted = true;
+                    maritimeVideoRef.current.play().catch(() => {});
+                  }
+                }}
+              />
 
-                  {/* Concentric Radar Rings */}
-                  <circle cx="450" cy="200" r="80" fill="none" stroke="rgba(56, 189, 248, 0.15)" strokeWidth="1" strokeDasharray="4 4" />
-                  <circle cx="450" cy="200" r="160" fill="none" stroke="rgba(56, 189, 248, 0.15)" strokeWidth="1" strokeDasharray="4 4" />
-                  <circle cx="450" cy="200" r="240" fill="none" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="1" strokeDasharray="4 4" />
-                  <line x1="450" y1="0" x2="450" y2="400" stroke="rgba(56, 189, 248, 0.1)" strokeWidth="1" />
-                  <line x1="0" y1="200" x2="900" y2="200" stroke="rgba(56, 189, 248, 0.1)" strokeWidth="1" />
-
-                  {/* Coastline silhouette */}
-                  <path d="M 0 400 L 0 100 Q 150 140 220 220 T 320 380 L 320 400 Z" fill="rgba(30, 41, 59, 0.6)" stroke="#334155" strokeWidth="1.5" />
-                  <text x="50" y="360" fill="#64748b" fontSize="11" fontFamily="serif" fontWeight="bold">KOVALAM COASTLINE</text>
-
-                  {/* Collision Warning line between Vessel 1 and Vessel 2 */}
-                  <line x1="480" y1="180" x2="530" y2="215" stroke="#ef4444" strokeWidth="2.5" strokeDasharray="4 3" className="animate-pulse" />
-                  {/* Warning label */}
-                  <rect x="440" y="225" width="150" height="24" fill="#991b1b" rx="3" />
-                  <text x="448" y="241" fill="#fef2f2" fontSize="9" fontFamily="monospace" fontWeight="bold">COLLISION HAZARD: 68px</text>
-
-                  {/* Vessel 1: Fishing Trawler (Cruising 8.4kt) */}
-                  <g transform="translate(480, 180)">
-                    <circle cx="0" cy="0" r="6" fill="#38bdf8" />
-                    {/* Heading Vector */}
-                    <line x1="0" y1="0" x2="-25" y2="35" stroke="#38bdf8" strokeWidth="2" markerEnd="url(#arrow)" />
-                    <rect x="10" y="-14" width="130" height="18" fill="rgba(15, 23, 42, 0.85)" stroke="#38bdf8" strokeWidth="1" rx="2" />
-                    <text x="14" y="-2" fill="#38bdf8" fontSize="9" fontFamily="monospace" fontWeight="bold">TRAWLER-KL-902 (8.4kt)</text>
-                  </g>
-
-                  {/* Vessel 2: Speedboat (Cruising 24.2kt) */}
-                  <g transform="translate(530, 215)">
-                    <circle cx="0" cy="0" r="6" fill="#ef4444" className="animate-ping" />
-                    <circle cx="0" cy="0" r="5" fill="#ef4444" />
-                    {/* Heading Vector */}
-                    <line x1="0" y1="0" x2="10" y2="-45" stroke="#ef4444" strokeWidth="2" />
-                    <rect x="10" y="-8" width="145" height="18" fill="rgba(15, 23, 42, 0.85)" stroke="#ef4444" strokeWidth="1" rx="2" />
-                    <text x="14" y="4" fill="#ef4444" fontSize="9" fontFamily="monospace" fontWeight="bold">SPEEDBOAT-SEC-04 (24.2kt)</text>
-                  </g>
-
-                  {/* Vessel 3: Dhow (Anchored) */}
-                  <g transform="translate(360, 290)">
-                    <rect x="-5" y="-5" width="10" height="10" fill="#f59e0b" />
-                    <text x="12" y="2" fill="#f59e0b" fontSize="9" fontFamily="monospace">DHOW-AL-NOOR [ANCHORED]</text>
-                  </g>
-
-                  {/* Vessel 4: Cargo MV Kerala */}
-                  <g transform="translate(680, 110)">
-                    <polygon points="0,-8 14,0 0,8 -6,0" fill="#10b981" />
-                    <line x1="0" y1="0" x2="-30" y2="-25" stroke="#10b981" strokeWidth="1.5" />
-                    <text x="18" y="2" fill="#10b981" fontSize="9" fontFamily="monospace">MV-KERALA (11.5kt - 310°)</text>
-                  </g>
-                </svg>
-              </div>
-
-              {/* HUD Overlay Top */}
-              <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-sky-200">
-                <span className="bg-slate-900/90 px-2.5 py-1 rounded border border-sky-600/40 flex items-center gap-2">
-                  <Compass className="w-3.5 h-3.5 text-sky-400" />
-                  VIZHINJAM RADAR INTEGRATION ACTIVE
-                </span>
-                <span className="bg-red-950/90 text-red-300 px-2.5 py-1 rounded border border-red-500/50 font-bold flex items-center gap-1.5 animate-pulse">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                  PROXIMITY WARNING ACTIVE: SECTOR 4-B
-                </span>
-              </div>
-
-              {/* HUD Overlay Bottom */}
-              <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-300 bg-slate-950/80 p-2 rounded border border-slate-800">
-                <div className="flex items-center gap-3">
-                  <span className="text-sky-400 font-bold">KINEMATICS: BEARING VECTOR ESTIMATOR</span>
-                  <span className="opacity-50">|</span>
-                  <span>TTA TO CLOSEST POINT: 42 SECONDS</span>
+              {/* Click-to-play overlay when paused */}
+              {!isMaritimePlaying && (
+                <div
+                  onClick={toggleMaritimePlay}
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs cursor-pointer group transition-all"
+                >
+                  <div className="p-4 rounded-full bg-sky-600/90 text-white shadow-xl group-hover:scale-110 transition-transform flex items-center justify-center">
+                    <Play className="w-8 h-8 ml-1" />
+                  </div>
+                  <span className="mt-2.5 text-xs font-mono font-bold text-white bg-black/70 px-3 py-1 rounded border border-white/20">
+                    CLICK TO START STREAM
+                  </span>
                 </div>
-                <div className="text-amber-400 font-bold">
-                  RECOMMENDATION: ADVISE SPEEDBOAT ALTER COURSE 15° STARBOARD
+              )}
+
+              {/* Bottom controls bar */}
+              <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-between text-[10px] font-mono text-slate-200 bg-slate-950/85 backdrop-blur-xs p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={toggleMaritimePlay}
+                    className="p-1 rounded hover:bg-white/10 text-slate-200 transition-colors cursor-pointer"
+                    title={isMaritimePlaying ? 'Pause' : 'Play'}
+                  >
+                    {isMaritimePlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={toggleMaritimeMute}
+                    className="p-1 rounded hover:bg-white/10 text-slate-200 transition-colors cursor-pointer"
+                    title={isMaritimeMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {isMaritimeMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={restartMaritimeVideo}
+                    className="p-1 rounded hover:bg-white/10 text-slate-200 transition-colors cursor-pointer"
+                    title="Restart Video"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sky-400 hidden sm:inline">MARITIME DETECTION FEED — UAV-KL-02</span>
+                  <button
+                    onClick={toggleMaritimeFullscreen}
+                    className="p-1 rounded hover:bg-white/10 text-slate-200 transition-colors cursor-pointer"
+                    title="Fullscreen"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             </div>
