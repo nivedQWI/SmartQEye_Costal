@@ -3,11 +3,12 @@
 // As specified in Costal Police .docx
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   ScanFace, Users, ShieldAlert, CheckCircle, Search,
   Download, Eye, Filter, ArrowRight,
-  Radio, Clock, AlertTriangle, ShieldCheck
+  Radio, Clock, AlertTriangle, ShieldCheck,
+  Play, Pause, Volume2, VolumeX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
@@ -17,12 +18,12 @@ import { PersonReidRecord } from '@/types';
 const MOCK_REID_RECORDS: PersonReidRecord[] = [
   {
     id: 'reid-01',
-    trackId: 'TRK-9041',
+    trackId: 'ID-9041',
     confidence: 0.948,
     isWatchlistMatch: true,
     watchlistIdentity: 'Contact of Interest (Ref #88/24 - Vizhinjam)',
     watchlistNotes: 'Contact of interest flagged in coastal consignment review. Authorised watchlist reference active.',
-    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%237f1d1d"/><circle cx="100" cy="80" r="38" fill="%23fca5a5"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23fca5a5"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-9041</text></svg>',
+    faceCropUrl: '/reid/1.jpeg',
     firstSeenAt: '18:12:04 IST',
     lastSeenAt: '19:42:30 IST',
     appearanceFeatures: { upperColor: 'Red Check Shirt', lowerColor: 'Blue Denim', bag: true, helmet: false },
@@ -34,12 +35,12 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
   },
   {
     id: 'reid-02',
-    trackId: 'TRK-9048',
+    trackId: 'ID-9048',
     confidence: 0.912,
     isWatchlistMatch: true,
     watchlistIdentity: 'Contact of Interest (Ref #112/25 - Fort Station)',
     watchlistNotes: 'Flagged for port perimeter observation and verification.',
-    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23991b1b"/><circle cx="100" cy="80" r="38" fill="%23fecaca"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23fecaca"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-9048</text></svg>',
+    faceCropUrl: '/reid/2.jpeg',
     firstSeenAt: '19:15:22 IST',
     lastSeenAt: '19:38:10 IST',
     appearanceFeatures: { upperColor: 'Black Polo T-Shirt', lowerColor: 'Khaki Trousers', bag: false, helmet: false },
@@ -50,10 +51,10 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
   },
   {
     id: 'reid-03',
-    trackId: 'TRK-8812',
+    trackId: 'ID-8812',
     confidence: 0.985,
     isWatchlistMatch: false,
-    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23065f46"/><circle cx="100" cy="80" r="38" fill="%23a7f3d0"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23a7f3d0"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-8812</text></svg>',
+    faceCropUrl: '/reid/3.jpeg',
     firstSeenAt: '17:40:00 IST',
     lastSeenAt: '19:30:15 IST',
     appearanceFeatures: { upperColor: 'Yellow Kurta', lowerColor: 'White Churidhar', bag: true, helmet: false },
@@ -64,10 +65,10 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
   },
   {
     id: 'reid-04',
-    trackId: 'TRK-8830',
+    trackId: 'ID-8830',
     confidence: 0.967,
     isWatchlistMatch: false,
-    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%231e3a8a"/><circle cx="100" cy="80" r="38" fill="%23bfdbfe"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23bfdbfe"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-8830</text></svg>',
+    faceCropUrl: '/reid/4.jpeg',
     firstSeenAt: '18:50:11 IST',
     lastSeenAt: '19:40:05 IST',
     appearanceFeatures: { upperColor: 'Light Blue Linen', lowerColor: 'Navy Slacks', bag: false, helmet: false },
@@ -78,10 +79,10 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
   },
   {
     id: 'reid-05',
-    trackId: 'TRK-8902',
+    trackId: 'ID-8902',
     confidence: 0.934,
     isWatchlistMatch: false,
-    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23374151"/><circle cx="100" cy="80" r="38" fill="%23e5e7eb"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23e5e7eb"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-8902</text></svg>',
+    faceCropUrl: '/reid/5.jpeg',
     firstSeenAt: '19:02:44 IST',
     lastSeenAt: '19:36:12 IST',
     appearanceFeatures: { upperColor: 'Green T-Shirt', lowerColor: 'Cargo Shorts', bag: true, helmet: true },
@@ -91,10 +92,10 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
   },
   {
     id: 'reid-06',
-    trackId: 'TRK-8920',
+    trackId: 'ID-8920',
     confidence: 0.971,
     isWatchlistMatch: false,
-    faceCropUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%234c1d95"/><circle cx="100" cy="80" r="38" fill="%23ddd6fe"/><path d="M 40 180 C 40 130 160 130 160 180 Z" fill="%23ddd6fe"/><text x="100" y="185" fill="%23ffffff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRK-8920</text></svg>',
+    faceCropUrl: '/reid/6.jpeg',
     firstSeenAt: '19:22:18 IST',
     lastSeenAt: '19:44:00 IST',
     appearanceFeatures: { upperColor: 'White Shirt', lowerColor: 'Blue Jeans', bag: false, helmet: false },
@@ -113,7 +114,20 @@ export default function PersonReidPage() {
   const [hasBagFilter, setHasBagFilter] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<PersonReidRecord | null>(null);
   const [dispatchedAlerts, setDispatchedAlerts] = useState<string[]>([]);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
+  function togglePlay() {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) { videoRef.current.play().catch(() => {}); }
+    else { videoRef.current.pause(); }
+  }
+  function toggleMute() {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsMuted(videoRef.current.muted);
+  }
   // Filter records
   const filteredRecords = MOCK_REID_RECORDS.filter(record => {
     if (watchlistOnly && !record.isWatchlistMatch) return false;
@@ -122,8 +136,7 @@ export default function PersonReidPage() {
       const term = searchTerm.toLowerCase();
       const matchTrack = record.trackId.toLowerCase().includes(term);
       const matchIdentity = record.watchlistIdentity?.toLowerCase().includes(term);
-      const matchFeat = record.appearanceFeatures.upperColor.toLowerCase().includes(term);
-      if (!matchTrack && !matchIdentity && !matchFeat) return false;
+      if (!matchTrack && !matchIdentity) return false;
     }
     return true;
   });
@@ -133,7 +146,7 @@ export default function PersonReidPage() {
   }
 
   function handleExportCsv() {
-    const headers = ['Track ID', 'Watchlist Match', 'Identity', 'Confidence', 'First Seen', 'Last Seen', 'Upper Garment', 'Lower Garment', 'Carrying Bag', 'Hops Count'];
+    const headers = ['Track ID', 'Watchlist Match', 'Identity', 'Confidence', 'First Seen', 'Last Seen', 'Carrying Bag', 'Hops Count'];
     const rows = filteredRecords.map(r => [
       r.trackId,
       r.isWatchlistMatch ? 'YES' : 'NO',
@@ -141,8 +154,6 @@ export default function PersonReidPage() {
       `${(r.confidence * 100).toFixed(1)}%`,
       r.firstSeenAt,
       r.lastSeenAt,
-      r.appearanceFeatures.upperColor,
-      r.appearanceFeatures.lowerColor,
       r.appearanceFeatures.bag ? 'YES' : 'NO',
       r.cameraHops.length
     ]);
@@ -293,60 +304,50 @@ export default function PersonReidPage() {
               </span>
             </div>
 
-            {/* Simulated Live Video with Bounding Boxes */}
-            <div className="relative rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 aspect-video flex flex-col justify-between p-3 select-none">
-              <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                <svg className="w-full h-full" viewBox="0 0 500 300">
-                  {/* Subtle Grid */}
-                  <defs>
-                    <pattern id="reidGrid" width="30" height="30" patternUnits="userSpaceOnUse">
-                      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-                    </pattern>
-                  </defs>
-                  <rect width="500" height="300" fill="url(#reidGrid)" />
+            {/* Live Drone Video Player (Clean video without overlays) */}
+            <div className="relative aspect-video rounded-lg overflow-hidden border border-[var(--border)] bg-slate-950 flex items-center justify-center select-none group">
+              <video
+                ref={videoRef}
+                src="/videos/Person_RE_ID.mp4"
+                autoPlay
+                muted={isMuted}
+                loop
+                playsInline
+                preload="auto"
+                className="w-full h-full object-cover"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onLoadedData={() => {
+                  if (videoRef.current) {
+                    videoRef.current.muted = true;
+                    videoRef.current.play().catch(() => {});
+                  }
+                }}
+              />
 
-                  {/* Sidewalk promenade line */}
-                  <line x1="0" y1="180" x2="500" y2="240" stroke="#334155" strokeWidth="2" strokeDasharray="5 5" />
+              {/* Click to start if browser blocked autoplay */}
+              {!isPlaying && (
+                <div
+                  onClick={togglePlay}
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs cursor-pointer group transition-all"
+                >
+                  <div className="p-3 rounded-full bg-[var(--sea-600)]/90 text-white shadow-xl group-hover:scale-110 transition-transform flex items-center justify-center">
+                    <Play className="w-6 h-6 ml-0.5" />
+                  </div>
+                  <span className="mt-2 text-[10px] font-mono font-bold text-white bg-black/70 px-2.5 py-0.5 rounded border border-white/20">
+                    CLICK TO PLAY RE-ID FEED
+                  </span>
+                </div>
+              )}
 
-                  {/* Person 1: Flagged Contact of Interest (Rajan) */}
-                  <g transform="translate(130, 90)">
-                    {/* Bounding box */}
-                    <rect x="0" y="0" width="75" height="150" fill="rgba(239, 68, 68, 0.15)" stroke="#ef4444" strokeWidth="2" rx="3" />
-                    {/* Face crop box */}
-                    <rect x="22" y="10" width="32" height="36" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 2" />
-                    {/* ID Label tag */}
-                    <rect x="0" y="-22" width="135" height="20" fill="#ef4444" rx="2" />
-                    <text x="4" y="-8" fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold">TRK-9041 [WATCHLIST]</text>
-                    {/* Feature badge */}
-                    <rect x="0" y="152" width="125" height="16" fill="rgba(15, 23, 42, 0.85)" rx="2" />
-                    <text x="4" y="163" fill="#fca5a5" fontSize="7.5" fontFamily="monospace">RED CHECK / BACKPACK</text>
-                  </g>
-
-                  {/* Person 2: Normal Tourist TRK-8812 */}
-                  <g transform="translate(300, 110)">
-                    <rect x="0" y="0" width="65" height="135" fill="rgba(16, 185, 129, 0.1)" stroke="#10b981" strokeWidth="1.5" rx="3" />
-                    <rect x="18" y="8" width="28" height="32" fill="none" stroke="#10b981" strokeWidth="1" strokeDasharray="2 2" />
-                    <rect x="0" y="-18" width="85" height="16" fill="#10b981" rx="2" />
-                    <text x="4" y="-6" fill="#ffffff" fontSize="8" fontFamily="monospace" fontWeight="bold">TRK-8812 [98.5%]</text>
-                    <rect x="0" y="137" width="95" height="14" fill="rgba(15, 23, 42, 0.8)" rx="2" />
-                    <text x="4" y="147" fill="#86efac" fontSize="7" fontFamily="monospace">YELLOW / BAG</text>
-                  </g>
-                </svg>
-              </div>
-
-              {/* HUD Bar */}
-              <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-300">
-                <span className="bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700">
-                  UAV-KL-01 · 4K DOWNLINK
-                </span>
-                <span className="bg-red-950/80 text-red-300 px-2 py-0.5 rounded border border-red-500/50 font-bold animate-pulse">
-                  MATCH DETECTED: TRK-9041
-                </span>
-              </div>
-
-              <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-slate-400 bg-slate-950/80 p-1.5 rounded">
-                <span>EMBEDDING EXTRACTOR: OSNet-x1_0</span>
-                <span>DISTANCE METRIC: COSINE SIMILARITY</span>
+              {/* Minimal playback controls */}
+              <div className="absolute bottom-0 left-0 right-0 z-30 flex items-center justify-between px-3 py-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={togglePlay} className="text-white hover:text-slate-300 cursor-pointer">
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                </button>
+                <button onClick={toggleMute} className="text-white hover:text-slate-300 cursor-pointer">
+                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -354,16 +355,16 @@ export default function PersonReidPage() {
             <div className="p-3 bg-[var(--surface-muted)] rounded border border-[var(--border)] flex items-center justify-between text-xs">
               <span className="font-medium" style={{ color: 'var(--text-muted)' }}>Flagged contact in current view: <strong className="text-red-700 dark:text-red-400">Rajan (Meen Rajan)</strong></span>
               <button
-                onClick={() => handleDispatchPatrol('TRK-9041')}
-                disabled={dispatchedAlerts.includes('TRK-9041')}
+                onClick={() => handleDispatchPatrol('ID-9041')}
+                disabled={dispatchedAlerts.includes('ID-9041')}
                 className={cn(
                   "px-3 py-1.5 rounded text-xs font-mono font-bold transition-all",
-                  dispatchedAlerts.includes('TRK-9041')
+                  dispatchedAlerts.includes('ID-9041')
                     ? "bg-emerald-100 text-emerald-800 border border-emerald-300 cursor-not-allowed"
                     : "bg-red-700 hover:bg-red-800 text-white shadow-sm"
                 )}
               >
-                {dispatchedAlerts.includes('TRK-9041') ? 'RECOMMENDATION SENT' : 'RECOMMEND PATROL CHECK'}
+                {dispatchedAlerts.includes('ID-9041') ? 'RECOMMENDATION SENT' : 'RECOMMEND PATROL CHECK'}
               </button>
             </div>
           </div>
@@ -478,13 +479,10 @@ export default function PersonReidPage() {
                     </div>
                   </div>
 
-                  {/* Garment / Feature tags */}
+                  {/* Biometric / Feature tags */}
                   <div className="flex flex-wrap gap-1 text-[10px] font-mono">
-                    <span className="px-1.5 py-0.5 rounded bg-[var(--surface-muted)] border border-[var(--line)]" style={{ color: 'var(--text)' }}>
-                      {record.appearanceFeatures.upperColor}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded bg-[var(--surface-muted)] border border-[var(--line)]" style={{ color: 'var(--text)' }}>
-                      {record.appearanceFeatures.lowerColor}
+                    <span className="px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20">
+                      Vector Verified
                     </span>
                     {record.appearanceFeatures.bag && (
                       <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 font-bold">

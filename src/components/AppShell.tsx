@@ -11,7 +11,7 @@ import {
   ChevronRight, LogOut, Sun, Moon, Laptop,
   AlertTriangle, Activity, Database, Terminal, PanelLeftClose, PanelLeft,
   Car, ScanFace, ShieldAlert, AlertOctagon, Grid, Sliders, Settings2,
-  Server, Network, ScrollText, CheckSquare, PackageSearch, FolderArchive, Info,
+  Server, Network, ScrollText, CheckSquare, FolderArchive, Info,
   GraduationCap, HelpCircle, Search, ChevronDown
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
@@ -81,7 +81,6 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/person-reid',        label: 'Person Re-ID',        labelKey: 'nav_reid',           icon: ScanFace,        roles: ALL_ROLES },
       { to: '/intrusion-detection',label: 'Intrusion Geofence',  labelKey: 'nav_intrusion',      icon: ShieldAlert,     roles: ALL_ROLES },
       { to: '/anomaly-monitor',    label: 'Anomaly Monitor',     labelKey: 'nav_anomaly',        icon: AlertOctagon,    roles: ALL_ROLES },
-      { to: '/abandoned-objects',  label: 'Abandoned Objects',   labelKey: 'nav_abandoned',      icon: PackageSearch,   roles: ALL_ROLES },
     ]
   },
   {

@@ -15,7 +15,6 @@ test.describe('SmartQEye Coastal — Production Smoke Suite', () => {
     { path: '/crowd-analytics', titleSnippet: 'Crowd', keySelector: 'main' },
     { path: '/intrusion-detection', titleSnippet: 'Intrusion', keySelector: 'main' },
     { path: '/anomaly-monitor', titleSnippet: 'Anomaly', keySelector: 'main' },
-    { path: '/abandoned-objects', titleSnippet: 'Abandoned', keySelector: 'main' },
     { path: '/person-reid', titleSnippet: 'Person Re-ID', keySelector: 'main' },
     { path: '/history', titleSnippet: 'History', keySelector: 'main' },
     { path: '/incidents', titleSnippet: 'Incidents', keySelector: 'main' },

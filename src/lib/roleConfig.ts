@@ -63,7 +63,6 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfigItem> = {
       '/intrusion-detection',
       '/anomaly-monitor',
       '/fleet',
-      '/abandoned-objects',
       '/contacts',
       '/contacts/:id',
       '/incidents',

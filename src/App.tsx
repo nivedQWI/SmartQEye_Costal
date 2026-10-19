@@ -37,7 +37,6 @@ const OverviewDashboard     = lazy(() => import('@/features/overview/OverviewDas
 const FleetWallPage         = lazy(() => import('@/features/fleet/FleetWallPage'));
 const ContactsPage          = lazy(() => import('@/features/contacts/ContactsPage'));
 const ContactDetailPage     = lazy(() => import('@/features/contacts/ContactDetailPage'));
-const AbandonedObjectsPage  = lazy(() => import('@/features/abandoned/AbandonedObjectsPage'));
 const IncidentsPage         = lazy(() => import('@/features/incidents/IncidentsPage'));
 const ZonesConfigPage       = lazy(() => import('@/features/config/ZonesConfigPage'));
 const AlertConfigPage       = lazy(() => import('@/features/config/AlertConfigPage'));
@@ -130,7 +129,6 @@ export default function App() {
               <Route path="person-reid" element={<RequireRole path="/person-reid"><PersonReidPage /></RequireRole>} />
               <Route path="intrusion-detection" element={<RequireRole path="/intrusion-detection"><IntrusionDetectionPage /></RequireRole>} />
               <Route path="anomaly-monitor" element={<RequireRole path="/anomaly-monitor"><AnomalyMonitorPage /></RequireRole>} />
-              <Route path="abandoned-objects" element={<RequireRole path="/abandoned-objects"><AbandonedObjectsPage /></RequireRole>} />
 
               {/* Intelligence */}
               <Route path="contacts" element={<RequireRole path="/contacts"><ContactsPage /></RequireRole>} />
