@@ -777,7 +777,7 @@ export default function IntrusionDetectionPage() {
       {/* ── Intrusion Inspection Modal ── */}
       {inspectRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-[var(--raised)] text-[var(--text)] max-w-md w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--line)] rounded-2xl">
+          <div className="bg-[var(--raised)] text-[var(--text)] max-w-md w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--line)] rounded-2xl" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 text-red-600" />

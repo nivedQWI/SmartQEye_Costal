@@ -5,6 +5,7 @@
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Activity, Wifi, Video, Radio, HardDrive, Cpu, Zap, Database,
   Upload, CheckCircle, Trash2, BatteryCharging, Clock, MapPin,
@@ -75,6 +76,7 @@ const COMPLETED_SORTIES: CompletedSortie[] = [
 // ─── Component ───────────────────────────────────────────────
 
 export default function OverviewDashboard() {
+  const navigate = useNavigate();
   // Live KPI state (simulated with intervals)
   const [activeMission, setActiveMission] = useState(1);
   const [droneLink, setDroneLink] = useState<'UP' | 'DOWN'>('UP');
@@ -242,8 +244,19 @@ export default function OverviewDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-mono font-bold text-emerald-600">EDGE NODE ONLINE</span>
+          <button
+            onClick={() => navigate('/recorded-analysis')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold bg-[var(--raised)] hover:bg-[var(--panel)] transition-all cursor-pointer shadow-xs border-[var(--line)]"
+            title="Open Recorded Video Analysis (Muthalapozhi Breakwater Channel & Kerala Sectors)"
+          >
+            <Video className="w-3.5 h-3.5 text-amber-500" />
+            <span>Recorded Analysis (Muthalapozhi)</span>
+            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-600 font-bold ml-1">Step 3</span>
+          </button>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-mono font-bold text-emerald-600">EDGE NODE ONLINE</span>
+          </div>
         </div>
       </div>
 

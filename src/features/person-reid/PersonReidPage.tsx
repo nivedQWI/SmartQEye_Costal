@@ -514,7 +514,7 @@ export default function PersonReidPage() {
       {/* ── Contact of Interest / Re-ID Dossier Modal ── */}
       {selectedRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-[var(--raised)] text-[var(--text)] max-w-xl w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--line)] rounded-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-[var(--raised)] text-[var(--text)] max-w-xl w-full p-6 flex flex-col gap-4 shadow-2xl border border-[var(--line)] rounded-2xl max-h-[90vh] overflow-y-auto" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
@@ -533,7 +533,7 @@ export default function PersonReidPage() {
             </div>
 
             {/* Subject Overview Card */}
-            <div className="flex items-start gap-4 p-4 rounded-lg bg-[var(--surface-muted)] border border-[var(--border)]">
+            <div className="flex items-start gap-4 p-4 rounded-lg bg-[var(--surface-muted)] border border-[var(--border)]" style={{ background: "var(--panel)", borderColor: "var(--line)" }}>
               <img
                 src={selectedRecord.faceCropUrl}
                 alt={selectedRecord.trackId}
@@ -586,7 +586,7 @@ export default function PersonReidPage() {
                 {selectedRecord.cameraHops.map((hop, idx) => (
                   <div key={idx} className="relative flex items-center gap-4 pl-8 text-xs font-mono">
                     <div className="absolute left-1.5 w-3 h-3 rounded-full bg-[var(--sea-600)] dark:bg-[var(--sea-accent)] border-2 border-[var(--raised)] ring-2 ring-[var(--line)]"></div>
-                    <div className="flex-1 p-2.5 rounded bg-[var(--surface)] border border-[var(--border)] flex items-center justify-between">
+                    <div className="flex-1 p-2.5 rounded bg-[var(--surface)] border border-[var(--border)] flex items-center justify-between" style={{ background: "var(--panel)", borderColor: "var(--line)" }}>
                       <div>
                         <span className="font-bold" style={{ color: 'var(--text)' }}>{hop.droneCode}</span>
                         <span className="mx-2 opacity-50" style={{ color: 'var(--text-muted)' }}>·</span>

@@ -1403,7 +1403,7 @@ export default function AIModelsPage() {
       {/* ── Propose New Class Modal ── */}
       {isAddClassOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-xl border bg-[var(--raised)] text-[var(--text)] p-5 space-y-4 shadow-2xl" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-md rounded-xl border bg-[var(--raised)] text-[var(--text)] p-5 space-y-4 shadow-2xl" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <GitBranch className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
@@ -1505,7 +1505,7 @@ export default function AIModelsPage() {
       {/* ── Request Training Run Modal ── */}
       {isScheduleRunOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-xl border bg-[var(--raised)] text-[var(--text)] p-5 space-y-4 shadow-2xl" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-md rounded-xl border bg-[var(--raised)] text-[var(--text)] p-5 space-y-4 shadow-2xl" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <Activity className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
@@ -1610,7 +1610,7 @@ export default function AIModelsPage() {
       {/* ── Model Rollback Modal ── */}
       {isRollbackModalOpen && selectedModelForRollback && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-xl border bg-[var(--raised)] text-[var(--text)] p-5 space-y-4 shadow-2xl" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-md rounded-xl border bg-[var(--raised)] text-[var(--text)] p-5 space-y-4 shadow-2xl" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-amber-600" />

@@ -33,6 +33,7 @@ const IntrusionDetectionPage = lazy(() => import('@/features/intrusion/Intrusion
 const AnomalyMonitorPage    = lazy(() => import('@/features/anomaly/AnomalyMonitorPage'));
 const OverviewDashboard     = lazy(() => import('@/features/overview/OverviewDashboard'));
 const CoastalContextPage    = lazy(() => import('@/features/coastal-context/CoastalContextPage'));
+const RecordedAnalysisPage  = lazy(() => import('@/features/recorded-analysis/RecordedAnalysisPage'));
 
 // New Phase pages (RFP Compliance & Platform Architecture)
 const FleetWallPage         = lazy(() => import('@/features/fleet/FleetWallPage'));
@@ -117,6 +118,7 @@ export default function App() {
               <Route index element={<RequireRole path="/"><CommandCenter /></RequireRole>} />
               <Route path="overview" element={<RequireRole path="/overview"><OverviewDashboard /></RequireRole>} />
               <Route path="live" element={<RequireRole path="/live"><LiveMonitor /></RequireRole>} />
+              <Route path="recorded-analysis" element={<RequireRole path="/recorded-analysis"><RecordedAnalysisPage /></RequireRole>} />
               <Route path="alerts" element={<RequireRole path="/alerts"><AlertQueue /></RequireRole>} />
               <Route path="alerts/:id" element={<RequireRole path="/alerts/:id"><AlertDetail /></RequireRole>} />
               <Route path="map" element={<RequireRole path="/map"><MapGIS /></RequireRole>} />

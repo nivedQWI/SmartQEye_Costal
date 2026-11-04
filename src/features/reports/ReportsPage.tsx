@@ -239,8 +239,8 @@ export default function ReportsPage() {
       {generatingType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
           <div
-            className="w-full max-w-lg rounded-3xl p-6 border shadow-2xl bg-white dark:bg-[var(--raised)] space-y-4"
-            style={{ borderColor: 'var(--line)' }}
+            className="w-full max-w-lg rounded-3xl p-6 border shadow-2xl space-y-4"
+            style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
           >
             <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'var(--line)' }}>
               <div>

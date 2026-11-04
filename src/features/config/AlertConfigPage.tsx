@@ -280,7 +280,7 @@ export default function AlertConfigPage() {
       {/* Rule Edit Modal */}
       {showEditorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-xl rounded-2xl border p-6 space-y-5 shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-xl rounded-2xl border p-6 space-y-5 shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <div>
                 <span className="font-mono text-xs font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{selectedRule.code}</span>

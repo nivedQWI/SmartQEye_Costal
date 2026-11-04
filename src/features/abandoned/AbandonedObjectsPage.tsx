@@ -300,7 +300,7 @@ export default function AbandonedObjectsPage() {
       {/* Mark Cleared Confirmation Modal */}
       {showClearModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             <h3 className="font-serif text-base font-bold">Mark Stationary Object as Cleared</h3>
             <p className="text-xs opacity-70">
               Provide a verified verification reason before archiving this object from the active coastal watch queue.
@@ -353,7 +353,7 @@ export default function AbandonedObjectsPage() {
       {/* Threshold Config Drawer */}
       {showConfigDrawer && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-sm h-full p-6 space-y-5 border-l shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-sm h-full p-6 space-y-5 border-l shadow-2xl bg-[var(--raised)] text-[var(--text)]" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
               <h3 className="font-serif text-base font-bold">Stationary Dwell Thresholds</h3>
               <button

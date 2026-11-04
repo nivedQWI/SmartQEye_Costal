@@ -10,7 +10,7 @@ import {
   FileText, Shield, Cpu, Users, Radio,
   ChevronRight, LogOut, Sun, Moon, Laptop,
   AlertTriangle, Activity, Database, Terminal, PanelLeftClose, PanelLeft,
-  Car, ScanFace, ShieldAlert, AlertOctagon, Grid, Sliders, Settings2,
+  Car, ScanFace, ShieldAlert, AlertOctagon, Grid, Sliders, Settings2, Video,
   Server, Network, ScrollText, CheckSquare, FolderArchive, Info,
   GraduationCap, HelpCircle, Search, ChevronDown
 } from 'lucide-react';
@@ -65,6 +65,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/overview',           label: 'Overview Dashboard',  labelKey: 'nav_command_center', icon: Activity,        roles: ['OPERATOR'] },
       { to: '/',                   label: 'Command Center',      labelKey: 'nav_command_center', icon: LayoutDashboard, roles: ALL_ROLES },
       { to: '/live',               label: 'Live Monitor',        labelKey: 'nav_live',           icon: Monitor,         roles: ALL_ROLES },
+      { to: '/recorded-analysis',  label: 'Recorded Analysis',                                   icon: Video,           roles: ALL_ROLES },
       { to: '/fleet',              label: 'Fleet Wall',          labelKey: 'nav_fleet_wall',     icon: Grid,            roles: ALL_ROLES },
       { to: '/alerts',             label: 'Alerts',              labelKey: 'nav_alerts',         icon: Bell,            roles: ALL_ROLES, badgeKey: 'alerts' },
       { to: '/missions',           label: 'Mission Control',     labelKey: 'nav_missions',       icon: Anchor,          roles: ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN'] },

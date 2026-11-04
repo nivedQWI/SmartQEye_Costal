@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Grid2x2, Grid3x3, Maximize2, Minimize2,
   Play, Pause, SkipBack, Radio, Crosshair,
-  SlidersHorizontal, Eye, EyeOff,
+  SlidersHorizontal, Eye, EyeOff, Video,
 } from 'lucide-react';
 import { cn, formatIST, formatCoords, formatDeg, timeAgo } from '@/lib/utils';
 import { FeedStateChip, ModalityChip } from '@/components/FeedStateChip';
@@ -238,6 +238,7 @@ const LAYOUT_COLS: Record<Layout, string> = {
 // ─── Live Monitor page ────────────────────────────────────────
 
 export default function LiveMonitor() {
+  const navigate = useNavigate();
   const { feeds, activeFeedId, setActiveFeed, gridLayout, setGridLayout } = useFeedStore();
   const [focusMode, setFocusMode] = useState(false);
   const [showOverlays, setShowOverlays] = useState(true);
@@ -277,6 +278,22 @@ export default function LiveMonitor() {
         style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}
       >
         <span className="font-serif text-sm font-semibold">Live Monitor</span>
+
+        {/* View Mode Toggle: Live vs Recorded Analysis (Demo Step 3) */}
+        <div className="flex rounded-lg overflow-hidden border text-xs font-mono" style={{ borderColor: 'var(--line)' }}>
+          <button className="px-2.5 py-1 bg-[var(--sea-600)] text-white font-bold flex items-center gap-1.5 cursor-default">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live Monitor
+          </button>
+          <button
+            onClick={() => navigate('/recorded-analysis')}
+            className="px-2.5 py-1 bg-[var(--raised)] opacity-70 hover:opacity-100 transition-colors flex items-center gap-1.5 cursor-pointer hover:text-[var(--sea-accent)]"
+            title="Open Recorded Video Analysis (Muthalapozhi Breakwater Channel & Kerala Sectors)"
+          >
+            <Video className="w-3.5 h-3.5 text-amber-500" />
+            Recorded Analysis (Muthalapozhi)
+          </button>
+        </div>
 
         {/* Modality Section Filter Buttons */}
         <div className="flex rounded-lg overflow-hidden border text-xs font-mono" style={{ borderColor: 'var(--line)' }}>

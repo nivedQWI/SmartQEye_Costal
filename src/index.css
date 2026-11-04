@@ -387,7 +387,28 @@ aside nav a span {
   --color-sea-600: #2B7FA6;
   --color-ink-900: #12303F;
   --color-ink-600: #4B6572;
+  --color-raised: var(--raised);
+  --color-panel: var(--panel);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
   --font-serif: 'Fraunces', Georgia, serif;
   --font-sans: 'Manrope', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+
+/* Solid container utilities for modals & drawers */
+.modal-solid-raised {
+  background-color: var(--raised) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+
+.modal-solid-panel {
+  background-color: var(--panel) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
 }

@@ -667,7 +667,7 @@ export default function AdminPage() {
       {/* ── User Edit Drawer Modal ── */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="rounded-2xl p-6 w-full max-w-lg shadow-2xl border space-y-4 bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
+          <div className="rounded-2xl p-6 w-full max-w-lg shadow-2xl border space-y-4 bg-[var(--raised)] text-[var(--text)]" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             <h3 className="font-serif text-lg font-bold">Manage Officer Account</h3>
 
             <div className="space-y-3 text-xs">
@@ -768,7 +768,7 @@ export default function AdminPage() {
       {/* ── Matrix Justification Modal ── */}
       {pendingMatrixChange && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="rounded-2xl p-6 w-full max-w-md shadow-2xl border space-y-4 bg-[var(--raised)] text-[var(--text)]" style={{ borderColor: 'var(--line)' }}>
+          <div className="rounded-2xl p-6 w-full max-w-md shadow-2xl border space-y-4 bg-[var(--raised)] text-[var(--text)]" style={{ background: "var(--raised)", borderColor: "var(--line)" }}>
             <h3 className="font-serif text-lg font-bold">Modify Permissions Matrix</h3>
             <p className="text-xs opacity-70">
               {pendingMatrixChange.enabled ? 'Granting' : 'Revoking'} <strong className="font-mono text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{pendingMatrixChange.permission}</strong> for role <strong className="font-mono">{pendingMatrixChange.role}</strong>.
