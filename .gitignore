@@ -36,7 +36,8 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 *$py.class
-*.py
+.venv/
+venv/
 test-results/
 playwright-report/
 coverage/

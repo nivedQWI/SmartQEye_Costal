@@ -24,9 +24,10 @@ import { CoastalMap } from '@/components/CoastalMap';
 import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
 import { TacticalActionDialog, type TacticalActionType } from '@/components/TacticalActionDialog';
+import { ContactContextPanel } from '@/features/coastal-context/ContactContextPanel';
 import { cn } from '@/lib/utils';
 
-type DetailTab = 'overview' | 'track_map' | 'behaviour' | 'relationships' | 'evidence' | 'history';
+type DetailTab = 'overview' | 'track_map' | 'behaviour' | 'relationships' | 'evidence' | 'history' | 'context';
 
 // Kinematic sample points for Recharts speed & heading chart
 const KINEMATIC_SERIES = [
@@ -267,6 +268,7 @@ export default function ContactDetailPage() {
           { key: 'relationships', label: 'Relationship Graph' },
           { key: 'evidence', label: 'Evidence & CKFE' },
           { key: 'history', label: 'Mission History' },
+          { key: 'context', label: 'Context Intelligence' },
         ].map(tab => (
           <button
             key={tab.key}

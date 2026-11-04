@@ -1,4 +1,14 @@
 services:
+  context-engine:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: smartqeye-context-engine:latest
+    container_name: smartqeye-context-engine
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+
   smartqeye-coastal:
     build:
       context: .
@@ -6,6 +16,7 @@ services:
       target: runner
       args:
         - VITE_MAP_TILE_URL=${VITE_MAP_TILE_URL:-}
+        - VITE_CONTEXT_API=${VITE_CONTEXT_API:-http://localhost:8765}
     image: smartqeye-coastal:latest
     container_name: smartqeye-coastal-app
     restart: unless-stopped
@@ -35,4 +46,3 @@ services:
       - NODE_ENV=development
     profiles:
       - dev
-

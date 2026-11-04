@@ -10,6 +10,9 @@ import {
   AlertTriangle, History, CheckCircle2, ChevronRight, Scale
 } from 'lucide-react';
 import { CONTEXT_PROFILES, ZONES } from '@/lib/mockData';
+import { contextEngineApi } from '@/lib/contextEngineApi';
+import type { ContextZoneProfiles } from '@/types/contextIntelligence';
+import { useEffect } from 'react';
 import { AttentionBadge } from '@/components/AttentionBadge';
 import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
 import { cn } from '@/lib/utils';
@@ -18,7 +21,11 @@ import type { ContextProfileDetail, CoastalSeason, ApprovalState, AttentionLevel
 export default function ZonesConfigPage() {
   const [profiles, setProfiles] = useState<ContextProfileDetail[]>(CONTEXT_PROFILES);
   const [selectedProfileId, setSelectedProfileId] = useState<string>(CONTEXT_PROFILES[0].id);
-  const [activeSection, setActiveSection] = useState<'profiles' | 'comparison' | 'zones'>('profiles');
+  const [activeSection, setActiveSection] = useState<'profiles' | 'comparison' | 'zones' | 'context_engine'>('profiles');
+  const [liveProfiles, setLiveProfiles] = useState<ContextZoneProfiles | null>(null);
+  useEffect(() => {
+    contextEngineApi.profiles().then(setLiveProfiles).catch(() => {});
+  }, []);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Comparison panel state
@@ -118,6 +125,18 @@ export default function ZonesConfigPage() {
           >
             <Scale className="w-3.5 h-3.5" />
             Same Movement / Different Context
+          </button>
+          <button
+            onClick={() => setActiveSection('context_engine')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5',
+              activeSection === 'context_engine'
+                ? 'bg-[var(--panel)] text-[var(--sea-600)] shadow-xs'
+                : 'opacity-60 hover:opacity-100'
+            )}
+          >
+            <Anchor className="w-3.5 h-3.5" />
+            Context Engine Profiles
           </button>
           <button
             onClick={() => setActiveSection('zones')}
@@ -521,6 +540,77 @@ export default function ZonesConfigPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* --- SECTION 4: CONTEXT ENGINE PROFILES --- */}
+        {activeSection === 'context_engine' && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl border flex items-center justify-between" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+              <div>
+                <h3 className="font-serif text-sm font-bold flex items-center gap-2">
+                  <Anchor className="w-4 h-4 text-blue-500" />
+                  Live Context Engine Profiles (FastAPI Service :8765)
+                </h3>
+                <p className="text-xs opacity-60">
+                  Zone rules, normal operating windows, and permitted maritime behaviours loaded from context_profiles.json
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded text-xs font-mono font-bold bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
+                {liveProfiles ? Object.keys(liveProfiles).length : 4} ZONES LOADED
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {liveProfiles ? (
+                Object.entries(liveProfiles).map(([zoneId, prof]) => (
+                  <div key={zoneId} className="p-4 rounded-xl border space-y-3" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-[10px] font-mono uppercase text-blue-500 font-bold block">{zoneId}</span>
+                        <h4 className="font-serif text-sm font-bold mt-0.5">{prof.name}</h4>
+                        <span className="text-xs opacity-60 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-red-400" /> {prof.location}
+                        </span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold uppercase bg-slate-500/10 border border-slate-500/20">
+                        {prof.type}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono pt-1">
+                      <div className="p-2 rounded bg-[var(--surface)] border" style={{ borderColor: 'var(--line)' }}>
+                        <span className="opacity-50 text-[10px] block">NORMAL HOURS</span>
+                        <span className="font-bold">{prof.normal_hours[0].toString().padStart(2, '0')}:00 � {prof.normal_hours[1].toString().padStart(2, '0')}:00 IST</span>
+                      </div>
+                      <div className="p-2 rounded bg-[var(--surface)] border" style={{ borderColor: 'var(--line)' }}>
+                        <span className="opacity-50 text-[10px] block">BASE ATTENTION</span>
+                        <span className="font-bold text-amber-500">{prof.base_attention} / 100</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-mono uppercase opacity-50 block mb-1">Permitted Behaviours</span>
+                      <div className="flex flex-wrap gap-1">
+                        {prof.allowed_behaviours.length === 0 ? (
+                          <span className="text-[11px] font-mono italic opacity-50">None (all movements evaluated)</span>
+                        ) : (
+                          prof.allowed_behaviours.map((b) => (
+                            <span key={b} className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              ? {b.replace(/_/g, ' ')}
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-2 p-8 text-center text-xs opacity-60 font-mono">
+                  Connecting to Context Engine on port 8765...
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -1,0 +1,45 @@
+﻿{
+  "KOVALAM_WATERSPORTS": {
+    "name": "Kovalam Tourism / Water-Sports Zone",
+    "location": "Kovalam, Thiruvananthapuram",
+    "type": "tourism",
+    "normal_hours": [6, 19],
+    "allowed_behaviours": [
+      "repeated_turns",
+      "shoreline_approach",
+      "high_speed"
+    ],
+    "base_attention": 5
+  },
+
+  "FISHING_ZONE": {
+    "name": "Fishing / Landing Activity Zone",
+    "location": "Thiruvananthapuram Coastal Area",
+    "type": "fishing",
+    "normal_hours": [4, 20],
+    "allowed_behaviours": [
+      "vessel_clustering",
+      "shoreline_approach",
+      "low_speed_dwell"
+    ],
+    "base_attention": 5
+  },
+
+  "MONITORED_COASTAL_ZONE": {
+    "name": "Police Monitored Coastal Zone",
+    "location": "Thiruvananthapuram Coastal Area",
+    "type": "monitored",
+    "normal_hours": [6, 18],
+    "allowed_behaviours": [],
+    "base_attention": 20
+  },
+
+  "RESTRICTED_ZONE": {
+    "name": "Restricted Coastal Zone",
+    "location": "Police-Defined Restricted Area",
+    "type": "restricted",
+    "normal_hours": [0, 24],
+    "allowed_behaviours": [],
+    "base_attention": 40
+  }
+}

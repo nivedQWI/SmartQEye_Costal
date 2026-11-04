@@ -89,6 +89,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/contacts',           label: 'Contacts',            labelKey: 'nav_contacts',       icon: Radio,           roles: ALL_ROLES, badgeKey: 'contacts' },
       { to: '/incidents',          label: 'Incident Records',    labelKey: 'nav_incidents',      icon: FolderArchive,   roles: ALL_ROLES },
+      { to: '/coastal-context',    label: 'Coastal Contact Intel',                                 icon: Anchor,          roles: ['OPERATOR', 'SUPERVISOR'] },
     ]
   },
   {

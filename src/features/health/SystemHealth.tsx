@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, Cpu, Database, HardDrive, Server,
-  Wifi, WifiOff, Thermometer, Zap, Clock
+  Wifi, WifiOff, Thermometer, Zap, Clock, Anchor
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis,
@@ -20,6 +20,7 @@ import { healthApi } from '@/lib/api';
 import { useHealthStore, useAuthStore } from '@/lib/store';
 import { can } from '@/lib/roleConfig';
 import { simulator } from '@/lib/simulator';
+import { contextEngineApi } from '@/lib/contextEngineApi';
 import type { SystemHealth } from '@/types';
 
 // ─── SVG Donut Gauge Component ────────────────────────────────
@@ -99,6 +100,8 @@ export default function SystemHealth() {
   const { user, devRole } = useAuthStore();
   const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const [toast, setToast] = useState<string | null>(null);
+  const [ctxEngineHealth, setCtxEngineHealth] = useState<{ status: string; version: string } | null>(null);
+  const [ctxOnline, setCtxOnline] = useState<boolean | null>(null);
 
   function handleRestartNode() {
     setToast('Node TVM-EDGE-PRIMARY reboot sequence initiated');
@@ -109,6 +112,19 @@ export default function SystemHealth() {
     setToast('Hardware sensor and database sync completed');
     setTimeout(() => setToast(null), 3500);
   }
+
+  // Context Engine health check
+  useEffect(() => {
+    const check = () => {
+      contextEngineApi.health().then(h => {
+        setCtxOnline(h != null && h.status === 'ok');
+        if (h) setCtxEngineHealth({ status: h.status, version: h.version });
+      });
+    };
+    check();
+    const id = setInterval(check, 15000);
+    return () => clearInterval(id);
+  }, []);
 
   const { data: health = storeHealth } = useQuery({
     queryKey: ['system-health'],

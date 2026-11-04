@@ -32,6 +32,7 @@ const PersonReidPage        = lazy(() => import('@/features/person-reid/PersonRe
 const IntrusionDetectionPage = lazy(() => import('@/features/intrusion/IntrusionDetectionPage'));
 const AnomalyMonitorPage    = lazy(() => import('@/features/anomaly/AnomalyMonitorPage'));
 const OverviewDashboard     = lazy(() => import('@/features/overview/OverviewDashboard'));
+const CoastalContextPage    = lazy(() => import('@/features/coastal-context/CoastalContextPage'));
 
 // New Phase pages (RFP Compliance & Platform Architecture)
 const FleetWallPage         = lazy(() => import('@/features/fleet/FleetWallPage'));
@@ -133,6 +134,7 @@ export default function App() {
               {/* Intelligence */}
               <Route path="contacts" element={<RequireRole path="/contacts"><ContactsPage /></RequireRole>} />
               <Route path="contacts/:id" element={<RequireRole path="/contacts/:id"><ContactDetailPage /></RequireRole>} />
+              <Route path="coastal-context" element={<RequireRole path="/coastal-context"><CoastalContextPage /></RequireRole>} />
 
               {/* Evidence & Review */}
               <Route path="incidents" element={<RequireRole path="/incidents"><IncidentsPage /></RequireRole>} />
