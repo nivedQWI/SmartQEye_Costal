@@ -7,9 +7,10 @@ import { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import type { Map as MLMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { Alert } from '@/types';
+import type { Alert, Zone } from '@/types';
 import { useMapStore } from '@/lib/store';
 import { ZONES, ALERTS, INITIAL_TELEMETRY, KERALA_COASTAL_SECTORS } from '@/lib/mockData';
+import { ACTIVE_MISSION_DRONES, KERALA_SEAPORTS, type ActiveDroneMission } from '@/lib/coastalPortsData';
 
 // OpenStreetMap (OSM) Tile Provider URL
 const DEFAULT_OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -53,11 +54,12 @@ function buildHoverPopupHTML(data: {
   droneId: string;
   missionId: string;
   locationName: string;
-  timestamp: string | Date;
-  badgeType: 'DRONE' | 'ALERT' | 'ZONE';
+  operatorName?: string;
+  timestamp?: string | Date;
+  badgeType?: 'DRONE' | 'ALERT' | 'ZONE';
   extraTitle?: string;
 }): string {
-  const dateObj = typeof data.timestamp === 'string' ? new Date(data.timestamp) : data.timestamp;
+  const dateObj = data.timestamp ? (typeof data.timestamp === 'string' ? new Date(data.timestamp) : data.timestamp) : new Date();
   const formattedDate = dateObj.toLocaleString('en-IN', {
     timeZone: 'Asia/Kolkata',
     day: '2-digit',
@@ -69,56 +71,67 @@ function buildHoverPopupHTML(data: {
     hour12: false,
   }) + ' IST';
 
-  const typeLabel = data.badgeType === 'DRONE' ? 'UAV PATROL' : data.badgeType === 'ALERT' ? 'COASTAL ALERT' : 'COASTAL ZONE';
-  const typeBg = data.badgeType === 'ALERT' ? '#C8352E' : data.badgeType === 'ZONE' ? '#E06A3B' : '#2B7FA6';
+  const isAlert = data.badgeType === 'ALERT';
+  const isZone = data.badgeType === 'ZONE';
+  const typeLabel = isAlert ? 'COASTAL ALERT' : isZone ? 'COASTAL GEOFENCE' : 'ACTIVE MISSION DRONE';
+  const typeBg = isAlert ? '#C8352E' : isZone ? '#E06A3B' : '#0284c7';
 
   return `
     <div style="
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      padding: 10px 12px;
-      min-width: 250px;
-      max-width: 320px;
-      background: #0d1e2d;
+      padding: 12px 14px;
+      min-width: 270px;
+      max-width: 340px;
+      background: #091724;
       color: #e2e8f0;
-      border: 1px solid rgba(43, 127, 166, 0.45);
-      border-radius: 8px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
-      line-height: 1.4;
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      border-radius: 10px;
+      box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.85);
+      line-height: 1.45;
       pointer-events: none;
     ">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-        <span style="background: ${typeBg}; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px; font-family: monospace;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 6px;">
+        <span style="background: ${typeBg}; color: #ffffff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.6px; font-family: monospace;">
           ${typeLabel}
         </span>
-        ${data.extraTitle ? `<span style="font-size: 11px; font-weight: 600; color: #94a3b8; font-family: monospace;">${data.extraTitle}</span>` : ''}
+        <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #4ade80; font-family: monospace; font-weight: 700;">
+          <span style="width: 6px; height: 6px; border-radius: 50%; background: #4ade80; display: inline-block; box-shadow: 0 0 6px #4ade80;"></span> LIVE
+        </span>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11px;">
-        <div style="display: flex; justify-content: space-between; gap: 8px;">
-          <span style="color: #94a3b8; font-weight: 500;">Drone ID:</span>
-          <span style="color: #38bdf8; font-weight: 700; font-family: monospace;">${data.droneId}</span>
+      <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <span style="color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">DRONE ID:</span>
+          <span style="color: #38bdf8; font-weight: 800; font-family: monospace; font-size: 12px;">${data.droneId}</span>
         </div>
 
-        <div style="display: flex; justify-content: space-between; gap: 8px;">
-          <span style="color: #94a3b8; font-weight: 500;">Mission ID:</span>
-          <span style="color: #fbbf24; font-weight: 600; font-family: monospace;">${data.missionId}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <span style="color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">MISSION ID:</span>
+          <span style="color: #fbbf24; font-weight: 700; font-family: monospace; font-size: 11px;">${data.missionId}</span>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 2px;">
-          <span style="color: #94a3b8; font-weight: 500;">Location:</span>
-          <span style="color: #f1f5f9; font-weight: 600; font-size: 11px; line-height: 1.3;">"${data.locationName}"</span>
+        <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 1px;">
+          <span style="color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">LOCATION:</span>
+          <span style="color: #f8fafc; font-weight: 600; font-size: 11px; line-height: 1.35;">${data.locationName}</span>
         </div>
 
-        <div style="display: flex; justify-content: space-between; gap: 8px; margin-top: 3px; padding-top: 5px; border-top: 1px dashed rgba(255,255,255,0.12); font-size: 10px;">
-          <span style="color: #64748b;">Time & Date:</span>
-          <span style="color: #cbd5e1; font-family: monospace;">${formattedDate}</span>
+        ${data.operatorName ? `
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 1px;">
+          <span style="color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">OPERATOR NAME:</span>
+          <span style="color: #a7f3d0; font-weight: 700; font-size: 11px;">${data.operatorName}</span>
+        </div>
+        ` : ''}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.15); font-size: 10px;">
+          <span style="color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px;">TIME DATE:</span>
+          <span style="color: #e2e8f0; font-family: monospace; font-weight: 600;">${formattedDate}</span>
         </div>
       </div>
     </div>
   `;
 }
 
-interface CoastalMapProps {
+export interface CoastalMapProps {
   height?: string;
   className?: string;
   interactive?: boolean;
@@ -131,15 +144,25 @@ interface CoastalMapProps {
   onAlertClick?: (alertId: string) => void;
   onContactClick?: (contactId: string) => void;
   onZoneClick?: (zoneId: string) => void;
-  /** Fired when a UAV PATROL drone marker is clicked (feedId, e.g. 'f-01'). */
+  /** Fired when an active drone marker is clicked (feedId, e.g. 'f-01'). */
   onDroneClick?: (feedId: string) => void;
   followFeedId?: string;
   /** When this changes, the map flies to the given centre/zoom. */
   focus?: { center: [number, number]; zoom: number } | null;
   /** Show ONLY this drone (used by the Live Monitor focus mini-map). */
-  singleDrone?: { feedId: string; uavCode: string; missionCode: string; locationName: string; lat: number; lon: number; headingDeg?: number };
+  singleDrone?: { feedId: string; uavCode: string; missionCode: string; locationName: string; lat: number; lon: number; headingDeg?: number; operatorName?: string };
   /** Highlight and pin an exact alert incident */
   highlightAlert?: Alert | null;
+  /** Selected port filter ID (e.g. 'ALL', 'VIZHINJAM', 'KOCHI', etc.) */
+  selectedPortId?: string;
+  /** Whether polygon drawing mode is active */
+  isDrawingPolygon?: boolean;
+  /** Array of [lon, lat] coordinates placed by user during polygon draw */
+  drawingVertices?: [number, number][];
+  /** Callback when user clicks map while in polygon draw mode */
+  onMapClickCoord?: (coord: [number, number]) => void;
+  /** Custom user-created zones to render permanently on map */
+  customZones?: Zone[];
 }
 
 export function CoastalMap({
@@ -157,16 +180,25 @@ export function CoastalMap({
   focus,
   singleDrone,
   highlightAlert,
+  selectedPortId = 'ALL',
+  isDrawingPolygon = false,
+  drawingVertices = [],
+  onMapClickCoord,
+  customZones = [],
 }: CoastalMapProps) {
   const mapRef = useRef<MLMap | null>(null);
-  // Keep latest callbacks in refs — markers are created once inside the map 'load'
-  // handler, so reading props directly there would capture stale closures.
   const onAlertClickRef = useRef(onAlertClick);
   const onDroneClickRef = useRef(onDroneClick);
   const onZoneClickRef = useRef(onZoneClick);
+  const onMapClickCoordRef = useRef(onMapClickCoord);
+  const isDrawingPolygonRef = useRef(isDrawingPolygon);
+
   onAlertClickRef.current = onAlertClick;
   onDroneClickRef.current = onDroneClick;
   onZoneClickRef.current = onZoneClick;
+  onMapClickCoordRef.current = onMapClickCoord;
+  isDrawingPolygonRef.current = isDrawingPolygon;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const { layers, dronePositions } = useMapStore();
   const alertMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -178,16 +210,24 @@ export function CoastalMap({
     uavCode: string;
     missionCode: string;
     locationName: string;
+    operatorName: string;
     lat: number;
     lon: number;
-  }>>({
-    'f-01': { uavCode: 'UAV-01', missionCode: 'M-2026-0416', locationName: 'Kochi Port & Naval Base Sector, Ernakulam', lat: 9.965, lon: 76.230 },
-    'f-03': { uavCode: 'UAV-03', missionCode: 'M-2026-0415', locationName: 'Vizhinjam International Seaport, Thiruvananthapuram', lat: 8.382, lon: 76.980 },
-    'f-05': { uavCode: 'UAV-05', missionCode: 'M-2026-0417', locationName: 'Alappuzha Beach & Pier Sector, Alappuzha', lat: 9.492, lon: 76.320 },
-    'f-07': { uavCode: 'UAV-04', missionCode: 'M-2026-0418', locationName: 'Azhikkal Port Sector, Kannur', lat: 11.935, lon: 75.312 },
-    'f-09': { uavCode: 'UAV-06', missionCode: 'M-2026-0419', locationName: 'Bekal Fort Coastal Sector, Kasaragod', lat: 12.392, lon: 75.032 },
-    'f-11': { uavCode: 'UAV-02', missionCode: 'M-2026-0414', locationName: 'Beypore Deep Harbour Sector, Kozhikode', lat: 11.168, lon: 75.802 },
-  });
+  }>>({});
+
+  // Initialize droneDataRef with all ACTIVE_MISSION_DRONES
+  useEffect(() => {
+    ACTIVE_MISSION_DRONES.forEach(d => {
+      droneDataRef.current[d.feedId] = {
+        uavCode: d.droneId,
+        missionCode: d.missionId,
+        locationName: d.locationName,
+        operatorName: d.operatorName,
+        lat: d.lat,
+        lon: d.lon,
+      };
+    });
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -209,26 +249,30 @@ export function CoastalMap({
 
     mapRef.current = map;
 
-    // Add navigation controls (zoom in, zoom out, compass reset)
     if (interactive) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
       map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
     }
 
-    // Gracefully handle any tile loading warnings
     map.on('error', (e) => {
-      // Ignore normal abort errors during rapid panning
       if (e?.error?.message?.includes('aborted')) return;
       console.warn('MapLibre notice:', e?.error?.message || e);
+    });
+
+    map.on('click', (e) => {
+      if (isDrawingPolygonRef.current) {
+        onMapClickCoordRef.current?.([e.lngLat.lng, e.lngLat.lat]);
+      }
     });
 
     map.on('load', () => {
       map.resize();
 
-      if (showZones) addZones(map);
+      if (showZones) addZones(map, [...ZONES, ...customZones]);
       if (showAlerts) addAlertPins(map);
-      if (showDrones) addDroneMarkers(map);
+      if (showDrones) renderActiveMissionDrones(map, selectedPortId);
       setupInteractions(map);
+      setupDrawingLayers(map);
 
       if (highlightAlert) {
         map.jumpTo({ center: [highlightAlert.event.location.lon, highlightAlert.event.location.lat], zoom: 14 });
@@ -239,7 +283,6 @@ export function CoastalMap({
       setTimeout(() => map.resize(), 400);
     });
 
-    // Auto-resize observer to handle panel collapses and flexbox layout changes
     const resizeObserver = new ResizeObserver(() => {
       if (mapRef.current) {
         mapRef.current.resize();
@@ -259,14 +302,36 @@ export function CoastalMap({
     };
   }, []);
 
-  // Fly to a requested focus (e.g. port selected in the header dropdown)
+  // Update cursor based on drawing mode
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !focus) return;
-    map.flyTo({ center: focus.center, zoom: focus.zoom, duration: 1200, essential: true });
-  }, [focus?.center[0], focus?.center[1], focus?.zoom]);
+    if (!map) return;
+    map.getCanvas().style.cursor = isDrawingPolygon ? 'crosshair' : '';
+  }, [isDrawingPolygon]);
 
-  // Fly to highlighted alert on change and ensure pin is placed
+  // Fly to port focus when focus prop or selectedPortId changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (focus) {
+      map.flyTo({ center: focus.center, zoom: focus.zoom, duration: 1200, essential: true });
+    } else if (selectedPortId) {
+      const port = KERALA_SEAPORTS.find(p => p.id === selectedPortId);
+      if (port) {
+        map.flyTo({ center: port.center, zoom: port.zoom, duration: 1200, essential: true });
+      }
+    }
+  }, [focus?.center[0], focus?.center[1], focus?.zoom, selectedPortId]);
+
+  // Re-filter active mission drones when selectedPortId changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded() || !showDrones) return;
+    renderActiveMissionDrones(map, selectedPortId);
+  }, [selectedPortId, showDrones]);
+
+  // Fly to highlighted alert on change
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded() || !highlightAlert) return;
@@ -279,59 +344,168 @@ export function CoastalMap({
   useEffect(() => {
     if (!mapRef.current || !showDrones || !layers.drones || singleDrone) return;
     Object.entries(dronePositions).forEach(([feedId, pos]) => {
-      updateDroneMarker(feedId, pos.lat, pos.lon, pos.headingDeg);
+      // Only update if marker exists for this feed (active port filter)
+      if (droneMarkersRef.current[feedId]) {
+        updateDroneMarker(feedId, pos.lat, pos.lon, pos.headingDeg);
+      }
     });
   }, [dronePositions, showDrones, layers.drones]);
 
-  // Synchronize layer visibility from useMapStore
+  // Update custom zones when added
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded() || !showZones) return;
+    addZones(map, [...ZONES, ...customZones]);
+  }, [customZones, showZones]);
+
+  // Update user drawing polygon layer in real-time
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    // Toggle Zones
-    ZONES.forEach(zone => {
-      const fillId = `zone-fill-${zone.id}`;
-      const borderId = `zone-border-${zone.id}`;
-      const visibility = (showZones && layers.zones) ? 'visible' : 'none';
-      if (map.getLayer(fillId)) map.setLayoutProperty(fillId, 'visibility', visibility);
-      if (map.getLayer(borderId)) map.setLayoutProperty(borderId, 'visibility', visibility);
+    const source = map.getSource('user-drawn-geofence') as maplibregl.GeoJSONSource | undefined;
+    if (!source) return;
+
+    if (!isDrawingPolygon || drawingVertices.length === 0) {
+      source.setData({ type: 'FeatureCollection', features: [] });
+      return;
+    }
+
+    const features: GeoJSON.Feature[] = [];
+
+    // Polygon fill and outline if >= 3 vertices
+    if (drawingVertices.length >= 3) {
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[...drawingVertices, drawingVertices[0]]],
+        },
+        properties: {},
+      });
+    }
+
+    // Line connecting vertices if >= 2 vertices
+    if (drawingVertices.length >= 2) {
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: drawingVertices,
+        },
+        properties: {},
+      });
+    }
+
+    // Point circles on each vertex with sequence index
+    drawingVertices.forEach((coord, idx) => {
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: coord,
+        },
+        properties: { index: idx + 1 },
+      });
     });
 
-    // Toggle Alerts
-    alertMarkersRef.current.forEach(m => {
-      const el = m.getElement();
-      el.style.display = (showAlerts && layers.alerts) ? 'block' : 'none';
+    source.setData({
+      type: 'FeatureCollection',
+      features,
+    });
+  }, [isDrawingPolygon, drawingVertices]);
+
+  function setupDrawingLayers(map: MLMap) {
+    if (map.getSource('user-drawn-geofence')) return;
+
+    map.addSource('user-drawn-geofence', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
     });
 
-    // Toggle Drones
-    Object.values(droneMarkersRef.current).forEach(m => {
-      const el = m.getElement();
-      el.style.display = (showDrones && layers.drones) ? 'block' : 'none';
+    map.addLayer({
+      id: 'user-drawn-fill',
+      type: 'fill',
+      source: 'user-drawn-geofence',
+      filter: ['==', '$type', 'Polygon'],
+      paint: {
+        'fill-color': '#0284c7',
+        'fill-opacity': 0.35,
+      },
     });
-  }, [layers, showZones, showAlerts, showDrones]);
+
+    map.addLayer({
+      id: 'user-drawn-line',
+      type: 'line',
+      source: 'user-drawn-geofence',
+      paint: {
+        'line-color': '#38bdf8',
+        'line-width': 3,
+        'line-dasharray': [2, 1],
+      },
+    });
+
+    map.addLayer({
+      id: 'user-drawn-points',
+      type: 'circle',
+      source: 'user-drawn-geofence',
+      filter: ['==', '$type', 'Point'],
+      paint: {
+        'circle-radius': 6,
+        'circle-color': '#ffffff',
+        'circle-stroke-color': '#0284c7',
+        'circle-stroke-width': 2.5,
+      },
+    });
+  }
+
+  function renderActiveMissionDrones(map: MLMap, portId: string = 'ALL') {
+    // Clear existing drone markers
+    Object.values(droneMarkersRef.current).forEach(m => m.remove());
+    droneMarkersRef.current = {};
+
+    if (singleDrone) {
+      droneDataRef.current[singleDrone.feedId] = {
+        uavCode: singleDrone.uavCode,
+        missionCode: singleDrone.missionCode,
+        locationName: singleDrone.locationName,
+        operatorName: singleDrone.operatorName || 'Duty Patrol Officer',
+        lat: singleDrone.lat,
+        lon: singleDrone.lon,
+      };
+      updateDroneMarker(singleDrone.feedId, singleDrone.lat, singleDrone.lon, singleDrone.headingDeg ?? 0);
+      return;
+    }
+
+    // Filter by port
+    const activeList = portId === 'ALL'
+      ? ACTIVE_MISSION_DRONES
+      : ACTIVE_MISSION_DRONES.filter(d => d.portId === portId);
+
+    activeList.forEach(drone => {
+      droneDataRef.current[drone.feedId] = {
+        uavCode: drone.droneId,
+        missionCode: drone.missionId,
+        locationName: drone.locationName,
+        operatorName: drone.operatorName,
+        lat: drone.lat,
+        lon: drone.lon,
+      };
+      updateDroneMarker(drone.feedId, drone.lat, drone.lon, drone.headingDeg);
+    });
+  }
 
   function updateDroneMarker(feedId: string, lat: number, lon: number, headingDeg: number) {
     const map = mapRef.current;
     if (!map) return;
 
-    // Update internal reference
     if (droneDataRef.current[feedId]) {
       droneDataRef.current[feedId].lat = lat;
       droneDataRef.current[feedId].lon = lon;
-    } else {
-      const initial = INITIAL_TELEMETRY[feedId];
-      droneDataRef.current[feedId] = {
-        uavCode: initial?.uavCode ?? feedId.replace('f-', 'UAV-'),
-        missionCode: initial?.missionCode ?? 'M-2026-0415',
-        locationName: initial?.locationName ?? 'Kerala Coastal Waters',
-        lat,
-        lon,
-      };
     }
 
     if (droneMarkersRef.current[feedId]) {
       droneMarkersRef.current[feedId].setLngLat([lon, lat]);
-      // Rotate the inner glyph only — MapLibre owns the marker element's transform.
       const glyph = droneMarkersRef.current[feedId].getElement().firstElementChild as HTMLElement | null;
       if (glyph) glyph.style.transform = `rotate(${headingDeg}deg)`;
     } else {
@@ -346,31 +520,36 @@ export function CoastalMap({
   function createDroneElement(feedId: string, headingDeg: number, _coords: [number, number]): HTMLElement {
     const el = document.createElement('div');
     el.style.cursor = 'pointer';
-    el.title = 'Open this drone feed in Live Monitor';
+    el.title = 'Active Mission Drone';
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       hoverPopupRef.current?.remove();
       onDroneClickRef.current?.(feedId);
     });
+
+    const info = droneDataRef.current[feedId] || { uavCode: 'UAV-01' };
+    const shortCode = info.uavCode.replace('UAV-', 'U');
+
     el.innerHTML = `
-      <svg style="transform: rotate(${headingDeg}deg)" width="34" height="34" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="16" r="14" fill="#0284c7" fill-opacity="0.95" stroke="white" stroke-width="2" style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.55))"/>
+      <svg style="transform: rotate(${headingDeg}deg)" width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="14" fill="#0284c7" fill-opacity="0.95" stroke="white" stroke-width="2" style="filter: drop-shadow(0 2px 7px rgba(0,0,0,0.65))"/>
         <path d="M16 6 L13 17 L16 15 L19 17 Z" fill="#ffffff"/>
         <circle cx="16" cy="16" r="2.5" fill="#facc15"/>
-        <text x="16" y="27" text-anchor="middle" font-size="6.5" font-weight="bold" fill="white" font-family="monospace">${feedId.replace('f-', 'U')}</text>
+        <text x="16" y="27" text-anchor="middle" font-size="6.5" font-weight="bold" fill="white" font-family="monospace">${shortCode}</text>
       </svg>
     `;
 
-    // ── Mouse Hover Popup for Drones ────────────────────────────
+    // ── Mouse Hover Popup with DRONE ID, MISSION ID, LOCATION, OPERATOR NAME, TIME DATE ──
     el.addEventListener('mouseenter', () => {
       const map = mapRef.current;
       if (!map) return;
       hoverPopupRef.current?.remove();
 
       const data = droneDataRef.current[feedId] ?? {
-        uavCode: feedId.replace('f-', 'UAV-'),
+        uavCode: 'UAV-01',
         missionCode: 'M-2026-0415',
         locationName: 'Kerala Coastal Patrol Sector',
+        operatorName: 'Inspector Duty Officer',
         lat: 10.0,
         lon: 76.2,
       };
@@ -386,9 +565,9 @@ export function CoastalMap({
           droneId: data.uavCode,
           missionId: data.missionCode,
           locationName: data.locationName,
+          operatorName: data.operatorName,
           timestamp: new Date(),
           badgeType: 'DRONE',
-          extraTitle: feedId.toUpperCase(),
         }))
         .addTo(map);
 
@@ -403,11 +582,22 @@ export function CoastalMap({
     return el;
   }
 
-  function addZones(map: MLMap) {
-    ZONES.forEach(zone => {
-      if (map.getSource(`zone-${zone.id}`)) return;
+  function addZones(map: MLMap, zoneList: Zone[]) {
+    zoneList.forEach(zone => {
+      const sourceId = `zone-${zone.id}`;
+      const fillId = `zone-fill-${zone.id}`;
+      const borderId = `zone-border-${zone.id}`;
 
-      map.addSource(`zone-${zone.id}`, {
+      if (map.getSource(sourceId)) {
+        (map.getSource(sourceId) as maplibregl.GeoJSONSource).setData({
+          type: 'Feature',
+          geometry: zone.geometry,
+          properties: { code: zone.code, name: zone.name, type: zone.type },
+        });
+        return;
+      }
+
+      map.addSource(sourceId, {
         type: 'geojson',
         data: {
           type: 'Feature',
@@ -417,21 +607,21 @@ export function CoastalMap({
       });
 
       map.addLayer({
-        id: `zone-fill-${zone.id}`,
+        id: fillId,
         type: 'fill',
-        source: `zone-${zone.id}`,
+        source: sourceId,
         paint: {
-          'fill-color': zone.color,
+          'fill-color': zone.color || '#C8352E',
           'fill-opacity': 0.25,
         },
       });
 
       map.addLayer({
-        id: `zone-border-${zone.id}`,
+        id: borderId,
         type: 'line',
-        source: `zone-${zone.id}`,
+        source: sourceId,
         paint: {
-          'line-color': zone.color,
+          'line-color': zone.color || '#C8352E',
           'line-width': 2.5,
           'line-dasharray': zone.type === 'RESTRICTED' ? [4, 2] : [1],
         },
@@ -509,7 +699,6 @@ export function CoastalMap({
     inner.textContent = '!';
     el.appendChild(inner);
 
-    // ── Mouse Hover Popup for Alerts ────────────────────────────
     el.addEventListener('mouseenter', () => {
       const map = mapRef.current;
       if (!map) return;
@@ -527,6 +716,7 @@ export function CoastalMap({
           droneId: alert.event.uav?.code || 'UAV-01',
           missionId: alert.event.mission?.code || 'M-2026-0415',
           locationName: loc.name || alert.event.zone?.name || 'Kerala Coastline Sector',
+          operatorName: 'Inspector Coastal Surveillance Unit',
           timestamp: alert.event.occurredAt || alert.createdAt,
           badgeType: 'ALERT',
           extraTitle: alert.alertCode,
@@ -544,36 +734,8 @@ export function CoastalMap({
     return el;
   }
 
-  function addDroneMarkers(_map: MLMap) {
-    if (singleDrone) {
-      droneDataRef.current = {
-        [singleDrone.feedId]: {
-          uavCode: singleDrone.uavCode,
-          missionCode: singleDrone.missionCode,
-          locationName: singleDrone.locationName,
-          lat: singleDrone.lat,
-          lon: singleDrone.lon,
-        },
-      };
-      updateDroneMarker(singleDrone.feedId, singleDrone.lat, singleDrone.lon, singleDrone.headingDeg ?? 0);
-      return;
-    }
-    const initialPositions = [
-      { feedId: 'f-01', lat: 9.965, lon: 76.230, heading: 45 },
-      { feedId: 'f-03', lat: 8.382, lon: 76.980, heading: 195 },
-      { feedId: 'f-05', lat: 9.492, lon: 76.320, heading: 320 },
-      { feedId: 'f-07', lat: 11.935, lon: 75.312, heading: 110 },
-      { feedId: 'f-09', lat: 12.392, lon: 75.032, heading: 270 },
-      { feedId: 'f-11', lat: 11.168, lon: 75.802, heading: 180 },
-    ];
-    initialPositions.forEach(({ feedId, lat, lon, heading }) => {
-      updateDroneMarker(feedId, lat, lon, heading);
-    });
-  }
-
   function setupInteractions(map: MLMap) {
     ZONES.forEach(zone => {
-      // Find matching sector for drone / mission metadata
       const matchingSector = KERALA_COASTAL_SECTORS.find(s =>
         zone.name.toLowerCase().includes(s.name.split(' ')[0].toLowerCase()) ||
         s.name.toLowerCase().includes(zone.name.split(' ')[0].toLowerCase())
@@ -581,8 +743,8 @@ export function CoastalMap({
 
       map.on('click', `zone-fill-${zone.id}`, () => onZoneClickRef.current?.(zone.id));
 
-      // ── Mouse Hover Popup for Zones ───────────────────────────
       map.on('mousemove', `zone-fill-${zone.id}`, (e) => {
+        if (isDrawingPolygonRef.current) return;
         map.getCanvas().style.cursor = 'pointer';
         hoverPopupRef.current?.remove();
 
@@ -597,6 +759,7 @@ export function CoastalMap({
             droneId: matchingSector.uavCode,
             missionId: matchingSector.missionCode,
             locationName: zone.name,
+            operatorName: 'Inspector Coastal Security Wing',
             timestamp: new Date(),
             badgeType: 'ZONE',
             extraTitle: zone.code,
@@ -607,6 +770,7 @@ export function CoastalMap({
       });
 
       map.on('mouseleave', `zone-fill-${zone.id}`, () => {
+        if (isDrawingPolygonRef.current) return;
         map.getCanvas().style.cursor = '';
         hoverPopupRef.current?.remove();
         hoverPopupRef.current = null;
@@ -616,7 +780,6 @@ export function CoastalMap({
 
   return (
     <div className={`relative ${className}`} style={{ height, width: '100%' }}>
-      {/* Self-contained styling for dark glassmorphic hover popups */}
       <style>{`
         .coastal-custom-hover-popup .maplibregl-popup-content {
           background: transparent !important;
@@ -625,8 +788,8 @@ export function CoastalMap({
           border: none !important;
         }
         .coastal-custom-hover-popup .maplibregl-popup-tip {
-          border-top-color: #0d1e2d !important;
-          border-bottom-color: #0d1e2d !important;
+          border-top-color: #091724 !important;
+          border-bottom-color: #091724 !important;
         }
       `}</style>
       <div ref={containerRef} style={{ height: '100%', width: '100%' }} />

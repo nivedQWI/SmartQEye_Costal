@@ -7,8 +7,9 @@ import { useState } from 'react';
 import {
   FileText, Download, Calendar, Shield, Clock,
   CheckCircle2, FileCheck, Filter, ArrowDownToLine,
-  Printer, AlertCircle
+  Printer, AlertCircle, Loader2
 } from 'lucide-react';
+import { generatePoliceReportPdf } from '@/lib/policeReportsPdfGenerator';
 import { cn, formatIST } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
 import { useAuthStore } from '@/lib/store';
@@ -136,23 +137,25 @@ export default function ReportsPage() {
       setReports([newReport, ...reports]);
       setIsGenerating(false);
       setGeneratingType(null);
-      setSuccessToast(`Report "${newReport.title}" generated and signed successfully.`);
+      generatePoliceReportPdf(newReport).catch(console.error);
+      setSuccessToast(`Report "${newReport.title}" generated, signed, and downloaded successfully.`);
       setTimeout(() => setSuccessToast(null), 4000);
     }, 1200);
   }
 
-  function handleSimulatedDownload(report: PoliceReport) {
-    // Simulated PDF blob download
-    const dummyContent = `KERALA POLICE - COASTAL SECURITY OPERATIONS\nReport: ${report.title}\nOfficer: ${report.signOffOfficer}\nGenerated: ${formatIST(report.generatedAt)}\nSHA-256 Verification: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`;
-    const blob = new Blob([dummyContent], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${report.reportType}_${report.id}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
+
+  async function handleDownloadReport(report: PoliceReport) {
+    setDownloadingReportId(report.id);
+    try {
+      await generatePoliceReportPdf(report);
+      setSuccessToast(`Official report "${report.title}" downloaded successfully.`);
+      setTimeout(() => setSuccessToast(null), 4000);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    } finally {
+      setDownloadingReportId(null);
+    }
   }
 
   return (
@@ -368,13 +371,18 @@ export default function ReportsPage() {
                   {can(activeRole, 'EXPORT_DOWNLOAD') && (
                     <td className="py-2.5 px-3 text-right">
                       <button
-                        onClick={() => handleSimulatedDownload(r)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors bg-[var(--sand-200)] text-[var(--ink-900)] hover:bg-[var(--sand-300)]"
+                        onClick={() => handleDownloadReport(r)}
+                        disabled={downloadingReportId === r.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors bg-[var(--sand-200)] text-[var(--ink-900)] hover:bg-[var(--sand-300)] cursor-pointer disabled:opacity-50"
                         style={{ borderColor: 'var(--sand-300)' }}
-                        title="Download PDF"
+                        title="Download official PDF report"
                       >
-                        <Download className="w-3.5 h-3.5" />
-                        PDF
+                        {downloadingReportId === r.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--sea-600)]" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 text-[var(--sea-600)]" />
+                        )}
+                        <span>{downloadingReportId === r.id ? 'Generating...' : 'Download PDF'}</span>
                       </button>
                     </td>
                   )}

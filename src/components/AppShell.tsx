@@ -67,7 +67,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/live',               label: 'Live Monitor',        labelKey: 'nav_live',           icon: Monitor,         roles: ALL_ROLES },
       { to: '/recorded-analysis',  label: 'Recorded Analysis',                                   icon: Video,           roles: ALL_ROLES },
       { to: '/fleet',              label: 'Fleet Wall',          labelKey: 'nav_fleet_wall',     icon: Grid,            roles: ALL_ROLES },
-      { to: '/alerts',             label: 'Alerts',              labelKey: 'nav_alerts',         icon: Bell,            roles: ALL_ROLES, badgeKey: 'alerts' },
+      { to: '/alerts',             label: 'Alerts',              labelKey: 'nav_alerts',         icon: Bell,            roles: ['SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'], badgeKey: 'alerts' },
       { to: '/missions',           label: 'Mission Control',     labelKey: 'nav_missions',       icon: Anchor,          roles: ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN'] },
       { to: '/map',                label: 'Map / GIS',           labelKey: 'nav_map',            icon: Map,             roles: ALL_ROLES },
       { to: '/history',            label: 'History Playback',    labelKey: 'nav_history',        icon: History,         roles: ALL_ROLES },
@@ -544,7 +544,7 @@ export function AppShell() {
               <ISTClock />
 
               {/* 7. Active Alert Bell */}
-              {['OPERATOR', 'SUPERVISOR', 'AUDITOR'].includes(activeRole) && (
+              {['SUPERVISOR', 'AUDITOR'].includes(activeRole) && (
                 <button
                   onClick={() => setIsAlertDrawerOpen(true)}
                   className="relative p-2 rounded-lg transition-colors hover:bg-[var(--surface-hover)] cursor-pointer"

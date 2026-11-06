@@ -29,12 +29,10 @@ export type RoleAction =
 export const ROLE_CONFIG: Record<UserRole, RoleConfigItem> = {
   OPERATOR: {
     landing: '/overview',
-    primary: ['/overview', '/alerts', '/missions', '/map', '/reports', '/health'],
+    primary: ['/overview', '/missions', '/map', '/reports', '/health'],
     demoPassword: 'admin123',
     allowedRoutes: [
       '/overview',
-      '/alerts',
-      '/alerts/:id',
       '/missions',
       '/map',
       '/reports',
@@ -142,15 +140,15 @@ export function canAccess(role: UserRole, path: string): boolean {
 }
 
 export const ACTION_PERMISSIONS: Record<RoleAction, UserRole[]> = {
-  ACK_ALERT: ['OPERATOR', 'SUPERVISOR'],
-  ESCALATE_ALERT: ['OPERATOR', 'SUPERVISOR'],
+  ACK_ALERT: ['SUPERVISOR'],
+  ESCALATE_ALERT: ['SUPERVISOR'],
   RESOLVE_ALERT: ['SUPERVISOR'],
   START_STOP_MISSION: ['OPERATOR', 'SUPERVISOR'],
   DELETE_MISSION: ['SUPERVISOR', 'SYS_ADMIN'],
   DISPATCH_INTERCEPTOR: ['OPERATOR', 'SUPERVISOR'],
-  EDIT_GEOFENCE: ['SUPERVISOR'],
-  GENERATE_SIGN_REPORT: ['SUPERVISOR'],
-  EXPORT_DOWNLOAD: ['SUPERVISOR', 'AUDITOR'],
+  EDIT_GEOFENCE: ['OPERATOR', 'SUPERVISOR'],
+  GENERATE_SIGN_REPORT: ['OPERATOR', 'SUPERVISOR'],
+  EXPORT_DOWNLOAD: ['OPERATOR', 'SUPERVISOR', 'AUDITOR'],
   HOT_SWAP_MODEL: ['SYS_ADMIN'],
   RESTART_NODE: ['SYS_ADMIN'],
   CHANGE_MISSION: ['OPERATOR', 'SUPERVISOR'],
