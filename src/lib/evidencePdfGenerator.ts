@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal â€” Evidence Package PDF Generator
+// SmartQEye Coastal — Evidence Package PDF Generator
 // Generates court-admissible PDF reports with embedded Keyframes
 // Per Section 65B / Section 63 BSA Digital Evidence Attestation
 // ============================================================
@@ -65,12 +65,12 @@ export async function generateEvidencePackagePdf({
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text('KERALA POLICE â€” COASTAL SECURITY COMMAND & CONTROL', margin, 12);
+  doc.text('KERALA POLICE — COASTAL SECURITY COMMAND & CONTROL', margin, 12);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(165, 205, 230);
-  doc.text('SMARTQEYE COASTAL AI SURVEILLANCE PLATFORM â€” EVIDENCE-LINKED INCIDENT RECORD (ELIR)', margin, 18);
+  doc.text('SMARTQEYE COASTAL AI SURVEILLANCE PLATFORM — EVIDENCE-LINKED INCIDENT RECORD (ELIR)', margin, 18);
 
   doc.setFontSize(8);
   doc.setTextColor(200, 220, 240);

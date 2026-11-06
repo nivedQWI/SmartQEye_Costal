@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal Ã¢â‚¬â€ Real-time Simulator
+// SmartQEye Coastal — Real-time Simulator
 // Fake WebSocket / event emitter that keeps the UI "live"
 // ============================================================
 
@@ -10,7 +10,7 @@ import {
   ALERTS, INITIAL_FEEDS, INITIAL_TELEMETRY, INITIAL_HEALTH, CONTACTS, KERALA_COASTAL_SECTORS,
 } from './mockData';
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Event types Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Event types ─────────────────────────────────────────────
 
 export type SimulatorEvent =
   | { type: 'ALERT_NEW';       payload: Alert }
@@ -22,7 +22,7 @@ export type SimulatorEvent =
 
 type Listener = (event: SimulatorEvent) => void;
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Simulator class Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Simulator class ─────────────────────────────────────────
 
 class CoastalSimulator {
   private listeners: Set<Listener> = new Set();
@@ -33,7 +33,7 @@ class CoastalSimulator {
   private alertIndex = ALERTS.length;
   private running = false;
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Drone paths patrolling across Kerala Coastal Sectors Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── Drone paths patrolling across Kerala Coastal Sectors ──
   private dronePaths: Record<string, {
     lat: number; lon: number; heading: number; dLat: number; dLon: number;
     anchorLat: number; anchorLon: number;

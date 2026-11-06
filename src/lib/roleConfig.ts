@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal â€” Role-Based Access Control Configuration
+// SmartQEye Coastal — Role-Based Access Control Configuration
 // Per ROLE_BASED_ACCESS_CONTROL.md & UI_AND_SIDEBAR_NAVIGATION.md
 // ============================================================
 

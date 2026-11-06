@@ -138,6 +138,8 @@ interface CoastalMapProps {
   focus?: { center: [number, number]; zoom: number } | null;
   /** Show ONLY this drone (used by the Live Monitor focus mini-map). */
   singleDrone?: { feedId: string; uavCode: string; missionCode: string; locationName: string; lat: number; lon: number; headingDeg?: number };
+  /** Highlight and pin an exact alert incident */
+  highlightAlert?: Alert | null;
 }
 
 export function CoastalMap({
@@ -154,6 +156,7 @@ export function CoastalMap({
   onDroneClick,
   focus,
   singleDrone,
+  highlightAlert,
 }: CoastalMapProps) {
   const mapRef = useRef<MLMap | null>(null);
   // Keep latest callbacks in refs — markers are created once inside the map 'load'
@@ -226,6 +229,14 @@ export function CoastalMap({
       if (showAlerts) addAlertPins(map);
       if (showDrones) addDroneMarkers(map);
       setupInteractions(map);
+
+      if (highlightAlert) {
+        map.jumpTo({ center: [highlightAlert.event.location.lon, highlightAlert.event.location.lat], zoom: 14 });
+      } else if (focus) {
+        map.jumpTo({ center: focus.center, zoom: focus.zoom });
+      }
+      setTimeout(() => map.resize(), 100);
+      setTimeout(() => map.resize(), 400);
     });
 
     // Auto-resize observer to handle panel collapses and flexbox layout changes
@@ -254,6 +265,15 @@ export function CoastalMap({
     if (!map || !focus) return;
     map.flyTo({ center: focus.center, zoom: focus.zoom, duration: 1200, essential: true });
   }, [focus?.center[0], focus?.center[1], focus?.zoom]);
+
+  // Fly to highlighted alert on change and ensure pin is placed
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded() || !highlightAlert) return;
+    const loc = highlightAlert.event.location;
+    map.flyTo({ center: [loc.lon, loc.lat], zoom: 14, duration: 1000, essential: true });
+    if (showAlerts) addAlertPins(map);
+  }, [highlightAlert?.id, highlightAlert?.event.location.lat, highlightAlert?.event.location.lon]);
 
   // Update drone positions in real-time
   useEffect(() => {
@@ -423,9 +443,15 @@ export function CoastalMap({
     alertMarkersRef.current.forEach(m => m.remove());
     alertMarkersRef.current = [];
 
-    ALERTS.slice(0, 15).filter(a => a.status !== 'RESOLVED').forEach(alert => {
+    const alertList: Alert[] = [...ALERTS.slice(0, 15).filter(a => a.status !== 'RESOLVED')];
+    if (highlightAlert && !alertList.some(a => a.id === highlightAlert.id)) {
+      alertList.push(highlightAlert);
+    }
+
+    alertList.forEach(alert => {
       const loc = alert.event.location;
-      const el = createAlertElement(alert);
+      const isHighlighted = highlightAlert?.id === alert.id;
+      const el = createAlertElement(alert, isHighlighted);
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
@@ -439,11 +465,27 @@ export function CoastalMap({
     });
   }
 
-  function createAlertElement(alert: Alert): HTMLElement {
+  function createAlertElement(alert: Alert, isHighlighted: boolean = false): HTMLElement {
     const colours: Record<string, string> = {
       CRITICAL: '#C8352E', HIGH: '#E06A3B', MEDIUM: '#E0A526', LOW: '#3FAE9A', INFO: '#2B7FA6',
     };
     const colour = colours[alert.severity] ?? '#2B7FA6';
+
+    if (isHighlighted) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = `
+        position: relative; width: 44px; height: 44px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transform: translate(-50%, -50%);
+      `;
+      wrap.innerHTML = `
+        <span style="position: absolute; width: 40px; height: 40px; border-radius: 50%; background: ${colour}; opacity: 0.35; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+        <span style="position: absolute; width: 26px; height: 26px; border-radius: 50%; background: ${colour}; opacity: 0.85; box-shadow: 0 0 14px ${colour};"></span>
+        <span style="position: relative; width: 14px; height: 14px; border-radius: 50%; background: #ffffff; border: 3px solid ${colour};"></span>
+      `;
+      wrap.title = `INCIDENT LOCATION: ${alert.alertCode}`;
+      return wrap;
+    }
 
     const el = document.createElement('div');
     el.style.cssText = `

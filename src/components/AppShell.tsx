@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal Ã¢â‚¬â€ App Shell
+// SmartQEye Coastal — App Shell
 // Adaptive UI, Dynamic Role Navigation & HarbourBar
 // ============================================================
 
@@ -38,7 +38,7 @@ import type { UserRole } from '@/types';
 // Toggle to display developer role switcher in HarbourBar (hidden for customer demo)
 const SHOW_DEV_ROLE_SWITCHER = false;
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Nav Structure with Thematic Sections Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Nav Structure with Thematic Sections ────────────────────
 
 interface NavEntry {
   to: string;
@@ -60,7 +60,7 @@ const ALL_ROLES: UserRole[] = ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR']
 const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Tactical Ops',
-    titleMl: 'Ã Â´Å¸Ã Â´Â¾Ã Â´â€¢Ã ÂµÂÃ Â´Å¸Ã Â´Â¿Ã Â´â€¢Ã ÂµÂÃ Â´â€¢Ã ÂµÂ½ Ã Â´â€œÃ Â´ÂªÃ ÂµÂÃ Â´Â¸Ã ÂµÂ',
+    titleMl: 'ടാക്ടിക്കൽ ഓപ്സ്',
     items: [
       { to: '/overview',           label: 'Overview Dashboard',  labelKey: 'nav_command_center', icon: Activity,        roles: ['OPERATOR'] },
       { to: '/',                   label: 'Command Center',      labelKey: 'nav_command_center', icon: LayoutDashboard, roles: ALL_ROLES },
@@ -75,7 +75,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'AI Analytics',
-    titleMl: 'Ã Â´Å½Ã Â´Â Ã Â´â€¦Ã Â´Â¨Ã Â´Â²Ã Â´Â¿Ã Â´Â±Ã ÂµÂÃ Â´Â±Ã Â´Â¿Ã Â´â€¢Ã ÂµÂÃ Â´Â¸Ã ÂµÂ',
+    titleMl: 'എഐ അനലിറ്റിക്സ്',
     items: [
       { to: '/crowd-analytics',    label: 'Crowd Analytics',     labelKey: 'nav_crowd',          icon: Users,           roles: ALL_ROLES },
       { to: '/vehicle-maritime',   label: 'Vehicle & Maritime',  labelKey: 'nav_vehicle',        icon: Car,             roles: ALL_ROLES },
@@ -86,7 +86,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'Intelligence & Evidence',
-    titleMl: 'Ã Â´â€¡Ã Â´Â¨Ã ÂµÂÃ Â´Â±Ã Â´Â²Ã Â´Â¿Ã Â´Å“Ã ÂµÂ»Ã Â´Â¸Ã ÂµÂ & Ã Â´Â¤Ã Âµâ€ Ã Â´Â³Ã Â´Â¿Ã Â´ÂµÃ ÂµÂÃ Â´â€¢Ã ÂµÂ¾',
+    titleMl: 'ഇന്റലിജൻസ് & തെളിവുകൾ',
     items: [
       { to: '/incidents',          label: 'Incident Records',    labelKey: 'nav_incidents',      icon: FolderArchive,   roles: ALL_ROLES },
       { to: '/coastal-context',    label: 'Coastal Contact Intel',                                 icon: Anchor,          roles: ['OPERATOR', 'SUPERVISOR'] },
@@ -94,7 +94,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'Administration',
-    titleMl: 'Ã Â´â€¦Ã Â´Â¡Ã ÂµÂÃ Â´Â®Ã Â´Â¿Ã Â´Â¨Ã Â´Â¿Ã Â´Â¸Ã ÂµÂÃ Â´Å¸Ã ÂµÂÃ Â´Â°Ã Âµâ€¡Ã Â´Â·Ã ÂµÂ»',
+    titleMl: 'അഡ്മിനിസ്ട്രേഷൻ',
     items: [
       { to: '/health',             label: 'System Health',       labelKey: 'nav_health',         icon: Activity,        roles: ALL_ROLES },
       { to: '/models',             label: 'AI Models Cluster',   labelKey: 'nav_models',         icon: Cpu,             roles: ALL_ROLES },
@@ -110,7 +110,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'Analytics & Reporting',
-    titleMl: 'Ã Â´â€¦Ã Â´Â¨Ã Â´Â²Ã Â´Â¿Ã Â´Â±Ã ÂµÂÃ Â´Â±Ã Â´Â¿Ã Â´â€¢Ã ÂµÂÃ Â´Â¸Ã ÂµÂ & Ã Â´Â±Ã Â´Â¿Ã Â´ÂªÃ ÂµÂÃ Â´ÂªÃ Âµâ€¹Ã ÂµÂ¼Ã Â´Å¸Ã ÂµÂÃ Â´Å¸Ã Â´Â¿Ã Â´â€šÃ Â´â€”Ã ÂµÂ',
+    titleMl: 'അനലിറ്റിക്സ് & റിപ്പോർട്ടിംഗ്',
     items: [
       { to: '/reports',            label: 'Police Reports',      labelKey: 'nav_reports',        icon: FileText,        roles: ALL_ROLES },
     ]
@@ -119,7 +119,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 const ROLES: UserRole[] = ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'];
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ AppShell Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── AppShell ─────────────────────────────────────────────────
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(() =>
@@ -191,7 +191,7 @@ export function AppShell() {
   }, [location.pathname]);
 
   // Sidebar filtering: sections always render in the fixed NAV_SECTIONS order
-  // (Tactical Ops Ã¢â€ â€™ AI Analytics Ã¢â€ â€™ Intelligence & Evidence Ã¢â€ â€™ Administration Ã¢â€ â€™
+  // (Tactical Ops → AI Analytics → Intelligence & Evidence → Administration → Analytics & Reporting)
   // Analytics & Reporting) for every role; items inside a section follow the
   // role's allowedRoutes priority.
   const visibleSections = useMemo(() => {
@@ -212,7 +212,7 @@ export function AppShell() {
   return (
     <Tooltip.Provider delayDuration={200}>
       <div className="flex flex-col h-screen overflow-hidden" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Skip Link for Keyboard / Accessibility Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* ── Skip Link for Keyboard / Accessibility ── */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1.5 focus:bg-[var(--sea-600)] focus:text-white focus:rounded-lg focus:shadow-xl focus:font-bold focus:text-xs"
@@ -220,7 +220,7 @@ export function AppShell() {
           Skip to main content
         </a>
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Persistent Classification Strip (Top) Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* ── Persistent Classification Strip (Top) ── */}
         <div
           className="w-full py-0.5 px-4 text-center text-[10px] font-mono font-bold tracking-widest uppercase flex items-center justify-between border-b z-30 select-none flex-shrink-0"
           style={{
@@ -231,18 +231,16 @@ export function AppShell() {
         >
           <div className="flex items-center gap-2">
             <Shield className="w-3 h-3 text-[#5EEAD4]" />
-            <span>RESTRICTED Ã‚Â· KERALA POLICE INTERNAL OPERATIONAL USE ONLY</span>
+            <span>RESTRICTED · KERALA POLICE INTERNAL OPERATIONAL USE ONLY</span>
           </div>
           <span className="hidden sm:inline">SECTION 65B INDIAN EVIDENCE ACT & SECTION 63 BSA COMPLIANT</span>
           <span>DRONE FORENSIC LAB</span>
         </div>
 
-        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Body Container with Rail + Main Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* ── Body Container with Rail + Main ── */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
 
-          {/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-              LEFT SIDEBAR Ã¢â‚¬â€ always visible, collapsible
-             Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */}
+          {/* ── LEFT SIDEBAR — always visible, collapsible ── */}
           <aside
             className={cn(
               'flex flex-col h-full flex-shrink-0 border-r z-30 transition-all duration-200 select-none shadow-sm',
@@ -253,7 +251,7 @@ export function AppShell() {
               borderColor: 'var(--line)',
             }}
           >
-            {/* Ã¢â€â‚¬Ã¢â€â‚¬ Logo + app name Ã¢â€â‚¬Ã¢â€â‚¬ */}
+            {/* ── Logo + app name ── */}
             <div
               className="flex items-center gap-2.5 h-14 px-3 border-b flex-shrink-0"
               style={{ borderColor: 'var(--line)' }}
@@ -275,7 +273,7 @@ export function AppShell() {
                     SmartQEye
                   </div>
                   <div className="text-[11px] font-semibold tracking-wide truncate" style={{ color: 'var(--text-muted)' }}>
-                    Coastal Surveillance Ã‚Â· QW
+                    Coastal Surveillance · QW
                   </div>
                 </div>
               )}
@@ -291,7 +289,7 @@ export function AppShell() {
               </button>
             </div>
 
-            {/* Ã¢â€â‚¬Ã¢â€â‚¬ Grouped Navigation Sections Ã¢â€â‚¬Ã¢â€â‚¬ */}
+            {/* ── Grouped Navigation Sections ── */}
             <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-1 divide-y divide-[var(--line)]">
               {visibleSections.map(({ title, titleMl, items }, sIdx) => {
                 return (
@@ -392,7 +390,7 @@ export function AppShell() {
               })}
             </nav>
 
-            {/* Ã¢â€â‚¬Ã¢â€â‚¬ User Profile at bottom Ã¢â€â‚¬Ã¢â€â‚¬ */}
+            {/* ── User Profile at bottom ── */}
             <div className="border-t px-3 py-2.5 flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
               {collapsed ? (
                 <div
@@ -426,12 +424,10 @@ export function AppShell() {
             </div>
           </aside>
 
-          {/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
-              MAIN AREA (Header + Content + TideBar)
-             Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */}
+          {/* ── LEFT SIDEBAR — always visible, collapsible ── */}
           <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
-            {/* Ã¢â€â‚¬Ã¢â€â‚¬ Harbour Bar Header Ã¢â€â‚¬Ã¢â€â‚¬ */}
+            {/* ── Harbour Bar Header ── */}
             <header
               className="flex items-center h-14 px-4 gap-3 flex-shrink-0 border-b z-20"
               style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}
@@ -505,7 +501,7 @@ export function AppShell() {
                           <div className="truncate font-medium">All Ports</div>
                           <div className="text-[10px] opacity-60 font-mono">Entire Kerala coastline</div>
                         </div>
-                        {activeMissionId === null && <span className="ml-auto text-xs text-[var(--sea-600)]">Ã¢Å“â€œ</span>}
+                        {activeMissionId === null && <span className="ml-auto text-xs text-[var(--sea-600)]">✓</span>}
                       </DropdownMenu.Item>
                       <DropdownMenu.Separator className="my-1 h-px bg-[var(--line)]" />
                       {missions.map(m => (
@@ -522,7 +518,7 @@ export function AppShell() {
                             <div className="truncate font-medium">{m.title}</div>
                             <div className="text-[10px] opacity-60 font-mono">{m.missionCode}</div>
                           </div>
-                          {m.id === activeMissionId && <span className="ml-auto text-xs text-[var(--sea-600)]">Ã¢Å“â€œ</span>}
+                          {m.id === activeMissionId && <span className="ml-auto text-xs text-[var(--sea-600)]">✓</span>}
                         </DropdownMenu.Item>
                       ))}
                     </DropdownMenu.Content>
@@ -541,7 +537,7 @@ export function AppShell() {
               {/* 5. Connectivity & Processing Mode Chip */}
               <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>Central GPU Ã‚Â· Synced</span>
+                <span>Central GPU · Synced</span>
               </div>
 
               {/* 6. Mission Clock (IST) */}
@@ -578,12 +574,12 @@ export function AppShell() {
                 onClick={() => setLanguage(language === 'en' ? 'ml' : 'en')}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all hover:bg-[var(--surface-hover)] cursor-pointer"
                 style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
-                title={language === 'en' ? 'Switch to Malayalam (Ã Â´Â®Ã Â´Â²Ã Â´Â¯Ã Â´Â¾Ã Â´Â³Ã Â´â€š)' : 'Switch to English'}
+                title={language === 'en' ? 'Switch to Malayalam (മലയാളം)' : 'Switch to English'}
                 aria-label="Toggle language"
               >
                 <span className={cn(language === 'en' ? 'text-[var(--sea-600)] font-bold' : 'opacity-60')}>EN</span>
                 <span className="opacity-40">/</span>
-                <span className={cn(language === 'ml' ? 'text-[var(--sea-600)] font-bold' : 'opacity-60')}>Ã Â´Â®Ã Â´Â²Ã Â´Â¯Ã Â´Â¾Ã Â´Â³Ã Â´â€š</span>
+                <span className={cn(language === 'ml' ? 'text-[var(--sea-600)] font-bold' : 'opacity-60')}>മലയാളം</span>
               </button>
 
               {/* 10. Theme Toggle */}
@@ -618,7 +614,7 @@ export function AppShell() {
                         onSelect={() => setMode(m)}
                       >
                         {icon} {label}
-                        {mode === m && <span className="ml-auto text-[var(--sea-600)]">Ã¢Å“â€œ</span>}
+                        {mode === m && <span className="ml-auto text-[var(--sea-600)]">✓</span>}
                       </DropdownMenu.Item>
                     ))}
                   </DropdownMenu.Content>
@@ -629,7 +625,7 @@ export function AppShell() {
               {import.meta.env.VITE_DEMO_MODE !== 'false' && (
                 <div className="hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span>DEMO Ã‚Â· SIMULATED</span>
+                  <span>DEMO · SIMULATED</span>
                 </div>
               )}
 
@@ -682,7 +678,7 @@ export function AppShell() {
                     {SHOW_DEV_ROLE_SWITCHER && (
                       <>
                         <div className="px-3 pt-2 pb-1 text-[10px] font-mono uppercase font-bold opacity-40">
-                          Dev Ã‚Â· Switch Role
+                          Dev · Switch Role
                         </div>
                         {ROLES.map(role => (
                           <DropdownMenu.Item
@@ -695,7 +691,7 @@ export function AppShell() {
                           >
                             <Shield className="w-3 h-3 opacity-40 flex-shrink-0" />
                             <span>{role.replace(/_/g, ' ')}</span>
-                            {activeRole === role && <span className="ml-auto text-[var(--sea-600)]">Ã¢Å“â€œ</span>}
+                            {activeRole === role && <span className="ml-auto text-[var(--sea-600)]">✓</span>}
                           </DropdownMenu.Item>
                         ))}
                         <DropdownMenu.Separator className="my-1 h-px bg-[var(--line)]" />
@@ -716,7 +712,7 @@ export function AppShell() {
             </header>
 
             {/* Critical Alert Banner removed per notification requirement */}
-            {/* Ã¢â€â‚¬Ã¢â€â‚¬ Page Content Ã¢â€â‚¬Ã¢â€â‚¬ */}
+            {/* ── Page Content ── */}
             <main
               id="main-content"
               tabIndex={-1}
@@ -727,7 +723,7 @@ export function AppShell() {
               </RouteErrorBoundary>
             </main>
 
-            {/* Ã¢â€â‚¬Ã¢â€â‚¬ Status Tide Bar Ã¢â€â‚¬Ã¢â€â‚¬ */}
+            {/* ── Status Tide Bar ── */}
             <footer
               className="flex items-center h-9 px-4 gap-6 text-xs border-t flex-shrink-0 overflow-x-auto"
               style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text-muted)' }}
@@ -743,7 +739,7 @@ export function AppShell() {
                 className="ml-auto flex-shrink-0 opacity-70 hover:opacity-100 hover:underline font-mono text-[11px] flex items-center gap-1.5 transition-opacity cursor-pointer"
                 title="Click to view Platform & Build specifications"
               >
-                <span>SmartQEye v1.2.0-coastal Ã‚Â· Kerala Coastal Police</span>
+                <span>SmartQEye v1.2.0-coastal · Kerala Coastal Police</span>
                 <Info className="w-3.5 h-3.5 text-[var(--sea-600)]" />
               </button>
             </footer>
@@ -772,7 +768,7 @@ export function AppShell() {
   );
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Tide bar status item Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Tide bar status item ─────────────────────────────────────
 
 function TideBarItem({ icon, label, value, ok }: { icon: React.ReactNode; label: string; value: string; ok: boolean }) {
   return (

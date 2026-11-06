@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal â€” Alert Queue (/alerts)
+// SmartQEye Coastal — Alert Queue (/alerts)
 // Filterable, sortable table with right preview pane
 // Keyboard: J/K to move, A to ack, E to escalate, Enter to open
 // ============================================================
@@ -13,9 +13,10 @@ import { FeedStateChip, ModalityChip } from '@/components/FeedStateChip';
 import { useAlertStore, useAuthStore } from '@/lib/store';
 import { alertsApi } from '@/lib/api';
 import { can } from '@/lib/roleConfig';
+import { getAlertMedia, type KeyframeItem } from '@/lib/alertMedia';
 import type { Alert, Severity, AlertStatus, UserRole } from '@/types';
 
-// â”€â”€â”€ Filter bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Filter bar ───────────────────────────────────────────────
 
 const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 const STATUSES: AlertStatus[] = ['NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'UNDER_REVIEW', 'ESCALATED', 'RESOLVED', 'FALSE_ALERT'];
@@ -111,7 +112,7 @@ function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filt
   );
 }
 
-// â”€â”€â”€ Alert row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Alert row ────────────────────────────────────────────────
 
 function AlertRow({
   alert, isSelected, onClick, onAck, onEscalate, role,
@@ -174,7 +175,7 @@ function AlertRow({
             opacity: isSelected ? 0.9 : 0.7,
           }}
         >
-          {alert.event.zone?.name ?? 'â€”'}
+          {alert.event.zone?.name ?? '—'}
         </div>
       </td>
 
@@ -188,7 +189,7 @@ function AlertRow({
 
       {/* Contact */}
       <td className="pr-3 py-2.5 w-20 text-xs font-mono font-bold" style={{ color: 'var(--sea-accent)' }}>
-        {alert.event.contact?.code ?? 'â€”'}
+        {alert.event.contact?.code ?? '—'}
       </td>
 
       {/* Status */}
@@ -259,13 +260,16 @@ function AlertRow({
   );
 }
 
-// â”€â”€â”€ Preview pane â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Preview pane ─────────────────────────────────────────────
 
 function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => void; role: UserRole }) {
   const navigate = useNavigate();
   const { updateAlert } = useAlertStore();
   const [showFalseAlertModal, setShowFalseAlertModal] = useState(false);
   const [falseAlertReason, setFalseAlertReason] = useState('');
+  const [activeKf, setActiveKf] = useState<KeyframeItem | null>(null);
+
+  const media = getAlertMedia(alert.event.type);
 
   const canAck = can(role, 'ACK_ALERT');
   const canEscalate = can(role, 'ESCALATE_ALERT');
@@ -308,24 +312,40 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
           onClick={onClose}
           aria-label="Close preview"
         >
-          Ã—
+          ×
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* Keyframe carousel placeholder */}
+        {/* Real Keyframes for Selected Event */}
         <div className="px-4 pt-3">
-          <div className="text-xs font-bold font-mono uppercase tracking-wider mb-2" style={{ color: 'var(--sea-accent)' }}>
-            Keyframes
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold font-mono uppercase tracking-wider" style={{ color: 'var(--sea-accent)' }}>
+              Keyframes ({media.keyframes.length})
+            </span>
+            <span className="text-[10px] font-mono opacity-50">Extracted Frames</span>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {[...Array(5)].map((_, i) => (
+          <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+            {media.keyframes.map((kf, i) => (
               <div
-                key={i}
-                className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border flex items-center justify-center text-xs font-mono font-medium"
-                style={{ background: '#0a2233', borderColor: 'var(--line)', color: 'var(--sea-200)' }}
+                key={kf.id}
+                onClick={() => setActiveKf(kf)}
+                className="group relative flex-shrink-0 w-24 h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-[var(--sea-accent)] transition-all shadow-xs"
+                style={{ background: '#0a2233', borderColor: 'var(--line)' }}
+                title={`${kf.label} (+${kf.timestampOffsetSec}s) — Click to view`}
               >
-                {i === 0 ? <span className="text-sm">â–¶</span> : `KF-${i + 1}`}
+                <img
+                  src={kf.url}
+                  alt={kf.label}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  loading="lazy"
+                />
+                <div className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-black/80 text-[8px] font-mono text-white">
+                  +{kf.timestampOffsetSec}s
+                </div>
+                <div className="absolute top-0.5 left-0.5 px-1 py-0.2 rounded bg-black/60 text-[8px] font-mono font-semibold text-white">
+                  KF-{i + 1}
+                </div>
               </div>
             ))}
           </div>
@@ -383,7 +403,7 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
           <div className="rounded-xl p-3 space-y-2 border shadow-xs" style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}>
             {alert.event.rationale.factors.slice(0, 4).map((f, i) => (
               <div key={i} className="flex items-start gap-2 text-xs">
-                <span className="font-bold flex-shrink-0 mt-0.5" style={{ color: 'var(--sea-accent)' }}>â€¢</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--sea-accent)] mt-1.5 flex-shrink-0" />
                 <div className="flex-1">
                   <span className="font-semibold" style={{ color: 'var(--text)' }}>{f.factorName}:</span>{' '}
                   <span className="font-mono font-bold" style={{ color: 'var(--text)' }}>{f.value}{f.unit ? ` ${f.unit}` : ''}</span>
@@ -461,7 +481,7 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
               onChange={e => setFalseAlertReason(e.target.value)}
               className="w-full rounded-lg text-xs p-2.5 border resize-none outline-none focus:ring-1 focus:ring-[var(--sea-400)]"
               style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)', minHeight: '68px' }}
-              placeholder="Explain why this alert is a false positiveâ€¦"
+              placeholder="Explain why this alert is a false positive…"
             />
             <div className="flex gap-2 mt-2">
               <button
@@ -483,11 +503,57 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
           </div>
         )}
       </div>
+
+      {/* Keyframe lightbox popup */}
+      {activeKf && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setActiveKf(null)}
+        >
+          <div
+            className="max-w-xl w-full rounded-2xl overflow-hidden border shadow-2xl p-4 space-y-3"
+            style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold font-mono" style={{ color: 'var(--sea-accent)' }}>
+                  SURVEILLANCE KEYFRAME (+{activeKf.timestampOffsetSec}s)
+                </div>
+                <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{activeKf.label}</div>
+              </div>
+              <button
+                className="w-7 h-7 rounded-lg border flex items-center justify-center text-sm hover:bg-[var(--raised)] cursor-pointer"
+                style={{ borderColor: 'var(--line)' }}
+                onClick={() => setActiveKf(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center">
+              <img src={activeKf.url} alt={activeKf.label} className="w-full h-full object-contain" />
+            </div>
+            <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+              <span className="truncate">SHA: {activeKf.sha256.substring(0, 24)}...</span>
+              <button
+                className="px-3 py-1 rounded-lg text-xs font-bold text-white cursor-pointer ml-3 flex-shrink-0"
+                style={{ background: 'var(--sea-600)' }}
+                onClick={() => {
+                  setActiveKf(null);
+                  navigate(`/alerts/${alert.id}`);
+                }}
+              >
+                Open Full Record
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// â”€â”€â”€ Alert Queue page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Alert Queue page ─────────────────────────────────────────
 
 const EXCLUDED_ALERT_EVENT_TYPES = new Set([
   'repeated_shoreline_approach',

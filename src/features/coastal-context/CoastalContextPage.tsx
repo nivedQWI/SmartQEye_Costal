@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal â€” Persistent Coastal Contact & Context Intelligence Page
+// SmartQEye Coastal — Persistent Coastal Contact & Context Intelligence Page
 // Phase integration of SmartQEye-Coastal-Context-MVP
 // ============================================================
 
@@ -17,11 +17,11 @@ import type {
   ScenarioEvent,
 } from '@/types/contextIntelligence';
 
-// â”€â”€â”€ Scenario Definitions (ported from Context MVP) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Scenario Definitions (ported from Context MVP) ──────────
 
 const SCENARIOS: Record<ScenarioKey, CoastalScenario> = {
   Day: {
-    title: 'Daytime â€” Kovalam Water-Sports Context',
+    title: 'Daytime — Kovalam Water-Sports Context',
     video: '/videos/kerala_coastal_surveillance_v4.mp4',
     contact: 'VESSEL-A01',
     zone: 'KOVALAM_WATERSPORTS',
@@ -38,7 +38,7 @@ const SCENARIOS: Record<ScenarioKey, CoastalScenario> = {
     doNotClaim: ['No prolonged dwell', 'No repeated sharp turns'],
   },
   Cloudy: {
-    title: 'Cloudy â€” Fishing / Landing Activity Context',
+    title: 'Cloudy — Fishing / Landing Activity Context',
     video: '/videos/kerala_coastal_cloudy.mp4',
     contact: 'VESSEL-C03',
     zone: 'FISHING_ZONE',
@@ -54,7 +54,7 @@ const SCENARIOS: Record<ScenarioKey, CoastalScenario> = {
     doNotClaim: ['No strong turning claim', 'No long stationary dwell'],
   },
   Night: {
-    title: 'Night â€” Police Monitored Coastal Zone',
+    title: 'Night — Police Monitored Coastal Zone',
     video: '/videos/kerala_coastal_night.mp4',
     contact: 'VESSEL-N17',
     zone: 'MONITORED_COASTAL_ZONE',
@@ -69,7 +69,7 @@ const SCENARIOS: Record<ScenarioKey, CoastalScenario> = {
     doNotClaim: ['No clear shoreline approach', 'No dwell-near-shore claim'],
   },
   Thermal: {
-    title: 'Thermal â€” Monitored Coastal Observation',
+    title: 'Thermal — Monitored Coastal Observation',
     video: '/videos/kerala_coastal_thermal.mp4',
     contact: 'VESSEL-T04',
     zone: 'MONITORED_COASTAL_ZONE',
@@ -94,7 +94,7 @@ const SCENARIO_TAB_LABELS: Record<ScenarioKey, string> = {
   Thermal: 'Thermal / LWIR',
 };
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helpers ─────────────────────────────────────────────────
 
 function attentionColor(level: string): string {
   if (level === 'ATTENTION') return '#ef4444';
@@ -126,7 +126,7 @@ function beep() {
   } catch { /* ignore */ }
 }
 
-// â”€â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Sub-components ───────────────────────────────────────────
 
 function AttentionBadge({ level }: { level: string }) {
   const color = attentionColor(level);
@@ -173,7 +173,7 @@ function EventChip({ event, seen }: { event: ScenarioEvent; seen: boolean }) {
   );
 }
 
-// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Page ───────────────────────────────────────────────
 
 export default function CoastalContextPage() {
   const [scenarioKey, setScenarioKey] = useState<ScenarioKey>('Day');
@@ -268,7 +268,7 @@ export default function CoastalContextPage() {
       }}
     >
 
-      {/* â”€â”€ Page Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Page Header ─────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ width: 40, height: 40, borderRadius: '0.5rem', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -279,7 +279,7 @@ export default function CoastalContextPage() {
               Persistent Coastal Contact &amp; Context Intelligence
             </h1>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
-              Continuous UAV observation â†’ contact history â†’ contextual attention â†’ Police review
+              Continuous UAV observation → contact history → contextual attention → Police review
             </p>
           </div>
         </div>
@@ -300,7 +300,7 @@ export default function CoastalContextPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Scenario Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Scenario Tabs ────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         {SCENARIO_KEYS.map(k => (
           <button key={k} onClick={() => setScenarioKey(k)} style={{
@@ -315,10 +315,10 @@ export default function CoastalContextPage() {
         ))}
       </div>
 
-      {/* â”€â”€ Main Content Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Main Content Grid ────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.5rem', alignItems: 'start' }}>
 
-        {/* LEFT â€” Video & Timeline */}
+        {/* LEFT — Video & Timeline */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
           {/* Video card */}
@@ -428,7 +428,7 @@ export default function CoastalContextPage() {
           </div>
         </div>
 
-        {/* RIGHT â€” Contact Intelligence Panel */}
+        {/* RIGHT — Contact Intelligence Panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
           {/* Contact facts card */}
@@ -473,7 +473,7 @@ export default function CoastalContextPage() {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.875rem', minHeight: 32 }}>
               {activeEvents.length === 0
-                ? <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Acquiring contactâ€¦</span>
+                ? <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Acquiring contact…</span>
                 : activeEvents.map(ev => <EventChip key={ev.code} event={ev} seen />)
               }
             </div>
@@ -500,7 +500,7 @@ export default function CoastalContextPage() {
                   Context Assessment Pending
                 </div>
                 <div style={{ fontSize: '0.75rem' }}>
-                  {autoStarted ? 'Evaluating when all events are observedâ€¦' : 'Start the automatic scenario to begin evaluation.'}
+                  {autoStarted ? 'Evaluating when all events are observed…' : 'Start the automatic scenario to begin evaluation.'}
                 </div>
               </div>
             ) : (
@@ -560,7 +560,7 @@ export default function CoastalContextPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Evidence Package Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Evidence Package Section ─────────────────────────── */}
       {result && evidence && (
         <div className="card" style={{ padding: '1.25rem' }}>
           {/* Header */}
@@ -570,7 +570,7 @@ export default function CoastalContextPage() {
                 Evidence-Linked Review
               </div>
               <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
-                {scenario.contact} â€” Evidence Package
+                {scenario.contact} — Evidence Package
               </div>
             </div>
             <button
@@ -600,7 +600,7 @@ export default function CoastalContextPage() {
               <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.6rem' }}>Context Explanation</div>
               {result.reasons.map((r, i) => (
                 <p key={i} style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 0.4rem', lineHeight: 1.5 }}>
-                  â€¢ {r}
+                  • {r}
                 </p>
               ))}
             </div>
@@ -652,7 +652,7 @@ export default function CoastalContextPage() {
         </div>
       )}
 
-      {/* â”€â”€ Footer disclaimer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Footer disclaimer ────────────────────────────────── */}
       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: '0.75rem', lineHeight: 1.6 }}>
         <strong>Demo boundary:</strong> synthetic video is controlled source material; displayed observations are limited to the supplied evidence manifest. Operational and legal interpretation remains with authorized Kerala Police personnel.
       </div>

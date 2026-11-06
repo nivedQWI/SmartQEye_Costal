@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal â€” Mock Data
+// SmartQEye Coastal — Mock Data
 // Kerala coastal area: Thiruvananthapuram / Vizhinjam / Kovalam / Poovar
 // ============================================================
 
@@ -10,7 +10,7 @@ import type {
   AttentionLevel, Modality, ContextProfileDetail, AlertRuleConfig, AbandonedObjectRecord,
 } from '@/types';
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helpers ─────────────────────────────────────────────────
 
 function ageMs(ms: number): string {
   return new Date(Date.now() - ms).toISOString();
@@ -25,11 +25,11 @@ export function toIST(date: Date): string {
   return date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false });
 }
 
-// â”€â”€â”€ Zone Profiles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Zone Profiles ────────────────────────────────────────────
 
 export const ZONE_PROFILES: ZoneProfile[] = [
   {
-    id: 'zp-restricted-24x7', name: 'Restricted 24Ã—7', zoneType: 'RESTRICTED',
+    id: 'zp-restricted-24x7', name: 'Restricted 24×7', zoneType: 'RESTRICTED',
     sensitivityLevel: 'VERY_HIGH', dwellThresholdSec: 30, schedule: 'ALWAYS',
     defaultSeverity: 'HIGH', notifyList: ['Control Room', 'Coastal SHO'],
   },
@@ -39,12 +39,12 @@ export const ZONE_PROFILES: ZoneProfile[] = [
     defaultSeverity: 'MEDIUM', notifyList: ['Control Room'],
   },
   {
-    id: 'zp-fishing-daytime', name: 'Fishing Zone â€“ Daytime', zoneType: 'FISHING',
+    id: 'zp-fishing-daytime', name: 'Fishing Zone – Daytime', zoneType: 'FISHING',
     sensitivityLevel: 'LOW', dwellThresholdSec: 600, schedule: 'DAYTIME',
     defaultSeverity: 'INFO', notifyList: ['Control Room'],
   },
   {
-    id: 'zp-tourism-evening', name: 'Tourism â€“ Evening', zoneType: 'TOURISM',
+    id: 'zp-tourism-evening', name: 'Tourism – Evening', zoneType: 'TOURISM',
     sensitivityLevel: 'MEDIUM', dwellThresholdSec: 300, schedule: 'CUSTOM',
     defaultSeverity: 'MEDIUM', notifyList: ['Control Room', 'Tourism Police'],
   },
@@ -60,7 +60,7 @@ export const ZONE_PROFILES: ZoneProfile[] = [
   },
 ];
 
-// â”€â”€â”€ Kerala Coastal Sectors Definition â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Kerala Coastal Sectors Definition ────────────────────────
 
 export interface CoastalSector {
   name: string;
@@ -86,7 +86,7 @@ export const KERALA_COASTAL_SECTORS: CoastalSector[] = [
   { name: 'Kasaragod Estuary & Marine Sector, Kasaragod', lat: 12.498, lon: 74.982, uavCode: 'UAV-06', missionCode: 'M-2026-0419', missionTitle: 'Bekal Coastal High-Security Sector' },
 ];
 
-// â”€â”€â”€ Zones â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Zones ───────────────────────────────────────────────────
 
 export const ZONES: Zone[] = [
   {
@@ -151,7 +151,7 @@ export const ZONES: Zone[] = [
   },
 ];
 
-// â”€â”€â”€ UAVs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── UAVs ─────────────────────────────────────────────────────
 
 export const UAVS: Uav[] = [
   { id: 'u-01', droneCode: 'UAV-01', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-001-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
@@ -162,7 +162,7 @@ export const UAVS: Uav[] = [
   { id: 'u-06', droneCode: 'UAV-06', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-006-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
 ];
 
-// â”€â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Missions ─────────────────────────────────────────────────
 
 export const MISSIONS: Mission[] = [
   { id: 'm-01', missionCode: 'M-2026-0415', title: 'Vizhinjam Seaport Security Patrol', profile: 'harbour_patrol', uavId: 'u-03', uavCode: 'UAV-03', status: 'ACTIVE', processingMode: 'CENTRAL_GPU', startedAt: minutesAgo(180), area: 'Vizhinjam & Kovalam, Thiruvananthapuram' },
@@ -173,7 +173,7 @@ export const MISSIONS: Mission[] = [
   { id: 'm-06', missionCode: 'M-2026-0419', title: 'Bekal Coastal High-Security Sector', profile: 'beach_patrol', uavId: 'u-06', uavCode: 'UAV-06', status: 'ACTIVE', processingMode: 'LOCAL_EDGE', startedAt: minutesAgo(45), area: 'Bekal Coastal Zone, Kasaragod' },
 ];
 
-// â”€â”€â”€ Telemetry (initial values) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Telemetry (initial values) ───────────────────────────────
 
 export const INITIAL_TELEMETRY: Record<string, TelemetrySample> = {
   'f-01': { feedId: 'f-01', uavCode: 'UAV-01', missionCode: 'M-2026-0416', timestamp: new Date().toISOString(), lat: 9.965, lon: 76.230, altitudeM: 120, headingDeg: 45, groundSpeedMs: 9.2, batteryPct: 78, flightStatus: 'AUTO', signalStrengthPct: 94, satelliteCount: 14, telemetryAvailable: true, locationName: 'Kochi Port & Naval Base Sector, Ernakulam' },
@@ -190,7 +190,7 @@ export const INITIAL_TELEMETRY: Record<string, TelemetrySample> = {
   'f-12': { feedId: 'f-12', uavCode: 'UAV-02', missionCode: 'M-2026-0414', timestamp: new Date().toISOString(), lat: 11.168, lon: 75.802, altitudeM: 105, headingDeg: 180, groundSpeedMs: 8.5, batteryPct: 75, flightStatus: 'AUTO', signalStrengthPct: 88, satelliteCount: 13, telemetryAvailable: true, locationName: 'Beypore Deep Harbour Sector, Kozhikode' },
 };
 
-// â”€â”€â”€ Feeds â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Feeds ────────────────────────────────────────────────────
 
 export const INITIAL_FEEDS: Feed[] = [
   { id: 'f-01', uavCode: 'UAV-01', missionCode: 'M-2026-0416', label: 'UAV-01 RGB (Kochi Port)', modality: 'RGB', videoSrc: '/videos/RGB_1.mp4', state: 'LIVE', latencyMs: 820, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 8.4, droppedFrames: 12, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: true, telemetry: INITIAL_TELEMETRY['f-01'] },
@@ -216,7 +216,7 @@ export const INITIAL_FEEDS: Feed[] = [
   { id: 'f-20', uavCode: 'UAV-03', missionCode: 'M-2026-0415', label: 'UAV-03 RGB (Varkala Cliff)', modality: 'RGB', videoSrc: '/videos/RGB_11.mp4', state: 'LIVE', latencyMs: 960, fpsCurrent: 25, fpsTarget: 25, bitrateMbps: 7.9, droppedFrames: 1, lastFrameAt: new Date().toISOString(), resolution: '1920x1080', isPinned: false },
 ];
 
-// â”€â”€â”€ Contacts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Contacts ─────────────────────────────────────────────────
 
 const CONTACT_CLASSES: ContactClass[] = ['VESSEL', 'SMALL_CRAFT', 'FISHING_BOAT', 'PERSON', 'VEHICLE', 'UNKNOWN'];
 
@@ -263,7 +263,7 @@ export const CONTACTS: Contact[] = Array.from({ length: 40 }, (_, i) => {
   };
 });
 
-// â”€â”€â”€ Evidence items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Evidence items ──────────────────────────────────────────
 
 function makeEvidence(prefix: string): EvidenceItem[] {
   return [
@@ -275,11 +275,11 @@ function makeEvidence(prefix: string): EvidenceItem[] {
   ];
 }
 
-// â”€â”€â”€ Alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Alerts ───────────────────────────────────────────────────
 
 const EVENT_TYPES_BY_SEV: Record<Severity, { type: CoastalEvent['type']; zone?: string; zoneName?: string }[]> = {
   CRITICAL: [
-    { type: 'intrusion', zone: 'Z-07', zoneName: 'Restricted â€“ Vizhinjam Military Approach' },
+    { type: 'intrusion', zone: 'Z-07', zoneName: 'Restricted – Vizhinjam Military Approach' },
     { type: 'intrusion', zone: 'Z-01', zoneName: 'Vizhinjam Restricted Jetty' },
   ],
   HIGH: [
@@ -318,7 +318,7 @@ export const ALERTS: Alert[] = [
       id: 'ev-001', type: 'intrusion', occurredAt: minutesAgo(1.5),
       uav: { id: 'u-03', code: 'UAV-03' }, mission: { id: 'm-01', code: 'M-2026-0415', title: 'Vizhinjam Seaport Security Patrol' },
       location: { lat: 8.378, lon: 76.977, method: 'DRONE_POSITION', name: 'Vizhinjam International Seaport, Thiruvananthapuram' },
-      zone: { code: 'Z-01', name: 'Vizhinjam Deepwater Seaport & Approach', version: 3, profile: 'Restricted 24Ã—7' },
+      zone: { code: 'Z-01', name: 'Vizhinjam Deepwater Seaport & Approach', version: 3, profile: 'Restricted 24×7' },
       contact: { code: 'C-1042', class: 'SMALL_CRAFT', classConf: 0.91, continuityConf: 0.93 },
       attention: 'CRITICAL', modality: 'RGB',
       rationale: {
@@ -330,7 +330,7 @@ export const ALERTS: Alert[] = [
           { factorName: 'Time condition', value: 'Outside normal fishing hours', contribution: 'CONTEXTUAL' },
         ],
         note: 'Small craft entered restricted military approach zone at 08:14:22 IST.',
-        zoneProfileUsed: 'Restricted 24Ã—7',
+        zoneProfileUsed: 'Restricted 24×7',
         contextCondition: 'Night restriction active',
       },
       versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.0.3' },
@@ -349,18 +349,18 @@ export const ALERTS: Alert[] = [
       id: 'ev-002', type: 'zone_entry', occurredAt: minutesAgo(4.5),
       uav: { id: 'u-01', code: 'UAV-01' }, mission: { id: 'm-02', code: 'M-2026-0416', title: 'Kochi Port & Naval Base Surveillance' },
       location: { lat: 9.962, lon: 76.228, method: 'DRONE_POSITION', name: 'Kochi Port & Naval Base Channel, Ernakulam' },
-      zone: { code: 'Z-05', name: 'Cochin Port & Naval Base Restricted Waters', version: 4, profile: 'Restricted 24Ã—7' },
+      zone: { code: 'Z-05', name: 'Cochin Port & Naval Base Restricted Waters', version: 4, profile: 'Restricted 24×7' },
       contact: { code: 'C-1031', class: 'SMALL_CRAFT', classConf: 0.88, continuityConf: 0.82 },
       attention: 'ATTENTION', modality: 'RGB',
       rationale: {
         factors: [
           { factorName: 'Shoreline approaches', value: 4, threshold: 3, unit: 'count/11min', contribution: 'PRIMARY' },
-          { factorName: 'Zone profile', value: 'Restricted 24Ã—7', contribution: 'CONTEXTUAL' },
+          { factorName: 'Zone profile', value: 'Restricted 24×7', contribution: 'CONTEXTUAL' },
           { factorName: 'Co-appearance with C-1050', value: 3, unit: 'times', contribution: 'SUPPORTING' },
           { factorName: 'Detector confidence', value: 0.88, threshold: 0.70, unit: 'conf', contribution: 'SUPPORTING' },
         ],
-        note: 'Contact approached shoreline 4 times in 11 minutes â€” exceeds threshold of 3.',
-        zoneProfileUsed: 'Restricted 24Ã—7',
+        note: 'Contact approached shoreline 4 times in 11 minutes — exceeds threshold of 3.',
+        zoneProfileUsed: 'Restricted 24×7',
       },
       versions: { rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9', appVersion: '1.0.3' },
     },
@@ -378,7 +378,7 @@ export const ALERTS: Alert[] = [
       id: 'ev-003', type: 'crowd_threshold_exceeded', occurredAt: minutesAgo(12),
       uav: { id: 'u-03', code: 'UAV-03' }, mission: { id: 'm-01', code: 'M-2026-0415', title: 'Vizhinjam Seaport Security Patrol' },
       location: { lat: 8.399, lon: 76.984, method: 'DRONE_POSITION', name: 'Kovalam Beach Bay & Lighthouse, Thiruvananthapuram' },
-      zone: { code: 'Z-02', name: 'Kovalam Beach & Lighthouse Bay', version: 2, profile: 'Tourism â€“ Evening' },
+      zone: { code: 'Z-02', name: 'Kovalam Beach & Lighthouse Bay', version: 2, profile: 'Tourism – Evening' },
       attention: 'MONITOR', modality: 'RGB',
       rationale: {
         factors: [
@@ -386,7 +386,7 @@ export const ALERTS: Alert[] = [
           { factorName: 'Zone type', value: 'TOURISM', contribution: 'CONTEXTUAL' },
           { factorName: 'Time window', value: 'Weekend evening', contribution: 'CONTEXTUAL' },
         ],
-        zoneProfileUsed: 'Tourism â€“ Evening',
+        zoneProfileUsed: 'Tourism – Evening',
       },
       versions: { appVersion: '1.0.3', rgbDetectorVersion: 'rgb-det-v1.4.2', trackerVersion: 'bytetrack-v0.9' },
     },
@@ -480,7 +480,7 @@ export const ALERTS: Alert[] = [
   }),
 ];
 
-// â”€â”€â”€ Historical events (200 events) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Historical events (200 events) ──────────────────────────
 
 export const HISTORICAL_EVENTS: CoastalEvent[] = Array.from({ length: 200 }, (_, i) => {
   const hoursAgo = Math.floor(i / 5) + 1;
@@ -504,7 +504,7 @@ export const HISTORICAL_EVENTS: CoastalEvent[] = Array.from({ length: 200 }, (_,
   };
 });
 
-// â”€â”€â”€ System Health â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── System Health ─────────────────────────────────────────────
 
 const EDGE_NODES: EdgeNode[] = [
   { id: 'en-01', name: 'Central-GPU-A', kind: 'CENTRAL_GPU', isOnline: true, lastSeenAt: new Date().toISOString(), queuedEvents: 0, modelVersion: 'rgb-det-v1.4.2', configVersion: '2.3.1', gpuInfo: 'NVIDIA A100 40GB' },
@@ -547,7 +547,7 @@ export const INITIAL_HEALTH: SystemHealth = {
   updatedAt: new Date().toISOString(),
 };
 
-// â”€â”€â”€ Drone path data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Drone path data ──────────────────────────────────────────
 
 export const DRONE_PATHS: Record<string, Array<[number, number]>> = {
   'f-01': [

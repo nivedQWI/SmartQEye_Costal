@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal â€” Alert / Incident Detail (/alerts/:id)
+// SmartQEye Coastal — Alert / Incident Detail (/alerts/:id)
 // Evidence-Linked Incident Record (ELIR)
 // Real Video Stream, Keyframe Inspection, MapLibre Telemetry & PDF Export
 // ============================================================
@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Shield, Copy, Check, Download, ChevronLeft, AlertTriangle,
   Clock, MapPin, Cpu, Eye, ExternalLink, Play, RotateCcw,
-  CheckCircle2, Sparkles, FileText, Loader2, X
+  CheckCircle2, Sparkles, FileText, Loader2, X, Maximize2
 } from 'lucide-react';
 import {
   cn, formatIST, formatISTFull, formatCoords,
@@ -26,7 +26,7 @@ import { getAlertMedia, type KeyframeItem } from '@/lib/alertMedia';
 import { generateEvidencePackagePdf } from '@/lib/evidencePdfGenerator';
 import type { EvidenceItem } from '@/types';
 
-// â”€â”€ Evidence item row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Evidence item row ────────────────────────────────────────────────────────
 
 function EvidenceRow({ item }: { item: EvidenceItem }) {
   const [copied, setCopied] = useState(false);
@@ -65,7 +65,7 @@ function EvidenceRow({ item }: { item: EvidenceItem }) {
   );
 }
 
-// â”€â”€ Rationale factor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Rationale factor ─────────────────────────────────────────────────────────
 
 function RationaleFactor({ factor }: { factor: { factorName: string; value: string|number; threshold?: string|number; unit?: string; contribution: string } }) {
   const contribColour = factor.contribution === 'PRIMARY' ? 'var(--sev-high)' : factor.contribution === 'SUPPORTING' ? 'var(--sev-medium)' : 'var(--text-muted)';
@@ -85,7 +85,7 @@ function RationaleFactor({ factor }: { factor: { factorName: string; value: stri
   );
 }
 
-// â”€â”€ Alert Detail page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Alert Detail page ────────────────────────────────────────────────────────
 
 export default function AlertDetail() {
   const { id } = useParams<{ id: string }>();
@@ -100,6 +100,7 @@ export default function AlertDetail() {
   const [exportSuccess, setExportSuccess] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [selectedKeyframe, setSelectedKeyframe] = useState<KeyframeItem | null>(null);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -153,7 +154,7 @@ export default function AlertDetail() {
     return (
       <div className="flex items-center justify-center h-full gap-3" style={{ color: 'var(--text-muted)' }}>
         <div className="w-5 h-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-        Loading incident recordâ€¦
+        Loading incident record…
       </div>
     );
   }
@@ -186,12 +187,12 @@ export default function AlertDetail() {
           <div className="flex items-center gap-2 mt-0.5">
             <SeverityChip severity={alert.severity} />
             <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>{eventTypeLabel(ev.type)}</span>
-            <span className="text-xs opacity-50">â€¢</span>
+            <span className="text-xs opacity-50">•</span>
             <span className="text-xs px-2 py-0.5 rounded font-mono font-medium border" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}>
               {alert.status.replace(/_/g,' ')}
             </span>
             {alert.assignedToName && (
-              <><span className="text-xs opacity-50">â€¢</span><span className="text-xs" style={{ color: 'var(--text-muted)' }}>Assigned: <strong style={{ color: 'var(--text)' }}>{alert.assignedToName}</strong></span></>
+              <><span className="text-xs opacity-50">•</span><span className="text-xs" style={{ color: 'var(--text-muted)' }}>Assigned: <strong style={{ color: 'var(--text)' }}>{alert.assignedToName}</strong></span></>
             )}
           </div>
         </div>
@@ -307,12 +308,13 @@ export default function AlertDetail() {
             </div>
           </div>
 
-          {/* Map display with correct Kerala focus */}
-          <div className="h-48 flex-shrink-0 border-b relative" style={{ borderColor: 'var(--line)' }}>
+          {/* Map display with high visibility and Kerala focus */}
+          <div className="h-60 flex-shrink-0 border-b relative" style={{ borderColor: 'var(--line)' }}>
             <CoastalMap
               height="100%"
               className="h-full w-full"
               interactive={true}
+              highlightAlert={alert}
               initialCenter={[ev.location.lon, ev.location.lat]}
               initialZoom={14}
               focus={{ center: [ev.location.lon, ev.location.lat], zoom: 14 }}
@@ -321,10 +323,23 @@ export default function AlertDetail() {
               showDrones={true}
             />
             {/* Map coordinate overlay badge */}
-            <div className="absolute bottom-2 left-2 bg-black/80 backdrop-blur-xs border border-white/20 rounded px-2 py-1 text-[10px] font-mono text-white pointer-events-none z-10">
-              <div className="font-semibold text-sky-300">{ev.location.name}</div>
-              <div className="text-[9px] text-white/70">{formatCoords(ev.location.lat, ev.location.lon)}</div>
+            <div className="absolute bottom-2 left-2 bg-black/85 backdrop-blur-xs border border-white/20 rounded px-2.5 py-1 text-[10px] font-mono text-white pointer-events-none z-10 shadow-lg">
+              <div className="font-bold text-sky-300 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{ev.location.name}</span>
+              </div>
+              <div className="text-[9px] text-white/80 font-mono mt-0.5">{formatCoords(ev.location.lat, ev.location.lon)}</div>
             </div>
+
+            {/* Expand map button */}
+            <button
+              onClick={() => setIsMapExpanded(true)}
+              className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white p-1.5 rounded-lg border border-white/20 z-10 transition-colors shadow-md cursor-pointer flex items-center gap-1 text-[10px] font-mono"
+              title="Expand tactical map"
+            >
+              <Maximize2 className="w-3.5 h-3.5 text-sky-400" />
+              <span>Expand</span>
+            </button>
           </div>
 
           {/* Contact history timeline */}
@@ -367,7 +382,7 @@ export default function AlertDetail() {
                   </div>
                   <div>
                     <span className="opacity-50">Mission:</span>{' '}
-                    <span className="font-medium">{ev.mission.code} â€” {ev.mission.title}</span>
+                    <span className="font-medium">{ev.mission.code} — {ev.mission.title}</span>
                   </div>
                   <div>
                     <span className="opacity-50">Location:</span>{' '}
@@ -377,7 +392,7 @@ export default function AlertDetail() {
                   <div>
                     <span className="opacity-50">Zone:</span>{' '}
                     {ev.zone ? (
-                      <span className="font-medium">{ev.zone.code} â€” {ev.zone.name} (v{ev.zone.version})</span>
+                      <span className="font-medium">{ev.zone.code} — {ev.zone.name} (v{ev.zone.version})</span>
                     ) : (
                       <span className="opacity-50">Unzoned sector</span>
                     )}
@@ -403,6 +418,55 @@ export default function AlertDetail() {
                   ))}
                   {ev.rationale.note && (
                     <div className="mt-2 text-xs italic opacity-75">{ev.rationale.note}</div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Full-width Tactical GIS Card */}
+            <section className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[var(--sea-accent)]" />
+                  <h2 className="font-serif text-lg font-semibold">Incident Position &amp; Coastal GIS Context</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono px-2 py-0.5 rounded border" style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--sea-accent)' }}>
+                    {formatCoords(ev.location.lat, ev.location.lon)}
+                  </span>
+                  <button
+                    onClick={() => setIsMapExpanded(true)}
+                    className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors hover:bg-[var(--raised)] cursor-pointer"
+                    style={{ borderColor: 'var(--line)', color: 'var(--sea-accent)' }}
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" /> Full View
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border overflow-hidden shadow-xs relative h-80" style={{ borderColor: 'var(--line)' }}>
+                <CoastalMap
+                  height="100%"
+                  className="h-full w-full"
+                  interactive={true}
+                  highlightAlert={alert}
+                  initialCenter={[ev.location.lon, ev.location.lat]}
+                  initialZoom={14}
+                  focus={{ center: [ev.location.lon, ev.location.lat], zoom: 14 }}
+                  showAlerts={true}
+                  showZones={true}
+                  showDrones={true}
+                />
+                <div className="absolute top-3 left-3 bg-black/85 backdrop-blur-md border border-white/20 rounded-xl p-2.5 text-xs text-white z-10 shadow-xl pointer-events-none max-w-sm">
+                  <div className="font-bold text-sky-300 font-mono text-[11px] mb-1">INCIDENT LOCALIZATION · {alert.alertCode}</div>
+                  <div className="text-white font-medium">{ev.location.name}</div>
+                  <div className="text-[10px] text-zinc-300 font-mono mt-1">
+                    Coordinates: {formatCoords(ev.location.lat, ev.location.lon)} · UAV: {ev.uav.code}
+                  </div>
+                  {ev.zone && (
+                    <div className="text-[10px] text-amber-300 font-medium mt-0.5">
+                      Monitored Perimeter: {ev.zone.name} ({ev.zone.code})
+                    </div>
                   )}
                 </div>
               </div>
@@ -475,7 +539,7 @@ export default function AlertDetail() {
                 onChange={e => setNoteText(e.target.value)}
                 className="w-full rounded-xl p-3 text-sm border resize-none outline-none focus:ring-2"
                 style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)', minHeight: '80px' }}
-                placeholder="Add operational notes (visible to supervisors)â€¦"
+                placeholder="Add operational notes (visible to supervisors)…"
               />
               {noteText.trim() && (
                 <button
@@ -548,7 +612,7 @@ export default function AlertDetail() {
                 onChange={e => setExportReason(e.target.value)}
                 className="w-full rounded-xl p-3 text-sm border resize-none outline-none focus:ring-1 focus:ring-sky-500"
                 style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)', minHeight: '80px' }}
-                placeholder="Investigation reference, authorisation numberâ€¦"
+                placeholder="Investigation reference, authorisation number…"
                 autoFocus
               />
             </div>

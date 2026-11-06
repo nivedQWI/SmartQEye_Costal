@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal â€” App Router
+// SmartQEye Coastal — App Router
 // As specified in Costal Police .docx
 // ============================================================
 
@@ -56,7 +56,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// â”€â”€â”€ Page loading skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Page loading skeleton ────────────────────────────────────
 
 function PageSkeleton() {
   return (
@@ -67,7 +67,7 @@ function PageSkeleton() {
   );
 }
 
-// â”€â”€â”€ Auth & Role guards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Auth & Role guards ───────────────────────────────────────
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -97,7 +97,7 @@ function CatchAll() {
   return <Navigate to="/login" replace />;
 }
 
-// â”€â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── App ─────────────────────────────────────────────────────
 
 export default function App() {
   return (
