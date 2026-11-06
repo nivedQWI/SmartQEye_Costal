@@ -469,8 +469,9 @@ export function CoastalMap({
 
     if (droneMarkersRef.current[feedId]) {
       droneMarkersRef.current[feedId].setLngLat([lon, lat]);
-      const glyph = droneMarkersRef.current[feedId].getElement().firstElementChild as HTMLElement | null;
-      if (glyph) glyph.style.transform = `rotate(${headingDeg}deg)`;
+      // The SVG direction arrow is inside: el > div(#2) > svg > g[transform]
+      const svgEl = droneMarkersRef.current[feedId].getElement().querySelector('svg g[transform]') as SVGGElement | null;
+      if (svgEl) svgEl.setAttribute('transform', `translate(27, 27) rotate(${headingDeg})`);
     } else {
       const el = createDroneElement(feedId, headingDeg, [lon, lat]);
       const marker = new maplibregl.Marker({ element: el })
@@ -491,16 +492,70 @@ export function CoastalMap({
       onDroneClickRef.current?.(feedId);
     });
 
-    const info = droneDataRef.current[feedId] || { uavCode: 'UAV-01' };
-    const shortCode = info.uavCode.replace('UAV-', 'U');
+    const info = droneDataRef.current[feedId] || { uavCode: 'UAV-01', missionCode: '', locationName: 'Kerala Coast', operatorName: '', lat: 0, lon: 0 };
+    const droneId = info.uavCode || 'UAV-01';
+    const portLabel = (info.locationName || 'Patrol Sector').split(',')[0];
+
+    el.style.cssText = 'cursor: pointer; position: relative; display: flex; flex-direction: column; align-items: center;';
 
     el.innerHTML = `
-      <svg style="transform: rotate(${headingDeg}deg)" width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="16" r="14" fill="#0284c7" fill-opacity="0.95" stroke="white" stroke-width="2" style="filter: drop-shadow(0 2px 7px rgba(0,0,0,0.65))"/>
-        <path d="M16 6 L13 17 L16 15 L19 17 Z" fill="#ffffff"/>
-        <circle cx="16" cy="16" r="2.5" fill="#facc15"/>
-        <text x="16" y="27" text-anchor="middle" font-size="6.5" font-weight="bold" fill="white" font-family="monospace">${shortCode}</text>
-      </svg>
+      <style>
+        @keyframes drone-pulse-ring {
+          0%   { transform: scale(1);   opacity: 0.7; }
+          50%  { transform: scale(1.6); opacity: 0; }
+          100% { transform: scale(1);   opacity: 0; }
+        }
+        @keyframes drone-blink {
+          0%, 100% { opacity: 1; }
+          50%      { opacity: 0.4; }
+        }
+      </style>
+      <!-- Outer pulsing ring -->
+      <div style="
+        position: absolute; top: 50%; left: 50%;
+        width: 54px; height: 54px;
+        margin-left: -27px; margin-top: -43px;
+        border-radius: 50%;
+        border: 3px solid #38bdf8;
+        animation: drone-pulse-ring 2s ease-out infinite;
+        pointer-events: none;
+      "></div>
+
+      <!-- Drone icon circle -->
+      <div style="position: relative; width: 54px; height: 54px; flex-shrink: 0;">
+        <svg width="54" height="54" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="27" cy="27" r="25" fill="#0c4a6e" stroke="#38bdf8" stroke-width="3" style="filter: drop-shadow(0 4px 12px rgba(2,132,199,0.7))"/>
+          <g transform="translate(27, 27) rotate(${headingDeg})">
+            <path d="M0 -12 L-5 4 L0 1 L5 4 Z" fill="#ffffff" opacity="0.95"/>
+          </g>
+          <circle cx="27" cy="27" r="4" fill="#facc15" stroke="#000" stroke-width="1"/>
+        </svg>
+        <!-- Live blinking dot -->
+        <div style="
+          position: absolute; top: 2px; right: 2px;
+          width: 10px; height: 10px; border-radius: 50%;
+          background: #4ade80;
+          border: 2px solid #0c4a6e;
+          animation: drone-blink 1.5s ease-in-out infinite;
+          box-shadow: 0 0 6px #4ade80;
+        "></div>
+      </div>
+
+      <!-- Label below marker -->
+      <div style="
+        margin-top: 2px;
+        background: rgba(12, 74, 110, 0.92);
+        border: 1.5px solid #38bdf8;
+        border-radius: 6px;
+        padding: 3px 8px;
+        text-align: center;
+        white-space: nowrap;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.7);
+        pointer-events: none;
+      ">
+        <div style="font-family: monospace; font-size: 11px; font-weight: 900; color: #38bdf8; letter-spacing: 0.8px;">${droneId}</div>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 9px; color: #94a3b8; font-weight: 600; margin-top: 1px; max-width: 140px; overflow: hidden; text-overflow: ellipsis;">${portLabel}</div>
+      </div>
     `;
 
     // Mouse Hover Popup with DRONE ID, MISSION ID, LOCATION, OPERATOR NAME, TIME DATE
@@ -522,7 +577,7 @@ export function CoastalMap({
       const popup = new maplibregl.Popup({
         closeButton: false,
         closeOnClick: false,
-        offset: 18,
+        offset: 50,
         className: 'coastal-custom-hover-popup',
       })
         .setLngLat([data.lon, data.lat])
