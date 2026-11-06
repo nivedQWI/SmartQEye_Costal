@@ -3,14 +3,20 @@
 // Powered by OpenStreetMap (OSM) focused on Kerala State Coastline
 // ============================================================
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import type { Map as MLMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import type { Alert, Zone } from '@/types';
 import { useMapStore } from '@/lib/store';
 import { ZONES, ALERTS, KERALA_COASTAL_SECTORS } from '@/lib/mockData';
 import { ACTIVE_MISSION_DRONES, KERALA_SEAPORTS, type ActiveDroneMission } from '@/lib/coastalPortsData';
+
+// Configure MapLibre Web Worker to use bundled static asset URL
+if (typeof window !== 'undefined' && (maplibregl as any).setWorkerUrl) {
+  (maplibregl as any).setWorkerUrl(maplibreWorkerUrl);
+}
 
 // OpenStreetMap (OSM) Tile Provider URL
 const DEFAULT_OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -42,7 +48,6 @@ function buildOSMStyle(): maplibregl.StyleSpecification {
 }
 
 // Kerala State Geographical Focus (Center: Lat 10.25°N, Lon 76.35°E, Zoom 7.8)
-// Encompasses the complete Kerala coastline from Kasaragod to Thiruvananthapuram
 export const KERALA_VIEW = {
   center: [76.35, 10.25] as [number, number],
   zoom: 7.8,
@@ -187,6 +192,9 @@ export function CoastalMap({
   customZones = [],
 }: CoastalMapProps) {
   const mapRef = useRef<MLMap | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Keep latest callbacks in refs
   const onAlertClickRef = useRef(onAlertClick);
   const onDroneClickRef = useRef(onDroneClick);
   const onZoneClickRef = useRef(onZoneClick);
@@ -199,14 +207,15 @@ export function CoastalMap({
   onMapClickCoordRef.current = onMapClickCoord;
   isDrawingPolygonRef.current = isDrawingPolygon;
 
-  const containerRef = useRef<HTMLDivElement>(null);
   const { layers, dronePositions } = useMapStore();
   const alertMarkersRef = useRef<maplibregl.Marker[]>([]);
   const droneMarkersRef = useRef<Record<string, maplibregl.Marker>>({});
   const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
 
-  // Dedicated HTML markers for vertex pins in draw mode
-  const drawingMarkersRef = useRef<maplibregl.Marker[]>([]);
+  // SVG Screen Coordinates for in-progress geofence drawing
+  const [screenVertices, setScreenVertices] = useState<{ x: number; y: number }[]>([]);
+  // SVG Screen Coordinates for saved custom zones
+  const [customZonesScreen, setCustomZonesScreen] = useState<Array<{ id: string; name: string; points: string }>>([]);
 
   // Drone real-time state for hover popups
   const droneDataRef = useRef<Record<string, {
@@ -232,6 +241,43 @@ export function CoastalMap({
     });
   }, []);
 
+  // Update SVG projected points from geographic coordinates
+  const updateProjectedCoords = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Project drawing vertices to screen pixels
+    if (drawingVertices.length > 0) {
+      const projected = drawingVertices.map(coord => {
+        const pt = map.project([coord[0], coord[1]]);
+        return { x: pt.x, y: pt.y };
+      });
+      setScreenVertices(projected);
+    } else {
+      setScreenVertices([]);
+    }
+
+    // Project custom zones to screen pixels
+    if (customZones.length > 0) {
+      const projectedZones = customZones.map(zone => {
+        if (zone.geometry && zone.geometry.type === 'Polygon') {
+          const ring = (zone.geometry as any).coordinates[0] as [number, number][];
+          if (!ring || ring.length < 3) return null;
+          const pts = ring.map(c => {
+            const pt = map.project([c[0], c[1]]);
+            return `${pt.x},${pt.y}`;
+          }).join(' ');
+          return { id: zone.id, name: zone.name, points: pts };
+        }
+        return null;
+      }).filter(Boolean) as Array<{ id: string; name: string; points: string }>;
+      setCustomZonesScreen(projectedZones);
+    } else {
+      setCustomZonesScreen([]);
+    }
+  }, [drawingVertices, customZones]);
+
+  // Map initialization
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -262,6 +308,11 @@ export function CoastalMap({
       console.warn('MapLibre notice:', e?.error?.message || e);
     });
 
+    // Real-time map projection listener for SVG drawing overlay
+    map.on('move', updateProjectedCoords);
+    map.on('zoom', updateProjectedCoords);
+    map.on('resize', updateProjectedCoords);
+
     // Map click handler for polygon drawing
     map.on('click', (e) => {
       if (isDrawingPolygonRef.current) {
@@ -276,20 +327,27 @@ export function CoastalMap({
       if (showAlerts) addAlertPins(map);
       if (showDrones) renderActiveMissionDrones(map, selectedPortId);
       setupInteractions(map);
-      ensureDrawingLayers(map);
+      updateProjectedCoords();
 
       if (highlightAlert) {
         map.jumpTo({ center: [highlightAlert.event.location.lon, highlightAlert.event.location.lat], zoom: 14 });
       } else if (focus) {
         map.jumpTo({ center: focus.center, zoom: focus.zoom });
       }
-      setTimeout(() => map.resize(), 100);
-      setTimeout(() => map.resize(), 400);
+      setTimeout(() => {
+        map.resize();
+        updateProjectedCoords();
+      }, 150);
+      setTimeout(() => {
+        map.resize();
+        updateProjectedCoords();
+      }, 500);
     });
 
     const resizeObserver = new ResizeObserver(() => {
       if (mapRef.current) {
         mapRef.current.resize();
+        updateProjectedCoords();
       }
     });
     if (containerRef.current) {
@@ -301,7 +359,6 @@ export function CoastalMap({
       hoverPopupRef.current?.remove();
       alertMarkersRef.current.forEach(m => m.remove());
       Object.values(droneMarkersRef.current).forEach(m => m.remove());
-      drawingMarkersRef.current.forEach(m => m.remove());
       map.remove();
       mapRef.current = null;
     };
@@ -313,6 +370,11 @@ export function CoastalMap({
     if (!map) return;
     map.getCanvas().style.cursor = isDrawingPolygon ? 'crosshair' : '';
   }, [isDrawingPolygon]);
+
+  // Re-project SVG whenever drawing vertices or custom zones change
+  useEffect(() => {
+    updateProjectedCoords();
+  }, [updateProjectedCoords]);
 
   // Fly to port focus when focus prop or selectedPortId changes
   useEffect(() => {
@@ -361,149 +423,6 @@ export function CoastalMap({
     if (!map || !map.isStyleLoaded() || !showZones) return;
     addZones(map, [...ZONES, ...customZones]);
   }, [customZones, showZones]);
-
-  // ─── Real-Time Yellowish Geofence Drawing & Vertex Pins Update ───
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-
-    // Ensure dedicated fill and line drawing layers exist
-    ensureDrawingLayers(map);
-
-    // Remove previous vertex pins
-    drawingMarkersRef.current.forEach(m => m.remove());
-    drawingMarkersRef.current = [];
-
-    const fillSrc = map.getSource('drawn-geofence-fill-source') as maplibregl.GeoJSONSource | undefined;
-    const lineSrc = map.getSource('drawn-geofence-line-source') as maplibregl.GeoJSONSource | undefined;
-
-    if (!isDrawingPolygon || drawingVertices.length === 0) {
-      fillSrc?.setData({ type: 'FeatureCollection', features: [] });
-      lineSrc?.setData({ type: 'FeatureCollection', features: [] });
-      return;
-    }
-
-    // 1. Create prominent glowing vertex pins for every clicked point
-    drawingVertices.forEach((coord, idx) => {
-      const el = document.createElement('div');
-      el.style.cssText = 'position: relative; pointer-events: none;';
-      el.innerHTML = `
-        <div style="
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          background: #FACC15;
-          border: 2.5px solid #000000;
-          color: #000000;
-          font-family: monospace;
-          font-size: 11px;
-          font-weight: 900;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 0 14px rgba(250, 204, 21, 1), 0 3px 8px rgba(0, 0, 0, 0.85);
-          transform: translate(-50%, -50%);
-        ">
-          ${idx + 1}
-        </div>
-      `;
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat(coord)
-        .addTo(map);
-      drawingMarkersRef.current.push(marker);
-    });
-
-    // 2. Yellowish Translucent Zone Fill (active when >= 3 points)
-    if (fillSrc) {
-      if (drawingVertices.length >= 3) {
-        fillSrc.setData({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [[...drawingVertices, drawingVertices[0]]],
-          },
-          properties: {},
-        });
-      } else {
-        fillSrc.setData({ type: 'FeatureCollection', features: [] });
-      }
-    }
-
-    // 3. Yellow Connecting Perimeter Lines (connects all marked points, closes loop if >= 3)
-    if (lineSrc) {
-      const lineCoords =
-        drawingVertices.length >= 3
-          ? [...drawingVertices, drawingVertices[0]]
-          : drawingVertices.length >= 2
-          ? drawingVertices
-          : [];
-
-      if (lineCoords.length >= 2) {
-        lineSrc.setData({
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: lineCoords,
-          },
-          properties: {},
-        });
-      } else {
-        lineSrc.setData({ type: 'FeatureCollection', features: [] });
-      }
-    }
-  }, [isDrawingPolygon, drawingVertices]);
-
-  function ensureDrawingLayers(map: MLMap) {
-    // 1. Polygon Fill Source & Layer (Yellowish fill)
-    if (!map.getSource('drawn-geofence-fill-source')) {
-      map.addSource('drawn-geofence-fill-source', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
-
-      map.addLayer({
-        id: 'drawn-geofence-fill',
-        type: 'fill',
-        source: 'drawn-geofence-fill-source',
-        paint: {
-          'fill-color': '#FACC15',
-          'fill-opacity': 0.38,
-        },
-      });
-    }
-
-    // 2. Polygon Perimeter Line Source & Layers (Yellow lines with dark casing for contrast)
-    if (!map.getSource('drawn-geofence-line-source')) {
-      map.addSource('drawn-geofence-line-source', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
-
-      // Dark under-casing for high visibility against ocean water or land
-      map.addLayer({
-        id: 'drawn-geofence-line-casing',
-        type: 'line',
-        source: 'drawn-geofence-line-source',
-        paint: {
-          'line-color': '#78350F',
-          'line-width': 6.5,
-          'line-opacity': 0.6,
-        },
-      });
-
-      // Bright yellow dashed perimeter line
-      map.addLayer({
-        id: 'drawn-geofence-line',
-        type: 'line',
-        source: 'drawn-geofence-line-source',
-        paint: {
-          'line-color': '#FACC15',
-          'line-width': 4,
-          'line-dasharray': [3, 2],
-        },
-      });
-    }
-  }
 
   function renderActiveMissionDrones(map: MLMap, portId: string = 'ALL') {
     Object.values(droneMarkersRef.current).forEach(m => m.remove());
@@ -566,9 +485,7 @@ export function CoastalMap({
     el.style.cursor = 'pointer';
     el.title = 'Active Mission Drone';
     el.addEventListener('click', (e) => {
-      if (isDrawingPolygonRef.current) {
-        return;
-      }
+      if (isDrawingPolygonRef.current) return;
       e.stopPropagation();
       hoverPopupRef.current?.remove();
       onDroneClickRef.current?.(feedId);
@@ -636,7 +553,6 @@ export function CoastalMap({
       const fillId = `zone-fill-${zone.id}`;
       const borderId = `zone-border-${zone.id}`;
 
-      // Custom zones created by user are displayed in yellowish color
       const isCustom = zone.id.startsWith('z-custom');
       const fillColor = isCustom ? '#FACC15' : (zone.color || '#C8352E');
       const borderColor = isCustom ? '#EAB308' : (zone.color || '#C8352E');
@@ -853,7 +769,103 @@ export function CoastalMap({
           border-bottom-color: #091724 !important;
         }
       `}</style>
+
+      {/* MapLibre WebGL Canvas Container */}
       <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
+
+      {/* ─── Dedicated SVG Tactical Geofence Layer ─── */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none z-10"
+        style={{ overflow: 'visible' }}
+      >
+        <defs>
+          <filter id="yellow-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* 1. Saved custom geofence zones in yellowish color */}
+        {customZonesScreen.map(zone => (
+          <g key={zone.id}>
+            <polygon
+              points={zone.points}
+              fill="rgba(250, 204, 21, 0.35)"
+              stroke="#EAB308"
+              strokeWidth="3.5"
+              strokeDasharray="6,4"
+              strokeLinejoin="round"
+              filter="url(#yellow-glow)"
+            />
+          </g>
+        ))}
+
+        {/* 2. In-progress closed geofence zone with yellowish fill and dotted lines */}
+        {isDrawingPolygon && screenVertices.length >= 3 && (
+          <polygon
+            points={screenVertices.map(p => `${p.x},${p.y}`).join(' ')}
+            fill="rgba(250, 204, 21, 0.38)"
+            stroke="#EAB308"
+            strokeWidth="4"
+            strokeDasharray="6,4"
+            strokeLinejoin="round"
+            filter="url(#yellow-glow)"
+          />
+        )}
+
+        {/* 3. In-progress dotted connecting line between 2 marked points */}
+        {isDrawingPolygon && screenVertices.length === 2 && (
+          <line
+            x1={screenVertices[0].x}
+            y1={screenVertices[0].y}
+            x2={screenVertices[1].x}
+            y2={screenVertices[1].y}
+            stroke="#FACC15"
+            strokeWidth="4"
+            strokeDasharray="6,4"
+            strokeLinecap="round"
+            filter="url(#yellow-glow)"
+          />
+        )}
+
+        {/* 4. Visible colored dots at every marked point on the map */}
+        {isDrawingPolygon && screenVertices.map((p, idx) => (
+          <g key={idx} transform={`translate(${p.x}, ${p.y})`}>
+            {/* Outer animated halo ring */}
+            <circle r="12" fill="none" stroke="#FACC15" strokeWidth="2.5" opacity="0.8">
+              <animate attributeName="r" values="10;16;10" dur="2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.9;0.2;0.9" dur="2s" repeatCount="indefinite" />
+            </circle>
+
+            {/* Dark background backing for contrast */}
+            <circle r="9" fill="#000000" opacity="0.6" />
+
+            {/* Marked colored dot */}
+            <circle
+              r="7.5"
+              fill="#FACC15"
+              stroke="#000000"
+              strokeWidth="2"
+              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))' }}
+            />
+
+            {/* Sequence number on dot */}
+            <text
+              y="3.5"
+              textAnchor="middle"
+              fontSize="9"
+              fontWeight="900"
+              fill="#000000"
+              fontFamily="monospace"
+            >
+              {idx + 1}
+            </text>
+          </g>
+        ))}
+      </svg>
     </div>
   );
 }
