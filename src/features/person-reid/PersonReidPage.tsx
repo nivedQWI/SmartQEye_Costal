@@ -3,16 +3,73 @@
 // As specified in Costal Police .docx
 // ============================================================
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ScanFace, Users, ShieldAlert, CheckCircle, Search,
-  Download, Eye, Filter, ArrowRight,
-  Radio, Clock, AlertTriangle, ShieldCheck,
+  Download, Radio, Clock, ListOrdered,
   Play, Pause, Volume2, VolumeX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/lib/store';
-import { PersonReidRecord } from '@/types';
+import type { PersonReidRecord } from '@/types';
+
+// ─── Live Re-ID KPI + detection log simulation ───────────────
+
+interface ReidKpis {
+  personsTracked: number;
+  uniqueIdentities: number;
+  facesExtracted: number;
+}
+
+interface ReidLogRow {
+  id: string;
+  timestamp: string;
+  droneId: string;
+  sector: string;
+  personsDetected: number;
+  faceIds: string[];
+  reidMatch: string | null;
+  confidence: number;
+}
+
+const LOG_DRONES: { droneId: string; sector: string }[] = [
+  { droneId: 'UAV-KL-01', sector: 'Kovalam Lighthouse Promenade' },
+  { droneId: 'UAV-KL-02', sector: 'Hawa Beach Entrance' },
+  { droneId: 'UAV-KL-03', sector: 'Samudra Beach North' },
+  { droneId: 'UAV-KL-01', sector: 'Vizhinjam Fish Landing Wharf' },
+  { droneId: 'UAV-KL-04', sector: 'Shanghumugham Beach Walkway' },
+  { droneId: 'UAV-KL-05', sector: 'Poovar Estuary Jetty' },
+];
+
+const KNOWN_TRACK_IDS = ['ID-9041', 'ID-9048', 'ID-8812', 'ID-8830', 'ID-8902', 'ID-8920'];
+
+let faceSeq = 4100;
+let logSeq = 0;
+
+function istNow(offsetMs = 0): string {
+  return new Date(Date.now() - offsetMs).toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }) + ' IST';
+}
+
+function makeLogRow(offsetMs = 0): ReidLogRow {
+  const src = LOG_DRONES[Math.floor(Math.random() * LOG_DRONES.length)];
+  const personsDetected = 2 + Math.floor(Math.random() * 9);
+  const faceCount = Math.max(1, Math.min(personsDetected, Math.round(personsDetected * (0.4 + Math.random() * 0.5))));
+  const faceIds = Array.from({ length: faceCount }, () => `FID-${++faceSeq}`);
+  const hasMatch = Math.random() < 0.35;
+  return {
+    id: `log-${++logSeq}`,
+    timestamp: istNow(offsetMs),
+    droneId: src.droneId,
+    sector: src.sector,
+    personsDetected,
+    faceIds,
+    reidMatch: hasMatch ? KNOWN_TRACK_IDS[Math.floor(Math.random() * KNOWN_TRACK_IDS.length)] : null,
+    confidence: 0.86 + Math.random() * 0.13,
+  };
+}
+
+const LOG_CAP = 25;
 
 // Mock high-resolution Re-ID records
 const MOCK_REID_RECORDS: PersonReidRecord[] = [
@@ -106,8 +163,27 @@ const MOCK_REID_RECORDS: PersonReidRecord[] = [
 ];
 
 export default function PersonReidPage() {
-  const { devRole } = useAuthStore();
-  const isAuthorizedRole = ['ANALYST', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'].includes(devRole);
+  // Live KPIs + detection log
+  const [kpi, setKpi] = useState<ReidKpis>({ personsTracked: 84, uniqueIdentities: 312, facesExtracted: 294 });
+  const [logRows, setLogRows] = useState<ReidLogRow[]>(() =>
+    Array.from({ length: 8 }, (_, i) => makeLogRow((i + 1) * 7000))
+  );
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const row = makeLogRow();
+      setLogRows(prev => [row, ...prev].slice(0, LOG_CAP));
+      setKpi(prev => {
+        const personsTracked = Math.max(60, Math.min(120, prev.personsTracked + Math.round(Math.random() * 6 - 2.5)));
+        const newIdentities = row.reidMatch ? 0 : Math.max(1, Math.round(row.faceIds.length * 0.6));
+        const uniqueIdentities = prev.uniqueIdentities + newIdentities;
+        // faces extracted always keeps pace with (and stays ≥) unique identities
+        const facesExtracted = Math.max(uniqueIdentities, prev.facesExtracted + row.faceIds.length);
+        return { personsTracked, uniqueIdentities, facesExtracted };
+      });
+    }, 3000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [watchlistOnly, setWatchlistOnly] = useState(false);
@@ -169,26 +245,6 @@ export default function PersonReidPage() {
 
   return (
     <div className="h-full flex flex-col overflow-y-auto chart-paper p-4 md:p-6 gap-6">
-      {/* ── Optional Module Authorization Banner (Rule 9) ── */}
-      <div className="rounded-2xl p-4 border bg-amber-500/10 border-amber-500/30 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-start gap-2.5">
-          <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <div className="font-bold text-amber-900 dark:text-amber-200">
-              Optional Module — Requires Authorisation (RFP Baseline Extension)
-            </div>
-            <p className="text-amber-800/80 dark:text-amber-300/80 mt-0.5">
-              Biometric facial crops and watchlist cross-matching are restricted to ANALYST / SUPERVISOR roles. Current Role: <span className="font-mono font-bold">{devRole}</span>. All queries and dossier views are cryptographically logged.
-            </p>
-          </div>
-        </div>
-        {!isAuthorizedRole && (
-          <span className="px-3 py-1 rounded bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-mono text-[11px] font-bold">
-            SUPERVISOR ELEVATION REQUIRED
-          </span>
-        )}
-      </div>
-
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
         <div>
@@ -223,7 +279,7 @@ export default function PersonReidPage() {
             Persons Tracked
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">84</span>
+            <span className="font-mono text-2xl font-bold tabular-nums text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{kpi.personsTracked}</span>
             <Users className="w-4 h-4 opacity-60" style={{ color: 'var(--text-muted)' }} />
           </div>
           <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Active in field</div>
@@ -234,7 +290,7 @@ export default function PersonReidPage() {
             Unique Identities
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>312</span>
+            <span className="font-mono text-2xl font-bold tabular-nums" style={{ color: 'var(--text)' }}>{kpi.uniqueIdentities}</span>
             <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20">24h</span>
           </div>
           <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Cross-drone deduplicated</div>
@@ -245,7 +301,7 @@ export default function PersonReidPage() {
             Faces Extracted
           </span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="font-mono text-2xl font-bold text-emerald-700 dark:text-emerald-400">294</span>
+            <span className="font-mono text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{kpi.facesExtracted}</span>
             <ScanFace className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Stored in MinIO object store</div>
@@ -376,7 +432,7 @@ export default function PersonReidPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <h3 className="font-serif text-base font-bold text-[var(--text)]">
-                  MinIO Face Crop Gallery &amp; Track Directory
+                  Track Directory
                 </h3>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   Auto-extracted facial biometric crops with multi-camera trajectory histories
@@ -508,6 +564,79 @@ export default function PersonReidPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* ── Live Re-ID Detection Log Ledger ── */}
+      <div className="card-sand p-4 flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ListOrdered className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
+            <div>
+              <h3 className="font-serif text-base font-bold text-[var(--text)]">Re-ID Detection Log Ledger</h3>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Per-drone person detections, extracted face IDs and cross-camera Re-ID matches (live)
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            LIVE · {logRows.length} ENTRIES
+          </span>
+        </div>
+
+        <div className="overflow-x-auto rounded-md border" style={{ borderColor: 'var(--line)' }}>
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr
+                className="font-mono text-[11px] uppercase border-b"
+                style={{ background: 'var(--panel)', color: 'var(--text-muted)', borderColor: 'var(--line)' }}
+              >
+                <th className="p-2.5">Timestamp (IST)</th>
+                <th className="p-2.5">Drone ID</th>
+                <th className="p-2.5">Sector</th>
+                <th className="p-2.5 text-right">Persons Detected</th>
+                <th className="p-2.5">Face IDs Extracted</th>
+                <th className="p-2.5">Re-ID Match</th>
+                <th className="p-2.5 text-right">Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logRows.map((row, idx) => (
+                <tr
+                  key={row.id}
+                  className={cn(
+                    'border-b transition-colors hover:bg-[var(--surface-hover)]',
+                    idx === 0 && 'bg-emerald-500/5'
+                  )}
+                  style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
+                >
+                  <td className="p-2.5 font-mono whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{row.timestamp}</td>
+                  <td className="p-2.5 font-mono font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{row.droneId}</td>
+                  <td className="p-2.5 whitespace-nowrap">{row.sector}</td>
+                  <td className="p-2.5 font-mono font-bold text-right tabular-nums">{row.personsDetected}</td>
+                  <td className="p-2.5 font-mono">
+                    <span className="font-bold mr-1.5">{row.faceIds.length}</span>
+                    <span style={{ color: 'var(--text-muted)' }} title={row.faceIds.join(', ')}>
+                      {row.faceIds.slice(0, 3).join(', ')}{row.faceIds.length > 3 ? ` +${row.faceIds.length - 3}` : ''}
+                    </span>
+                  </td>
+                  <td className="p-2.5 font-mono">
+                    {row.reidMatch ? (
+                      <span className="px-1.5 py-0.5 rounded font-bold bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/30">
+                        {row.reidMatch}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)' }}>New identity</span>
+                    )}
+                  </td>
+                  <td className="p-2.5 font-mono text-right">
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400">{(row.confidence * 100).toFixed(1)}%</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

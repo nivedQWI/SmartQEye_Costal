@@ -3,22 +3,42 @@
 // Full Canvas Tactical Map focused on Kerala Coastline
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layers, ChevronDown, ChevronUp } from 'lucide-react';
-import { CoastalMap } from '@/components/CoastalMap';
+import { CoastalMap, KERALA_VIEW } from '@/components/CoastalMap';
 import { SeverityChip, SeverityDot } from '@/components/SeverityChip';
 import { useAlertStore, useFeedStore, useMapStore, useMissionStore, useAuthStore } from '@/lib/store';
 import { canAccess } from '@/lib/roleConfig';
 import { cn, formatIST, eventTypeLabel } from '@/lib/utils';
-import { MISSIONS } from '@/lib/mockData';
+import { KERALA_COASTAL_SECTORS } from '@/lib/mockData';
+import type { Alert, Feed } from '@/types';
+
+/** Mission code of the port selected in the header dropdown (null = all ports). */
+function useSelectedMissionCode(): string | null {
+  const { missions, activeMissionId } = useMissionStore();
+  return missions.find(m => m.id === activeMissionId)?.missionCode ?? null;
+}
+
+/** Best live feed for an alert: same UAV + mission, prefer LIVE RGB. */
+function feedForAlert(alert: Alert, feeds: Feed[]): Feed | undefined {
+  const uav = alert.event.uav?.code;
+  const msn = alert.event.mission?.code;
+  const score = (f: Feed) =>
+    (f.uavCode === uav ? 4 : 0) + (f.missionCode === msn ? 2 : 0) +
+    (f.state === 'LIVE' ? 1 : 0) + (f.modality === 'RGB' ? 0.5 : 0);
+  const candidates = feeds.filter(f => f.uavCode === uav || f.missionCode === msn);
+  return candidates.sort((a, b) => score(b) - score(a))[0];
+}
 
 // ─── Alert Queue (right panel) ────────────────────────────────
 
 function AlertQueue() {
   const { alerts } = useAlertStore();
   const navigate = useNavigate();
+  const missionCode = useSelectedMissionCode();
   const topAlerts = alerts
+    .filter(a => !missionCode || a.event.mission?.code === missionCode)
     .filter(a => a.status === 'NEW' || a.status === 'ACKNOWLEDGED')
     .sort((a, b) => {
       const order = ['CRITICAL','HIGH','MEDIUM','LOW','INFO'];
@@ -43,7 +63,8 @@ function AlertQueue() {
               key={alert.id}
               className="w-full text-left px-3 py-2.5 border-b hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)] transition-colors"
               style={{ borderColor: 'var(--line)' }}
-              onClick={() => navigate(`/alerts/${alert.id}`)}
+              onClick={() => navigate(`/alerts?focus=${encodeURIComponent(alert.id)}`)}
+              title="Open this alert in the Alerts page"
             >
               <div className="flex items-start gap-2">
                 <SeverityDot severity={alert.severity} pulse={alert.severity === 'CRITICAL'} className="mt-1 flex-shrink-0" />
@@ -75,18 +96,28 @@ function MissionStats({ borderTop = true }: { borderTop?: boolean }) {
   const { missions, activeMissionId } = useMissionStore();
 
   const activeMission = missions.find(m => m.id === activeMissionId);
-  const activeAlerts = alerts.filter(a => a.status === 'NEW').length;
-  const liveFeeds = feeds.filter(f => f.state === 'LIVE').length;
+  const missionCode = activeMission?.missionCode ?? null;
+
+  // Scope stats to the port selected in the header dropdown
+  const scopedAlerts = missionCode ? alerts.filter(a => a.event.mission?.code === missionCode) : alerts;
+  const scopedFeeds = missionCode ? feeds.filter(f => f.missionCode === missionCode) : feeds;
+  const activeAlerts = scopedAlerts.filter(a => a.status === 'NEW').length;
+  const liveFeeds = scopedFeeds.filter(f => f.state === 'LIVE').length;
 
   return (
     <div className={cn("p-3 flex-shrink-0", borderTop && "border-t")} style={{ borderColor: 'var(--line)' }}>
       <div className="font-serif text-sm font-semibold mb-2 truncate">
-        {activeMission?.title ?? 'Active Operation'}
+        {activeMission?.title ?? 'All Ports · Kerala Coast'}
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs">
         <StatBox label="Active Alerts" value={activeAlerts.toString()} alert={activeAlerts > 0} />
-        <StatBox label="Active UAVs" value={`${liveFeeds}/${feeds.length}`} />
+        <StatBox label="Active UAVs" value={`${liveFeeds}/${scopedFeeds.length}`} />
       </div>
+      {activeMission && (
+        <div className="mt-2 text-[11px] font-mono opacity-70 truncate">
+          {activeMission.missionCode} · {activeMission.area}
+        </div>
+      )}
     </div>
   );
 }
@@ -149,6 +180,33 @@ export default function CommandCenter() {
   const { user, devRole } = useAuthStore();
   const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const hasAlertsAccess = canAccess(activeRole, '/alerts');
+  const hasLiveAccess = canAccess(activeRole, '/live');
+  const { alerts } = useAlertStore();
+  const { feeds } = useFeedStore();
+  const missionCode = useSelectedMissionCode();
+
+  // Fly the map to the selected port
+  const focus = useMemo(() => {
+    if (!missionCode) return { center: KERALA_VIEW.center, zoom: KERALA_VIEW.zoom };
+    const sector = KERALA_COASTAL_SECTORS.find(s => s.missionCode === missionCode);
+    return sector ? { center: [sector.lon, sector.lat] as [number, number], zoom: 11.5 } : null;
+  }, [missionCode]);
+
+  // UAV PATROL marker → that drone's feed in Live Monitor
+  function openDroneFeed(feedId: string) {
+    if (hasLiveAccess) navigate(`/live?feed=${encodeURIComponent(feedId)}`);
+  }
+
+  // COASTAL ALERT marker → the feed of the drone that raised it in Live Monitor
+  function openAlertFeed(alertId: string) {
+    const alert = alerts.find(a => a.id === alertId);
+    const feed = alert ? feedForAlert(alert, feeds) : undefined;
+    if (feed && hasLiveAccess) {
+      navigate(`/live?feed=${encodeURIComponent(feed.id)}&alert=${encodeURIComponent(alertId)}`);
+    } else if (hasAlertsAccess) {
+      navigate(`/alerts?focus=${encodeURIComponent(alertId)}`);
+    }
+  }
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -158,9 +216,9 @@ export default function CommandCenter() {
           height="100%"
           className="absolute inset-0"
           showContacts={false}
-          onAlertClick={id => {
-            if (hasAlertsAccess) navigate(`/alerts/${id}`);
-          }}
+          focus={focus}
+          onAlertClick={openAlertFeed}
+          onDroneClick={openDroneFeed}
         />
         <LayerToggles />
       </div>

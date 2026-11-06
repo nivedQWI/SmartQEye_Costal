@@ -3,7 +3,7 @@
 // As specified in Costal Police .docx
 // ============================================================
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Users, TrendingUp, TrendingDown, AlertTriangle,
   Download, Activity, Sparkles,
@@ -15,6 +15,59 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
+
+// ─── Live crowd model ─────────────────────────────────────────
+
+const PEAK_COUNT = 570;
+const FLOOR_COUNT = 190;
+const TICK_MS = 2500;
+const SERIES_WINDOW = 40;
+
+interface CrowdPoint {
+  time: string;
+  count: number;
+}
+
+function formatIstTime(d: Date): string {
+  return d.toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+/** Build-up history ending exactly at the peak (the moment the page opens). */
+function seedSeries(): CrowdPoint[] {
+  const now = Date.now();
+  const buildUp = [418, 436, 451, 470, 487, 503, 519, 534, 548, 559, 566, PEAK_COUNT];
+  return buildUp.map((count, i) => ({
+    time: formatIstTime(new Date(now - (buildUp.length - 1 - i) * TICK_MS)),
+    count,
+  }));
+}
+
+// Monitored coastal polygons — each holds a fixed share of the live head count
+const SECTORS = [
+  { id: 'z-1', name: 'Kovalam Lighthouse Beach Promenade', areaM2: 420, share: 0.30 },
+  { id: 'z-2', name: 'Hawa Beach Entrance Bottleneck', areaM2: 120, share: 0.32 },
+  { id: 'z-3', name: 'Samudra Beach North Steps', areaM2: 95, share: 0.26 },
+  { id: 'z-4', name: 'Vizhinjam Fishing Harbor Fish Landing Wharf', areaM2: 260, share: 0.12 },
+] as const;
+
+type SectorStatus = 'LOW' | 'MEDIUM' | 'HIGH';
+
+function deriveZones(total: number) {
+  // Allocate by share; give any rounding remainder to the first sector so the table sums to `total`
+  const counts = SECTORS.map(s => Math.round(total * s.share));
+  counts[0] += total - counts.reduce((a, b) => a + b, 0);
+  return SECTORS.map((s, i) => {
+    const ppm2 = parseFloat((counts[i] / s.areaM2).toFixed(2));
+    const status: SectorStatus = ppm2 >= 1.2 ? 'HIGH' : ppm2 >= 0.6 ? 'MEDIUM' : 'LOW';
+    return { id: s.id, name: s.name, areaM2: s.areaM2, count: counts[i], ppm2, status };
+  });
+}
 
 export default function CrowdAnalyticsPage() {
   const [selectedDrone, setSelectedDrone] = useState('UAV-KL-02');
@@ -71,36 +124,23 @@ export default function CrowdAnalyticsPage() {
     }
   }
 
-  // Live KPI values
-  const [currentCount, setCurrentCount] = useState(200);
-  const [peakCount] = useState({ count: 500, time: '17:45 IST' });
-  const [activeAlerts, setActiveAlerts] = useState(2);
-  const [densityRating, setDensityRating] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('HIGH');
-  const [densityPpm2, setDensityPpm2] = useState(1.4);
-  const [isIncreasing, setIsIncreasing] = useState(true);
+  // ── Live crowd series (single source of truth for KPIs, chart and sector table) ──
+  // Peak is fixed at PEAK_COUNT; the live count starts at the peak and ebbs
+  // gradually towards a dispersal floor, then fluctuates around it.
+  const [series, setSeries] = useState<CrowdPoint[]>(() => seedSeries());
+  const [peakTime] = useState(() => formatIstTime(new Date()));
 
-  // Crowd Analysis trend timeline (Range: 0–200, curve starts at 200, peaks at 500, gradually decreases to 100)
-  const [trendData] = useState(() => [
-    { range: 0, count: 200 },
-    { range: 20, count: 240 },
-    { range: 40, count: 310 },
-    { range: 60, count: 405 },
-    { range: 80, count: 475 },
-    { range: 100, count: 500 },
-    { range: 120, count: 440 },
-    { range: 140, count: 325 },
-    { range: 160, count: 230 },
-    { range: 180, count: 160 },
-    { range: 200, count: 100 },
-  ]);
+  const currentCount = series[series.length - 1].count;
+  const prevCount = series.length > 1 ? series[series.length - 2].count : currentCount;
+  const isIncreasing = currentCount > prevCount;
 
-  // Zone distribution
-  const [zones] = useState([
-    { id: 'z-1', name: 'Kovalam Lighthouse Beach Promenade', areaM2: 650, count: 520, ppm2: 0.8, status: 'MEDIUM' as const },
-    { id: 'z-2', name: 'Hawa Beach Entrance Bottleneck', areaM2: 240, count: 480, ppm2: 2.0, status: 'HIGH' as const },
-    { id: 'z-3', name: 'Samudra Beach North Steps', areaM2: 180, count: 320, ppm2: 1.77, status: 'HIGH' as const },
-    { id: 'z-4', name: 'Vizhinjam Fishing Harbor Fish Landing Wharf', areaM2: 300, count: 100, ppm2: 0.33, status: 'LOW' as const },
-  ]);
+  // Sector breakdown derived from the live count (sums to currentCount)
+  const zones = useMemo(() => deriveZones(currentCount), [currentCount]);
+  const peakSectorDensity = Math.max(...zones.map(z => z.ppm2));
+  const densityPpm2 = parseFloat(peakSectorDensity.toFixed(2));
+  const densityRating: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' =
+    peakSectorDensity >= 1.8 ? 'CRITICAL' : peakSectorDensity >= 1.2 ? 'HIGH' : peakSectorDensity >= 0.6 ? 'MEDIUM' : 'LOW';
+  const activeAlerts = zones.filter(z => z.status === 'HIGH').length;
 
   // Alert Log
   const [alertLog] = useState([
@@ -109,20 +149,25 @@ export default function CrowdAnalyticsPage() {
     { id: 'c-alt-3', time: '14:20 IST', type: 'BOTTLENECK_WARNING', location: 'North Steps Access', severity: 'MEDIUM', note: 'Egress rate lagging intake' },
   ]);
 
-  // Live slight pulse
+  // Live tick: gradual dispersal from the peak, then fluctuation near the floor
   useEffect(() => {
     const id = setInterval(() => {
-      setCurrentCount(c => {
-        const delta = Math.floor(Math.random() * 11) - 5;
-        const next = Math.max(100, Math.min(500, c + delta));
-        setIsIncreasing(delta >= 0);
-        setDensityPpm2(parseFloat((next / 140).toFixed(2)));
-        if (next > 400) setDensityRating('CRITICAL');
-        else if (next > 250) setDensityRating('HIGH');
-        else setDensityRating('MEDIUM');
-        return next;
+      setSeries(prev => {
+        const last = prev[prev.length - 1].count;
+        let next: number;
+        if (last > FLOOR_COUNT + 10) {
+          // Ebbing phase: drop 2–7 persons per tick, occasional tiny uptick
+          const delta = Math.random() < 0.12 ? Math.floor(Math.random() * 3) : -(2 + Math.floor(Math.random() * 6));
+          next = last + delta;
+        } else {
+          // Settled phase: fluctuate ±4 around the floor band
+          next = last + Math.floor(Math.random() * 9) - 4;
+        }
+        next = Math.max(FLOOR_COUNT - 5, Math.min(PEAK_COUNT, next));
+        const point = { time: formatIstTime(new Date()), count: next };
+        return [...prev, point].slice(-SERIES_WINDOW);
       });
-    }, 4000);
+    }, TICK_MS);
     return () => clearInterval(id);
   }, []);
 
@@ -231,9 +276,9 @@ export default function CrowdAnalyticsPage() {
             <span className="font-bold uppercase tracking-wider">Peak Count</span>
             <Activity className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-3xl font-bold font-mono tracking-tight">{peakCount.count.toLocaleString()}</div>
+          <div className="text-3xl font-bold font-mono tracking-tight">{PEAK_COUNT.toLocaleString()}</div>
           <p className="text-[11px] opacity-75 font-mono mt-1 text-amber-600 dark:text-amber-400 font-semibold">
-            At {peakCount.time} (Sunset Surge)
+            At {peakTime} IST (Sunset Surge)
           </p>
         </div>
 
@@ -375,12 +420,14 @@ export default function CrowdAnalyticsPage() {
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-serif text-sm font-bold">Crowd Analysis</h3>
-            <span className="text-[11px] font-mono text-sky-600 dark:text-sky-400 font-bold">Range: 0–200 | Peak: 500</span>
+            <span className="text-[11px] font-mono text-sky-600 dark:text-sky-400 font-bold">
+              Live: {currentCount} | Peak: {PEAK_COUNT}
+            </span>
           </div>
 
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <AreaChart data={series} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="crowdAreaGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2B7FA6" stopOpacity={0.6} />
@@ -388,17 +435,18 @@ export default function CrowdAnalyticsPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                <XAxis dataKey="range" stroke="#888888" fontSize={10} domain={[0, 200]} />
-                <YAxis stroke="#888888" fontSize={10} domain={[0, 500]} ticks={[0, 100, 200, 300, 400, 500]} />
+                <XAxis dataKey="time" stroke="#888888" fontSize={10} minTickGap={28} />
+                <YAxis stroke="#888888" fontSize={10} domain={[0, 600]} ticks={[0, 100, 200, 300, 400, 500, 600]} />
                 <Tooltip
                   contentStyle={{
                     background: 'var(--raised)',
                     borderColor: 'var(--line)',
                     borderRadius: 12,
                     fontSize: 12,
+                    color: 'var(--text)',
                   }}
-                  formatter={(value: any) => [`${value} persons`, 'Crowd Density']}
-                  labelFormatter={(label: any) => `Range: ${label}`}
+                  formatter={(value: any) => [`${value} persons`, 'Head Count']}
+                  labelFormatter={(label: any) => `${label} IST`}
                 />
                 <Area
                   type="monotone"
@@ -407,14 +455,15 @@ export default function CrowdAnalyticsPage() {
                   strokeWidth={2.5}
                   fillOpacity={1}
                   fill="url(#crowdAreaGrad)"
-                  name="Crowd Density"
+                  name="Head Count"
+                  isAnimationActive={false}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
           <p className="text-[11px] opacity-65 font-mono text-center mt-2">
-            Crowd Analysis (Range: 0–200 | Initial: 200 → Peak: 500 → Dispersal: 100)
+            Live head count (IST) · updates every {TICK_MS / 1000}s · Peak {PEAK_COUNT} → dispersal
           </p>
         </div>
       </div>
@@ -446,7 +495,7 @@ export default function CrowdAnalyticsPage() {
               </thead>
               <tbody>
                 {zones.map(z => (
-                  <tr key={z.id} className="border-b transition-colors hover:bg-[var(--sand-100)]" style={{ borderColor: 'var(--line)' }}>
+                  <tr key={z.id} className="border-b transition-colors hover:bg-[var(--surface-hover)]" style={{ borderColor: 'var(--line)', color: 'var(--text)' }}>
                     <td className="py-2.5 px-3 font-semibold">{z.name}</td>
                     <td className="py-2.5 px-3 font-mono">{z.areaM2} m²</td>
                     <td className="py-2.5 px-3 font-mono font-bold">{z.count}</td>
@@ -454,9 +503,9 @@ export default function CrowdAnalyticsPage() {
                     <td className="py-2.5 px-3 text-right">
                       <span className={cn(
                         'px-2 py-0.5 rounded text-[10px] font-mono font-bold border',
-                        z.status === 'HIGH' && 'bg-amber-100 text-amber-800 border-amber-300',
-                        z.status === 'MEDIUM' && 'bg-sky-100 text-sky-800 border-sky-300',
-                        z.status === 'LOW' && 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        z.status === 'HIGH' && 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/40',
+                        z.status === 'MEDIUM' && 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/15 dark:text-sky-300 dark:border-sky-500/40',
+                        z.status === 'LOW' && 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/40'
                       )}>
                         {z.status}
                       </span>

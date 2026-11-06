@@ -18,8 +18,16 @@ type ViewMode = 'list' | 'map' | 'timeline' | 'playback';
 
 // ─── Facet filters ────────────────────────────────────────────
 
+// Event types that are NOT shown in History & Playback (removed per demo review)
+const HIDDEN_EVENT_TYPES = new Set([
+  'prolonged_proximity',
+  'recurring_zone_entry',
+  'zone_dwell_exceeded',
+  'repeated_shoreline_approach',
+]);
+
 const EVENT_TYPES = [
-  'intrusion', 'zone_entry', 'zone_dwell_exceeded', 'repeated_shoreline_approach',
+  'intrusion', 'zone_entry',
   'loitering', 'crowd_threshold_exceeded', 'convergence', 'vessel_detected',
   'person_detected', 'vehicle_detected', 'course_speed_change',
 ];
@@ -224,12 +232,27 @@ export default function HistoryPlayback() {
   const [page, setPage] = useState(1);
   const [selectedEvent, setSelectedEvent] = useState<CoastalEvent | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['events', filters, page],
-    queryFn: () => eventsApi.list({ ...filters, page, pageSize: 50 }),
+  const { data: rawData, isLoading } = useQuery({
+    queryKey: ['events', 'history-visible', filters, page],
+    queryFn: async () => {
+      // Fetch everything matching the filters, drop hidden event types, then paginate
+      const all = await eventsApi.list({ ...filters, page: 1, pageSize: 10_000 });
+      const visible = all.items.filter(e => !HIDDEN_EVENT_TYPES.has(e.type));
+      const start = (page - 1) * 50;
+      return { items: visible.slice(start, start + 50), total: visible.length };
+    },
   });
+  const data = rawData;
 
-  const events = data?.items ?? [];
+  const q = search.trim().toLowerCase();
+  const events = (data?.items ?? []).filter(e =>
+    !q ||
+    eventTypeLabel(e.type).toLowerCase().includes(q) ||
+    (e.zone?.name ?? '').toLowerCase().includes(q) ||
+    (e.contact?.code ?? '').toLowerCase().includes(q) ||
+    e.uav.code.toLowerCase().includes(q) ||
+    (e.location.name ?? '').toLowerCase().includes(q)
+  );
 
   return (
     <div className="flex h-full overflow-hidden">

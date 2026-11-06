@@ -94,13 +94,6 @@ const NAV_SECTIONS: NavSection[] = [
     ]
   },
   {
-    title: 'Analytics & Reporting',
-    titleMl: 'അനലിറ്റിക്സ് & റിപ്പോർട്ടിംഗ്',
-    items: [
-      { to: '/reports',            label: 'Police Reports',      labelKey: 'nav_reports',        icon: FileText,        roles: ALL_ROLES },
-    ]
-  },
-  {
     title: 'Administration',
     titleMl: 'അഡ്മിനിസ്ട്രേഷൻ',
     items: [
@@ -115,7 +108,14 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/acceptance',         label: 'Acceptance Console',  labelKey: 'nav_acceptance',     icon: CheckSquare,     roles: ['SYS_ADMIN', 'AUDITOR'] },
       { to: '/help',               label: 'Help & Training',     labelKey: 'nav_help',           icon: GraduationCap,   roles: ALL_ROLES },
     ]
-  }
+  },
+  {
+    title: 'Analytics & Reporting',
+    titleMl: 'അനലിറ്റിക്സ് & റിപ്പോർട്ടിംഗ്',
+    items: [
+      { to: '/reports',            label: 'Police Reports',      labelKey: 'nav_reports',        icon: FileText,        roles: ALL_ROLES },
+    ]
+  },
 ];
 
 const ROLES: UserRole[] = ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'];
@@ -191,7 +191,10 @@ export function AppShell() {
     return [{ label: 'Navigation', path }, { label: path.replace(/^\//, ''), path }];
   }, [location.pathname]);
 
-  // Dynamic Sidebar Ordering & Filtering Algorithm (UI_AND_SIDEBAR_NAVIGATION.md)
+  // Sidebar filtering: sections always render in the fixed NAV_SECTIONS order
+  // (Tactical Ops → AI Analytics → Intelligence & Evidence → Administration →
+  // Analytics & Reporting) for every role; items inside a section follow the
+  // role's allowedRoutes priority.
   const visibleSections = useMemo(() => {
     return NAV_SECTIONS
       .map(section => {
@@ -204,18 +207,7 @@ export function AppShell() {
           });
         return { ...section, items: visibleItems };
       })
-      .filter(section => section.items.length > 0)
-      .sort((a, b) => {
-        const minA = Math.min(...a.items.map(i => {
-          const idx = allowedRoutes.indexOf(i.to);
-          return idx === -1 ? 999 : idx;
-        }));
-        const minB = Math.min(...b.items.map(i => {
-          const idx = allowedRoutes.indexOf(i.to);
-          return idx === -1 ? 999 : idx;
-        }));
-        return minA - minB;
-      });
+      .filter(section => section.items.length > 0);
   }, [activeRole, allowedRoutes]);
 
   return (
@@ -492,7 +484,7 @@ export function AppShell() {
                       style={{ background: 'var(--sand-200)', borderColor: 'var(--sand-300)', color: 'var(--ink-900)' }}
                     >
                       <Anchor className="w-3.5 h-3.5 flex-shrink-0 text-[var(--sea-600)]" />
-                      <span className="truncate">{activeMission?.title ?? 'All Missions'}</span>
+                      <span className="truncate">{activeMission?.title ?? 'All Ports'}</span>
                       <ChevronDown className="w-3 h-3 opacity-60 flex-shrink-0" />
                     </button>
                   </DropdownMenu.Trigger>
@@ -502,6 +494,21 @@ export function AppShell() {
                       style={{ borderColor: 'var(--line)' }}
                       sideOffset={6}
                     >
+                      <DropdownMenu.Item
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors outline-none hover:bg-[var(--surface-hover)]',
+                          activeMissionId === null && 'font-semibold',
+                        )}
+                        onSelect={() => setActiveMission(null)}
+                      >
+                        <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[var(--sea-600)]" />
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">All Ports</div>
+                          <div className="text-[10px] opacity-60 font-mono">Entire Kerala coastline</div>
+                        </div>
+                        {activeMissionId === null && <span className="ml-auto text-xs text-[var(--sea-600)]">✓</span>}
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Separator className="my-1 h-px bg-[var(--line)]" />
                       {missions.map(m => (
                         <DropdownMenu.Item
                           key={m.id}

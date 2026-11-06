@@ -3,7 +3,7 @@
 // As specified in Costal Police .docx
 // ============================================================
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import {
   AlertTriangle, ShieldAlert, Play, Pause, RotateCcw,
   Download, Filter, Search, CheckCircle, Clock,
@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { AnomalyRecord, AnomalyType } from '@/types';
 import { HumanInterpretationNote } from '@/components/HumanInterpretationNote';
+import { SideDrawer } from '@/components/SideDrawer';
 
 // Real-Time Behavioral Outlier Ledger: All Anomaly Types set to ERRATIC SPEEDING
 const INITIAL_ANOMALIES: AnomalyRecord[] = [
@@ -87,6 +88,107 @@ const INITIAL_ANOMALIES: AnomalyRecord[] = [
   }
 ];
 
+// Forensic detail for each ledger instance (shown in the detail drawer)
+interface AnomalyDetail {
+  subjectId: string;
+  subjectLabel: string;
+  location: string;
+  sector: string;
+  lat: number;
+  lon: number;
+  confidence: number; // 0-1
+  durationSec: number;
+  observedMetric: string;
+  threshold: string;
+  model: string;
+  factors: { name: string; value: string; weight: 'PRIMARY' | 'SUPPORTING' | 'CONTEXTUAL' }[];
+  recommendedAction: string;
+}
+
+const ANOMALY_DETAILS: Record<string, AnomalyDetail> = {
+  'anom-01': {
+    subjectId: 'TRK-01', subjectLabel: 'High-speed yacht',
+    location: 'Vizhinjam Outer Fairway', sector: 'Z-01 Vizhinjam Deepwater Seaport & Approach',
+    lat: 8.3764, lon: 76.9791, confidence: 0.93, durationSec: 46,
+    observedMetric: '38.6 kn peak speed', threshold: '16 kn fairway limit',
+    model: 'RTMDet-L v2.4.1 + ByteTrack kinematics',
+    factors: [
+      { name: 'Speed above fairway limit', value: '38.6 kn vs 16 kn', weight: 'PRIMARY' },
+      { name: 'Abrupt acceleration', value: '+22 kn in 9 s', weight: 'PRIMARY' },
+      { name: 'Zone sensitivity', value: 'Restricted 24×7', weight: 'CONTEXTUAL' },
+      { name: 'Track continuity', value: '0.95', weight: 'SUPPORTING' },
+    ],
+    recommendedAction: 'Alert Vizhinjam Coastal Police Station; dispatch interceptor boat to fairway entrance and verify vessel registration.',
+  },
+  'anom-02': {
+    subjectId: 'KL-16-J-8812', subjectLabel: 'Passenger car',
+    location: 'Harbour Access Terminal Bypass', sector: 'Vizhinjam Port Road',
+    lat: 8.3810, lon: 76.9862, confidence: 0.96, durationSec: 31,
+    observedMetric: '84 km/h', threshold: '30 km/h port-area limit',
+    model: 'RTMDet-L v2.4.1 + ANPR OCR v1.3',
+    factors: [
+      { name: 'Speed above road limit', value: '84 km/h vs 30 km/h', weight: 'PRIMARY' },
+      { name: 'Lane deviation', value: '3 swerves', weight: 'SUPPORTING' },
+      { name: 'Plate read confidence', value: '0.97', weight: 'SUPPORTING' },
+    ],
+    recommendedAction: 'Pass plate KL-16-J-8812 to Traffic Police checkpoint at Vizhinjam junction for interception.',
+  },
+  'anom-03': {
+    subjectId: 'TRK-03', subjectLabel: 'Person on personal watercraft',
+    location: 'Kovalam Swimmer Safety Buffer', sector: 'Z-02 Kovalam Beach & Lighthouse Bay',
+    lat: 8.3992, lon: 76.9845, confidence: 0.88, durationSec: 58,
+    observedMetric: '7 zig-zag turns / min', threshold: '2 turns / min',
+    model: 'RTMDet-L v2.4.1 + ST-GCN behaviour head',
+    factors: [
+      { name: 'Erratic heading changes', value: '7 / min', weight: 'PRIMARY' },
+      { name: 'Distance to swimmers', value: '< 15 m', weight: 'PRIMARY' },
+      { name: 'Time window', value: 'Evening tourist peak', weight: 'CONTEXTUAL' },
+    ],
+    recommendedAction: 'Notify Kovalam Tourism Police and lifeguards; direct the rider out of the swimming zone.',
+  },
+  'anom-04': {
+    subjectId: 'TRK-04', subjectLabel: 'Unidentified vessel',
+    location: 'Commercial Cargo Fairway', sector: 'Z-05 Cochin Port & Naval Base Restricted Waters',
+    lat: 9.9631, lon: 76.2297, confidence: 0.94, durationSec: 72,
+    observedMetric: '46.6 kn, 50 m from cargo lane', threshold: '16 kn / 200 m buffer',
+    model: 'RTMDet-L v2.4.1 + ByteTrack kinematics',
+    factors: [
+      { name: 'Speed above fairway limit', value: '46.6 kn', weight: 'PRIMARY' },
+      { name: 'Proximity to cargo lane', value: '50 m', weight: 'PRIMARY' },
+      { name: 'No AIS match', value: 'Unidentified', weight: 'SUPPORTING' },
+      { name: 'Zone sensitivity', value: 'Restricted 24×7', weight: 'CONTEXTUAL' },
+    ],
+    recommendedAction: 'Inform Coast Guard liaison and Fort Kochi Coastal Police; request patrol boat to identify and escort the vessel.',
+  },
+  'anom-05': {
+    subjectId: 'TRK-05', subjectLabel: 'Jet-ski rider',
+    location: 'Kovalam Rocky Slope Shoreline', sector: 'Z-02 Kovalam Beach & Lighthouse Bay',
+    lat: 8.3958, lon: 76.9821, confidence: 0.90, durationSec: 39,
+    observedMetric: '12 m from rocks at 24 kn', threshold: '50 m safety distance',
+    model: 'RTMDet-L v2.4.1 + ST-GCN behaviour head',
+    factors: [
+      { name: 'Unsafe shoreline distance', value: '12 m', weight: 'PRIMARY' },
+      { name: 'Speed near rocks', value: '24 kn', weight: 'SUPPORTING' },
+    ],
+    recommendedAction: 'Warn the operator via beach PA; record the rental operator for follow-up by Kovalam Police.',
+  },
+  'anom-06': {
+    subjectId: 'TRK-06', subjectLabel: 'White sedan',
+    location: 'Kovalam–Vizhinjam Coastal Road', sector: 'Coastal Road NH-66 Spur',
+    lat: 8.3902, lon: 76.9905, confidence: 0.85, durationSec: 22,
+    observedMetric: '92 km/h', threshold: '40 km/h coastal road limit',
+    model: 'RTMDet-L v2.4.1 + ByteTrack kinematics',
+    factors: [
+      { name: 'Speed above road limit', value: '92 km/h', weight: 'PRIMARY' },
+      { name: 'Operator review', value: 'Speed estimate distorted by camera pan', weight: 'CONTEXTUAL' },
+    ],
+    recommendedAction: 'No action — marked false positive by operator (camera-pan speed artefact). Kept for model feedback.',
+  },
+};
+
+const RISK_TO_ATTENTION = (score: number) =>
+  score >= 90 ? 'CRITICAL' : score >= 80 ? 'ELEVATED' : score >= 60 ? 'ATTENTION' : 'ROUTINE';
+
 // Telemetry timeline from 16331642_3840_2160_60fps_0m00s_to_0m20s_analytics.json
 const VIDEO_ANALYTICS_TIMELINE = [
   { second: '00:00', speeding: 38, proximity: 140, erratic: 22, loitering: 0, total: 200, maxSpeed: 108.6 },
@@ -118,6 +220,29 @@ export default function AnomalyMonitorPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailThumb, setDetailThumb] = useState<string | null>(null);
+
+  /** Select a ledger row and open its forensic detail drawer. */
+  function openDetail(item: AnomalyRecord) {
+    setSelectedAnomaly(item);
+    // Grab the current replay frame as the evidence thumbnail (same-origin video → canvas is not tainted)
+    let thumb: string | null = null;
+    const v = videoRef.current;
+    if (v && v.readyState >= 2 && v.videoWidth > 0) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 480;
+        canvas.height = Math.round((480 * v.videoHeight) / v.videoWidth);
+        canvas.getContext('2d')?.drawImage(v, 0, 0, canvas.width, canvas.height);
+        thumb = canvas.toDataURL('image/jpeg', 0.8);
+      } catch {
+        thumb = null;
+      }
+    }
+    setDetailThumb(thumb);
+    setDetailOpen(true);
+  }
 
   // Auto-play recovery on mount / anomaly selection
   useEffect(() => {
@@ -526,7 +651,7 @@ export default function AnomalyMonitorPage() {
               Real-Time Behavioral Outlier Ledger
             </h3>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              Select an incident from the log to view instant forensic replay and trigger escalation actions
+              Click any incident to open its full forensic details · use Replay to load it in the clip player
             </p>
           </div>
 
@@ -579,9 +704,18 @@ export default function AnomalyMonitorPage() {
               {filteredAnomalies.map(item => (
                 <tr
                   key={item.id}
-                  onClick={() => setSelectedAnomaly(item)}
+                  tabIndex={0}
+                  aria-selected={selectedAnomaly.id === item.id}
+                  aria-label={`Open details for ${item.id}`}
+                  onClick={() => openDetail(item)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openDetail(item);
+                    }
+                  }}
                   className={cn(
-                    "hover:bg-[var(--surface-hover)] transition-colors cursor-pointer",
+                    "hover:bg-[var(--surface-hover)] transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--sea-accent)]",
                     selectedAnomaly.id === item.id ? "bg-[var(--selected-row-bg)] border-l-2 border-l-[var(--selected-row-border)] font-medium" : ""
                   )}
                 >
@@ -637,6 +771,183 @@ export default function AnomalyMonitorPage() {
 
       {/* ── Decision-Support Legal Disclaimer Footer (Rule 7) ── */}
       <HumanInterpretationNote className="mt-4" />
+
+      {/* ── Ledger Instance Detail Drawer ── */}
+      <AnomalyDetailDrawer
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        item={selectedAnomaly}
+        thumb={detailThumb}
+        onUpdateStatus={status => handleUpdateStatus(selectedAnomaly.id, status)}
+        onReplay={() => {
+          setDetailOpen(false);
+          restartVideo();
+        }}
+      />
     </div>
+  );
+}
+
+// ─── Detail drawer ────────────────────────────────────────────
+
+function AnomalyDetailDrawer({
+  open, onOpenChange, item, thumb, onUpdateStatus, onReplay,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  item: AnomalyRecord;
+  thumb: string | null;
+  onUpdateStatus: (s: AnomalyRecord['status']) => void;
+  onReplay: () => void;
+}) {
+  const d = ANOMALY_DETAILS[item.id];
+  const attention = RISK_TO_ATTENTION(item.riskScore);
+  const today = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
+
+  const rows: [string, ReactNode][] = [
+    ['Event ID', <span className="font-mono font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{item.id.toUpperCase()}</span>],
+    ['Anomaly Type', item.anomalyType.replace(/_/g, ' ')],
+    ['Category', item.category],
+    ['Detected At', `${today}, ${item.timestamp}`],
+    ['Drone / UAV', item.droneCode],
+    ['Status', item.status.replace(/_/g, ' ')],
+  ];
+  if (d) {
+    rows.push(
+      ['Subject / Track', `${d.subjectId} · ${d.subjectLabel}`],
+      ['Location', d.location],
+      ['Sector', d.sector],
+      ['Coordinates', `${d.lat.toFixed(4)}°N, ${d.lon.toFixed(4)}°E`],
+      ['Observed', d.observedMetric],
+      ['Threshold', d.threshold],
+      ['Duration', `${d.durationSec} s (clip ${item.clipReplaySec} s)`],
+      ['Detector Confidence', `${Math.round(d.confidence * 100)}%`],
+      ['Model', d.model],
+    );
+  }
+
+  const weightClass = {
+    PRIMARY: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/40',
+    SUPPORTING: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/40',
+    CONTEXTUAL: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/40',
+  } as const;
+
+  return (
+    <SideDrawer
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Anomaly ${item.id.toUpperCase()} — ${item.anomalyType.replace(/_/g, ' ')}`}
+      description={`${item.category} outlier · ${item.droneCode} · ${item.timestamp}`}
+      width="lg"
+      footer={
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <button
+            onClick={onReplay}
+            className="px-3 py-1.5 rounded border font-mono text-[11px] font-bold cursor-pointer hover:bg-[var(--surface-hover)] flex items-center gap-1.5"
+            style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}
+          >
+            <Play className="w-3.5 h-3.5" /> Replay Clip
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onUpdateStatus('FALSE_POSITIVE')}
+              className="px-3 py-1.5 rounded border font-mono text-[11px] font-bold cursor-pointer hover:bg-[var(--surface-hover)]"
+              style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}
+            >
+              False Positive
+            </button>
+            <button
+              onClick={() => onUpdateStatus('REVIEWED')}
+              className="px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-[11px] font-bold cursor-pointer"
+            >
+              Mark Reviewed
+            </button>
+            <button
+              onClick={() => onUpdateStatus('ESCALATED')}
+              className="px-3 py-1.5 rounded bg-red-700 hover:bg-red-800 text-white font-mono text-[11px] font-bold cursor-pointer"
+            >
+              Escalate
+            </button>
+          </div>
+        </div>
+      }
+    >
+      {/* Severity strip */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className={cn(
+          'px-2 py-0.5 rounded text-[10px] font-mono font-bold border',
+          item.riskScore >= 80 ? 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/40' : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40'
+        )}>
+          RISK {item.riskScore} / 100
+        </span>
+        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold border bg-[var(--surface-muted)]" style={{ borderColor: 'var(--line)', color: 'var(--text)' }}>
+          ATTENTION: {attention}
+        </span>
+        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold border bg-[var(--surface-muted)]" style={{ borderColor: 'var(--line)', color: 'var(--text)' }}>
+          {item.status.replace(/_/g, ' ')}
+        </span>
+      </div>
+
+      {/* Evidence thumbnail */}
+      <div className="rounded-lg overflow-hidden border bg-slate-950 aspect-video flex items-center justify-center" style={{ borderColor: 'var(--line)' }}>
+        {thumb ? (
+          <img src={thumb} alt={`Evidence frame for ${item.id}`} className="w-full h-full object-cover" />
+        ) : (
+          <div className="text-center text-slate-400 font-mono text-[11px] p-4">
+            <Video className="w-6 h-6 mx-auto mb-1 opacity-60" />
+            Evidence frame available after the replay clip loads
+          </div>
+        )}
+      </div>
+
+      {/* Narrative */}
+      <div className="p-3 rounded border text-xs" style={{ background: 'var(--surface-muted)', borderColor: 'var(--line)', color: 'var(--text)' }}>
+        <div className="font-bold mb-1">What was observed</div>
+        {item.description}
+      </div>
+
+      {/* Key/value facts */}
+      <dl className="grid grid-cols-[minmax(130px,auto)_1fr] gap-x-4 gap-y-1.5 text-xs">
+        {rows.map(([k, v]) => (
+          <div key={k} className="contents">
+            <dt style={{ color: 'var(--text-muted)' }}>{k}</dt>
+            <dd className="font-medium" style={{ color: 'var(--text)' }}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {/* Rationale factors */}
+      {d && (
+        <div>
+          <div className="text-[11px] font-mono font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
+            Why the system flagged this
+          </div>
+          <ul className="space-y-1.5">
+            {d.factors.map(f => (
+              <li key={f.name} className="flex items-center justify-between gap-2 text-xs p-2 rounded border" style={{ borderColor: 'var(--line)', color: 'var(--text)' }}>
+                <span>{f.name}: <span className="font-mono font-semibold">{f.value}</span></span>
+                <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border flex-shrink-0', weightClass[f.weight])}>
+                  {f.weight}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Recommended action */}
+      {d && (
+        <div className="p-3 rounded border-l-4 border-l-amber-500 border text-xs" style={{ borderColor: 'var(--line)', background: 'var(--surface-muted)', color: 'var(--text)' }}>
+          <div className="font-bold mb-1 flex items-center gap-1.5">
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-600" /> Recommended Police Action
+          </div>
+          {d.recommendedAction}
+        </div>
+      )}
+
+      <p className="text-[10px] italic" style={{ color: 'var(--text-muted)' }}>
+        AI decision support only — an officer must verify before any enforcement action.
+      </p>
+    </SideDrawer>
   );
 }

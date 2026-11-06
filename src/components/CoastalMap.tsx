@@ -131,7 +131,13 @@ interface CoastalMapProps {
   onAlertClick?: (alertId: string) => void;
   onContactClick?: (contactId: string) => void;
   onZoneClick?: (zoneId: string) => void;
+  /** Fired when a UAV PATROL drone marker is clicked (feedId, e.g. 'f-01'). */
+  onDroneClick?: (feedId: string) => void;
   followFeedId?: string;
+  /** When this changes, the map flies to the given centre/zoom. */
+  focus?: { center: [number, number]; zoom: number } | null;
+  /** Show ONLY this drone (used by the Live Monitor focus mini-map). */
+  singleDrone?: { feedId: string; uavCode: string; missionCode: string; locationName: string; lat: number; lon: number; headingDeg?: number };
 }
 
 export function CoastalMap({
@@ -145,8 +151,19 @@ export function CoastalMap({
   initialZoom = KERALA_VIEW.zoom,
   onAlertClick,
   onZoneClick,
+  onDroneClick,
+  focus,
+  singleDrone,
 }: CoastalMapProps) {
   const mapRef = useRef<MLMap | null>(null);
+  // Keep latest callbacks in refs — markers are created once inside the map 'load'
+  // handler, so reading props directly there would capture stale closures.
+  const onAlertClickRef = useRef(onAlertClick);
+  const onDroneClickRef = useRef(onDroneClick);
+  const onZoneClickRef = useRef(onZoneClick);
+  onAlertClickRef.current = onAlertClick;
+  onDroneClickRef.current = onDroneClick;
+  onZoneClickRef.current = onZoneClick;
   const containerRef = useRef<HTMLDivElement>(null);
   const { layers, dronePositions } = useMapStore();
   const alertMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -231,9 +248,16 @@ export function CoastalMap({
     };
   }, []);
 
+  // Fly to a requested focus (e.g. port selected in the header dropdown)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focus) return;
+    map.flyTo({ center: focus.center, zoom: focus.zoom, duration: 1200, essential: true });
+  }, [focus?.center[0], focus?.center[1], focus?.zoom]);
+
   // Update drone positions in real-time
   useEffect(() => {
-    if (!mapRef.current || !showDrones || !layers.drones) return;
+    if (!mapRef.current || !showDrones || !layers.drones || singleDrone) return;
     Object.entries(dronePositions).forEach(([feedId, pos]) => {
       updateDroneMarker(feedId, pos.lat, pos.lon, pos.headingDeg);
     });
@@ -287,8 +311,9 @@ export function CoastalMap({
 
     if (droneMarkersRef.current[feedId]) {
       droneMarkersRef.current[feedId].setLngLat([lon, lat]);
-      const el = droneMarkersRef.current[feedId].getElement();
-      el.style.transform = `rotate(${headingDeg}deg)`;
+      // Rotate the inner glyph only — MapLibre owns the marker element's transform.
+      const glyph = droneMarkersRef.current[feedId].getElement().firstElementChild as HTMLElement | null;
+      if (glyph) glyph.style.transform = `rotate(${headingDeg}deg)`;
     } else {
       const el = createDroneElement(feedId, headingDeg, [lon, lat]);
       const marker = new maplibregl.Marker({ element: el })
@@ -300,10 +325,15 @@ export function CoastalMap({
 
   function createDroneElement(feedId: string, headingDeg: number, _coords: [number, number]): HTMLElement {
     const el = document.createElement('div');
-    el.style.transform = `rotate(${headingDeg}deg)`;
     el.style.cursor = 'pointer';
+    el.title = 'Open this drone feed in Live Monitor';
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hoverPopupRef.current?.remove();
+      onDroneClickRef.current?.(feedId);
+    });
     el.innerHTML = `
-      <svg width="34" height="34" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg style="transform: rotate(${headingDeg}deg)" width="34" height="34" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="16" cy="16" r="14" fill="#0284c7" fill-opacity="0.95" stroke="white" stroke-width="2" style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.55))"/>
         <path d="M16 6 L13 17 L16 15 L19 17 Z" fill="#ffffff"/>
         <circle cx="16" cy="16" r="2.5" fill="#facc15"/>
@@ -401,7 +431,11 @@ export function CoastalMap({
         .addTo(map);
 
       alertMarkersRef.current.push(marker);
-      el.addEventListener('click', () => onAlertClick?.(alert.id));
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hoverPopupRef.current?.remove();
+        onAlertClickRef.current?.(alert.id);
+      });
     });
   }
 
@@ -469,6 +503,19 @@ export function CoastalMap({
   }
 
   function addDroneMarkers(_map: MLMap) {
+    if (singleDrone) {
+      droneDataRef.current = {
+        [singleDrone.feedId]: {
+          uavCode: singleDrone.uavCode,
+          missionCode: singleDrone.missionCode,
+          locationName: singleDrone.locationName,
+          lat: singleDrone.lat,
+          lon: singleDrone.lon,
+        },
+      };
+      updateDroneMarker(singleDrone.feedId, singleDrone.lat, singleDrone.lon, singleDrone.headingDeg ?? 0);
+      return;
+    }
     const initialPositions = [
       { feedId: 'f-01', lat: 9.965, lon: 76.230, heading: 45 },
       { feedId: 'f-03', lat: 8.382, lon: 76.980, heading: 195 },
@@ -490,7 +537,7 @@ export function CoastalMap({
         s.name.toLowerCase().includes(zone.name.split(' ')[0].toLowerCase())
       ) || KERALA_COASTAL_SECTORS[0];
 
-      map.on('click', `zone-fill-${zone.id}`, () => onZoneClick?.(zone.id));
+      map.on('click', `zone-fill-${zone.id}`, () => onZoneClickRef.current?.(zone.id));
 
       // ── Mouse Hover Popup for Zones ───────────────────────────
       map.on('mousemove', `zone-fill-${zone.id}`, (e) => {

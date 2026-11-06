@@ -7,14 +7,11 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Car, Ship, AlertTriangle, ShieldAlert, Download,
   Search, Video, CheckCircle, Navigation,
-  Gauge, ArrowUpRight, Radio, Filter,
+  Gauge, ArrowUpRight,
   Play, Pause, Volume2, VolumeX, Maximize2, RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/lib/store';
-
-
-import { VehicleAnprRecord, MaritimeTrackRecord } from '@/types';
+import type { VehicleAnprRecord, MaritimeTrackRecord } from '@/types';
 
 // Mock initial ANPR data
 const INITIAL_VEHICLES: VehicleAnprRecord[] = [
@@ -95,10 +92,18 @@ const INITIAL_VEHICLES: VehicleAnprRecord[] = [
 ];
 
 // Mock Maritime data
-const INITIAL_VESSELS: MaritimeTrackRecord[] = [
+// Local vessel row type — Kerala coastal taxonomy (no dhows / cargo vessels in this sector)
+type VesselClass = 'FISHING_TRAWLER' | 'SPEEDBOAT' | 'MOTOR_FISHING_BOAT' | 'MOTOR_CRAFT' | 'COUNTRY_CRAFT';
+type VesselRow = Omit<MaritimeTrackRecord, 'vesselClass'> & { vesselClass: VesselClass };
+
+function vesselClassLabel(c: VesselClass): string {
+  return c.replace(/_/g, ' ');
+}
+
+const INITIAL_VESSELS: VesselRow[] = [
   {
     id: 'vsl-01',
-    vesselCode: 'TRAWLER-KL-902',
+    vesselCode: 'IND-KL-01-MM-0902',
     vesselClass: 'FISHING_TRAWLER',
     speedKnots: 8.4,
     headingDeg: 195,
@@ -112,7 +117,7 @@ const INITIAL_VESSELS: MaritimeTrackRecord[] = [
   },
   {
     id: 'vsl-02',
-    vesselCode: 'SPEEDBOAT-SEC-04',
+    vesselCode: 'KP-SEC-SPEEDBOAT-04',
     vesselClass: 'SPEEDBOAT',
     speedKnots: 24.2,
     headingDeg: 12,
@@ -126,8 +131,8 @@ const INITIAL_VESSELS: MaritimeTrackRecord[] = [
   },
   {
     id: 'vsl-03',
-    vesselCode: 'DHOW-AL-NOOR',
-    vesselClass: 'DHOW',
+    vesselCode: 'IND-KL-01-MM-4417',
+    vesselClass: 'MOTOR_FISHING_BOAT',
     speedKnots: 0.2,
     headingDeg: 280,
     motionState: 'ANCHORED',
@@ -140,8 +145,8 @@ const INITIAL_VESSELS: MaritimeTrackRecord[] = [
   },
   {
     id: 'vsl-04',
-    vesselCode: 'COASTAL-CARGO-MV-KERALA',
-    vesselClass: 'CARGO_VESSEL',
+    vesselCode: 'IND-KL-01-MC-2208',
+    vesselClass: 'MOTOR_CRAFT',
     speedKnots: 11.5,
     headingDeg: 310,
     motionState: 'CRUISING',
@@ -154,7 +159,7 @@ const INITIAL_VESSELS: MaritimeTrackRecord[] = [
   },
   {
     id: 'vsl-05',
-    vesselCode: 'COUNTRY-BOAT-VZM-11',
+    vesselCode: 'IND-KL-01-CC-0311',
     vesselClass: 'COUNTRY_CRAFT',
     speedKnots: 1.1,
     headingDeg: 85,
@@ -165,8 +170,147 @@ const INITIAL_VESSELS: MaritimeTrackRecord[] = [
     lat: 8.3792,
     lon: 76.9745,
     trajectory: [[8.3785, 76.973], [8.3792, 76.9745]]
+  },
+  {
+    id: 'vsl-06',
+    vesselCode: 'IND-KL-02-MM-1187',
+    vesselClass: 'FISHING_TRAWLER',
+    speedKnots: 6.9,
+    headingDeg: 222,
+    motionState: 'CRUISING',
+    proximityWarning: false,
+    closestSeparationPx: 310,
+    lastSeenAt: '19:42:48 IST',
+    lat: 8.3986,
+    lon: 76.9612,
+    trajectory: [[8.402, 76.965], [8.4003, 76.9631], [8.3986, 76.9612]]
+  },
+  {
+    id: 'vsl-07',
+    vesselCode: 'IND-KL-01-MM-5630',
+    vesselClass: 'MOTOR_FISHING_BOAT',
+    speedKnots: 4.3,
+    headingDeg: 168,
+    motionState: 'CRUISING',
+    proximityWarning: false,
+    closestSeparationPx: 275,
+    lastSeenAt: '19:42:31 IST',
+    lat: 8.3854,
+    lon: 76.9573,
+    trajectory: [[8.3889, 76.9566], [8.3871, 76.957], [8.3854, 76.9573]]
+  },
+  {
+    id: 'vsl-08',
+    vesselCode: 'IND-KL-01-MC-0749',
+    vesselClass: 'MOTOR_CRAFT',
+    speedKnots: 0.4,
+    headingDeg: 45,
+    motionState: 'ANCHORED',
+    proximityWarning: false,
+    closestSeparationPx: 420,
+    lastSeenAt: '19:40:05 IST',
+    lat: 8.3698,
+    lon: 76.9805,
+    trajectory: [[8.3698, 76.9805]]
+  },
+  {
+    id: 'vsl-09',
+    vesselCode: 'IND-KL-02-MM-3092',
+    vesselClass: 'FISHING_TRAWLER',
+    speedKnots: 0.3,
+    headingDeg: 300,
+    motionState: 'ANCHORED',
+    proximityWarning: false,
+    closestSeparationPx: 205,
+    lastSeenAt: '19:38:44 IST',
+    lat: 8.3576,
+    lon: 76.9621,
+    trajectory: [[8.3576, 76.9621]]
+  },
+  {
+    id: 'vsl-10',
+    vesselCode: 'IND-KL-01-MM-6618',
+    vesselClass: 'MOTOR_FISHING_BOAT',
+    speedKnots: 1.6,
+    headingDeg: 120,
+    motionState: 'DRIFTING',
+    proximityWarning: false,
+    closestSeparationPx: 160,
+    lastSeenAt: '19:41:57 IST',
+    lat: 8.3809,
+    lon: 76.9509,
+    trajectory: [[8.3801, 76.9497], [8.3805, 76.9503], [8.3809, 76.9509]]
+  },
+  {
+    id: 'vsl-11',
+    vesselCode: 'IND-KL-01-CC-1452',
+    vesselClass: 'COUNTRY_CRAFT',
+    speedKnots: 3.2,
+    headingDeg: 260,
+    motionState: 'CRUISING',
+    proximityWarning: false,
+    closestSeparationPx: 230,
+    lastSeenAt: '19:43:02 IST',
+    lat: 8.3927,
+    lon: 76.9718,
+    trajectory: [[8.3935, 76.9752], [8.3931, 76.9735], [8.3927, 76.9718]]
+  },
+  {
+    id: 'vsl-12',
+    vesselCode: 'IND-KL-01-MC-3375',
+    vesselClass: 'MOTOR_CRAFT',
+    speedKnots: 9.8,
+    headingDeg: 15,
+    motionState: 'CRUISING',
+    proximityWarning: false,
+    closestSeparationPx: 345,
+    lastSeenAt: '19:42:20 IST',
+    lat: 8.3663,
+    lon: 76.9434,
+    trajectory: [[8.3612, 76.9419], [8.3638, 76.9427], [8.3663, 76.9434]]
   }
 ];
+
+// ─── Live vehicle KPI simulation (start 15 → peak 71) ─────────
+interface VehicleKpis {
+  inTrack: number;
+  moving: number;
+  stopped: number;
+  avgSpeed: number;
+  platesOcrd: number;
+  delta10m: number;
+}
+
+const VEHICLE_START = 15;
+const VEHICLE_PEAK = 71;
+
+function nextVehicleKpis(prev: VehicleKpis): VehicleKpis {
+  let inTrack: number;
+  if (prev.inTrack < VEHICLE_PEAK) {
+    // climb 2–5 per tick, small chance of a 1-vehicle dip
+    const step = Math.random() < 0.12 ? -1 : 2 + Math.floor(Math.random() * 4);
+    inTrack = Math.min(VEHICLE_PEAK, Math.max(VEHICLE_START, prev.inTrack + step));
+  } else {
+    // hold around the peak with ±2 jitter, never above peak
+    inTrack = VEHICLE_PEAK - Math.floor(Math.random() * 3);
+  }
+  const movingRatio = 0.68 + Math.random() * 0.14;
+  const moving = Math.round(inTrack * movingRatio);
+  const stopped = inTrack - moving;
+  const avgSpeed = Math.round(Math.max(28, Math.min(52, 46 - inTrack * 0.08 + (Math.random() * 6 - 3))));
+  const newlySeen = Math.max(0, inTrack - prev.inTrack);
+  const platesOcrd = prev.platesOcrd + Math.max(1, Math.round(newlySeen * 0.96 + Math.random() * 2));
+  return { inTrack, moving, stopped, avgSpeed, platesOcrd, delta10m: inTrack - VEHICLE_START };
+}
+
+const INITIAL_VEHICLE_KPIS: VehicleKpis = {
+  inTrack: VEHICLE_START,
+  moving: 11,
+  stopped: 4,
+  avgSpeed: 44,
+  platesOcrd: 14,
+  delta10m: 0,
+};
 
 export default function VehicleMaritimePage() {
   const [activeTab, setActiveTab] = useState<'VEHICLE_ANPR' | 'MARITIME_VESSEL'>('VEHICLE_ANPR');
@@ -175,17 +319,18 @@ export default function VehicleMaritimePage() {
   const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
   const [vesselFilter, setVesselFilter] = useState<'ALL' | 'ALERTS' | 'ANCHORED'>('ALL');
   const [inspectVehicle, setInspectVehicle] = useState<VehicleAnprRecord | null>(null);
-  const [inspectVessel, setInspectVessel] = useState<MaritimeTrackRecord | null>(null);
+  const [inspectVessel, setInspectVessel] = useState<VesselRow | null>(null);
   const [vehicles] = useState<VehicleAnprRecord[]>(INITIAL_VEHICLES);
-  const [vessels] = useState<MaritimeTrackRecord[]>(INITIAL_VESSELS);
+  const [vessels] = useState<VesselRow[]>(INITIAL_VESSELS);
 
-  // SVG Unique IDs for patterns/gradients
-  const { devRole } = useAuthStore();
-  const isAuthorizedRole = ['ANALYST', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'].includes(devRole);
-
-
-
-
+  // Live vehicle KPIs — tick every 2.5s
+  const [vkpi, setVkpi] = useState<VehicleKpis>(INITIAL_VEHICLE_KPIS);
+  useEffect(() => {
+    const id = window.setInterval(() => setVkpi(prev => nextVehicleKpis(prev)), 2500);
+    return () => window.clearInterval(id);
+  }, []);
+  const flowPct = vkpi.inTrack > 0 ? Math.round((vkpi.moving / vkpi.inTrack) * 100) : 0;
+  const ocrRate = (96.4 + (vkpi.platesOcrd % 7) * 0.15).toFixed(1);
 
   // Maritime video player state
   const maritimeVideoRef = useRef<HTMLVideoElement>(null);
@@ -335,7 +480,7 @@ export default function VehicleMaritimePage() {
     const headers = ['Vessel Code', 'Class', 'Speed (Knots)', 'Heading (°)', 'State', 'Proximity Warning', 'Lat', 'Lon', 'Last Seen'];
     const rows = filteredVessels.map(v => [
       v.vesselCode,
-      v.vesselClass,
+      vesselClassLabel(v.vesselClass),
       v.speedKnots,
       v.headingDeg,
       v.motionState,
@@ -406,36 +551,16 @@ export default function VehicleMaritimePage() {
       {/* ════════════════════════════════════════════════════════════ */}
       {activeTab === 'VEHICLE_ANPR' && (
         <div className="flex flex-col gap-6">
-          {/* ── Optional Module Authorization Banner (Rule 9) ── */}
-          <div className="rounded-2xl p-4 border bg-amber-500/10 border-amber-500/30 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-2.5">
-              <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <div className="font-bold text-amber-900 dark:text-amber-200">
-                  Optional Module — Requires Authorisation (RFP Baseline Extension)
-                </div>
-                <p className="text-amber-800/80 dark:text-amber-300/80 mt-0.5">
-                  Automated Number Plate Recognition (ANPR) and hotlist matching are restricted to ANALYST / SUPERVISOR roles. Current Role: <span className="font-mono font-bold">{devRole}</span>. All queries and plate exports are recorded in the security audit log.
-                </p>
-              </div>
-            </div>
-            {!isAuthorizedRole && (
-              <span className="px-3 py-1 rounded bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-mono text-[11px] font-bold">
-                SUPERVISOR ELEVATION REQUIRED
-              </span>
-            )}
-          </div>
-
-          {/* 5 KPI Metric Cards */}
+          {/* 5 KPI Metric Cards (live) */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
             <div className="card-sand p-3.5 flex flex-col justify-between">
               <span className="font-mono text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--text-muted)' }}>
                 Vehicles In Track
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-2xl font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">142</span>
+                <span className="font-mono text-2xl font-bold tabular-nums text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{vkpi.inTrack}</span>
                 <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                  +18 / 10m
+                  +{vkpi.delta10m} / 10m
                 </span>
               </div>
               <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Multi-camera continuity</div>
@@ -446,11 +571,11 @@ export default function VehicleMaritimePage() {
                 Moving vs Stopped
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>108 / 34</span>
-                <span className="text-[10px] font-mono font-bold" style={{ color: 'var(--text-muted)' }}>76% flow</span>
+                <span className="font-mono text-2xl font-bold tabular-nums" style={{ color: 'var(--text)' }}>{vkpi.moving} / {vkpi.stopped}</span>
+                <span className="text-[10px] font-mono font-bold" style={{ color: 'var(--text-muted)' }}>{flowPct}% flow</span>
               </div>
               <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-1">
-                <div className="bg-emerald-600 h-full" style={{ width: '76%' }}></div>
+                <div className="bg-emerald-600 h-full transition-all duration-700" style={{ width: `${flowPct}%` }}></div>
               </div>
             </div>
 
@@ -459,7 +584,7 @@ export default function VehicleMaritimePage() {
                 Avg Road Speed
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>42 <span className="text-xs font-normal">km/h</span></span>
+                <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>{vkpi.avgSpeed} <span className="text-xs font-normal">km/h</span></span>
                 <Gauge className="w-4 h-4 opacity-60" style={{ color: 'var(--text-muted)' }} />
               </div>
               <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Limit: 50 km/h (Kovalam)</div>
@@ -470,9 +595,9 @@ export default function VehicleMaritimePage() {
                 Plates OCR&apos;d
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-2xl font-bold text-emerald-700 dark:text-emerald-400">138</span>
+                <span className="font-mono text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{vkpi.platesOcrd}</span>
                 <span className="text-[10px] font-mono text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold border border-emerald-500/20">
-                  97.2%
+                  {ocrRate}%
                 </span>
               </div>
               <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>PaddleOCR + LPRNet</div>
@@ -776,10 +901,10 @@ export default function VehicleMaritimePage() {
                 Cumulative Today
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>114</span>
+                <span className="font-mono text-2xl font-bold" style={{ color: 'var(--text)' }}>70</span>
                 <span className="text-[10px] font-mono font-bold" style={{ color: 'var(--text-muted)' }}>24h Log</span>
               </div>
-              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>78 Trawlers / 14 Cargo / 22 Crafts</div>
+              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>60 Trawlers / 0 Cargo / 10 Crafts</div>
             </div>
 
             <div className="card-sand p-3.5 flex flex-col justify-between">
@@ -787,11 +912,11 @@ export default function VehicleMaritimePage() {
                 Motion State Breakdown
               </span>
               <div className="flex items-baseline justify-between mt-2">
-                <span className="font-mono text-lg font-bold" style={{ color: 'var(--text)' }}>19 / 6 / 3</span>
+                <span className="font-mono text-lg font-bold" style={{ color: 'var(--text)' }}>40 / 32 / 20</span>
                 <span className="text-[10px] font-mono font-semibold" style={{ color: 'var(--text-muted)' }}>C / A / D</span>
               </div>
               <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
-                Cruising (19) · Anchored (6) · Drifting (3)
+                Cruising (40) · Anchored (32) · Drifting (20)
               </div>
             </div>
 
@@ -908,7 +1033,7 @@ export default function VehicleMaritimePage() {
                   Active Coastal Vessels Ledger
                 </h3>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  Automatic tracking of registered fishing boats, security speedboats, and merchant vessels
+                  Automatic tracking of registered trawlers, motor fishing boats, motor crafts and security speedboats
                 </p>
               </div>
 
@@ -966,7 +1091,7 @@ export default function VehicleMaritimePage() {
                   {filteredVessels.map(vsl => (
                     <tr key={vsl.id} className={cn("hover:bg-[var(--surface-hover)] transition-colors", vsl.proximityWarning ? "bg-red-500/10 border-l-2 border-l-red-500" : "")}>
                       <td className="p-3 font-mono font-bold text-[var(--sea-600)] dark:text-[var(--sea-accent)]">{vsl.vesselCode}</td>
-                      <td className="p-3 font-sans font-medium" style={{ color: 'var(--text)' }}>{vsl.vesselClass.replace('_', ' ')}</td>
+                      <td className="p-3 font-sans font-medium" style={{ color: 'var(--text)' }}>{vesselClassLabel(vsl.vesselClass)}</td>
                       <td className="p-3 font-mono font-bold">
                         <span className={vsl.speedKnots > 20 ? "text-amber-700 dark:text-amber-400" : ""} style={vsl.speedKnots <= 20 ? { color: 'var(--text)' } : undefined}>
                           {vsl.speedKnots.toFixed(1)} kt
@@ -1110,7 +1235,7 @@ export default function VehicleMaritimePage() {
               </div>
               <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Classification:</span>
-                <span className="font-bold" style={{ color: 'var(--text)' }}>{inspectVessel.vesselClass}</span>
+                <span className="font-bold" style={{ color: 'var(--text)' }}>{vesselClassLabel(inspectVessel.vesselClass)}</span>
               </div>
               <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--line)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Speed (Knots):</span>

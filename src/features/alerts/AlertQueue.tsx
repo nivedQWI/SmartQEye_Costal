@@ -5,7 +5,7 @@
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Filter, ChevronDown, Users, CheckCheck, ArrowUpCircle, XCircle, ExternalLink } from 'lucide-react';
 import { cn, formatIST, timeAgo, eventTypeLabel, formatCoords, SEV_GLYPH } from '@/lib/utils';
 import { SeverityChip, SeverityDot } from '@/components/SeverityChip';
@@ -127,6 +127,7 @@ function AlertRow({
   return (
     <tr
       data-selected={isSelected}
+      data-alert-id={alert.id}
       className={cn(
         'border-b cursor-pointer transition-all group',
         alert.status === 'NEW' && alert.severity === 'CRITICAL' && 'new-alert-pulse',
@@ -493,9 +494,24 @@ export default function AlertQueue() {
   const { user, devRole } = useAuthStore();
   const activeRole = user?.role ?? devRole ?? 'OPERATOR';
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const focusId = searchParams.get('focus');
   const [filters, setFilters] = useState<Filters>({ severity: [], status: [], groupByContact: false });
-  const [selectedId, setSelectedId] = useState<string | null>(alerts[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    focusId && alerts.some(a => a.id === focusId) ? focusId : (alerts[0]?.id ?? null)
+  );
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Deep-link from Command Center (/alerts?focus=<id>): select + scroll the row into view
+  useEffect(() => {
+    if (!focusId || !alerts.some(a => a.id === focusId)) return;
+    setSelectedId(focusId);
+    const t = window.setTimeout(() => {
+      document.querySelector(`[data-alert-id="${focusId}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 80);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
 
   // Apply filters
   const filtered = alerts.filter(a => {

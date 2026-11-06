@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore, useThemeStore, useTrainingStore } from '@/lib/store';
 import { UAVS } from '@/lib/mockData';
+import { canAccess } from '@/lib/roleConfig';
 
 export interface GlobalSearchDialogProps {
   open: boolean;
@@ -25,6 +26,8 @@ export function GlobalSearchDialog({ open, onOpenChange }: GlobalSearchDialogPro
   const { toggleTheme, setMode } = useThemeStore();
   const { toggleTrainingMode } = useTrainingStore();
   const [search, setSearch] = useState('');
+  const { user, devRole } = useAuthStore();
+  const activeRole = user?.role ?? devRole ?? 'OPERATOR';
 
   // Keyboard shortcut listener (Ctrl+K / Cmd+K)
   useEffect(() => {
@@ -89,7 +92,7 @@ export function GlobalSearchDialog({ open, onOpenChange }: GlobalSearchDialogPro
                 { title: 'System Deployment', route: '/deployment', icon: Shield, hint: 'Edge node topology' },
                 { title: 'Acceptance Console', route: '/acceptance', icon: CheckSquare, hint: '29 KSUM acceptance rows' },
                 { title: 'Help Centre & Training', route: '/help', icon: Sparkles, hint: 'Tours & manuals' },
-              ].map(p => {
+              ].filter(p => p.route === '/help' || canAccess(activeRole, p.route)).map(p => {
                 const Icon = p.icon;
                 return (
                   <Command.Item

@@ -3,16 +3,15 @@
 // Virtualised Multi-Stream Grid with Compute Placement & CFS Load Bars
 // ============================================================
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Monitor, Cpu, Radio, Shield, Zap, RefreshCw, Eye,
-  Pin, PinOff, Filter, Maximize2, AlertTriangle, Layers,
-  Compass, Activity, HardDrive, CheckCircle2, ChevronRight
+  Monitor, Pin, PinOff, Filter, AlertTriangle, Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CoastalVideoPlayer } from '@/components/CoastalVideoPlayer';
-import { COASTAL_VIDEOS } from '@/lib/videoCatalog';
+import { useFeedStore } from '@/lib/store';
+import { getFeedPlace, COASTAL_ZONES } from '@/lib/feedLocations';
 import type { FeedState, Modality, AttentionLevel, Severity } from '@/types';
 
 export type ComputePlacement = 'CENTRAL_GPU' | 'LOCAL_EDGE' | 'COOP_WORKER' | 'POST_MISSION';
@@ -35,6 +34,7 @@ export interface FleetFeedItem {
   cfsReason: string;
   zoneCode: string;
   zoneName: string;
+  zoneGroup: string;
   attention: AttentionLevel;
   activeAlertCount: number;
   highestSeverity?: Severity;
@@ -47,46 +47,45 @@ export interface FleetFeedItem {
   videoOffsetSec: number;
 }
 
-const ZONES_LIST = [
-  { code: 'Z-01', name: 'Vizhinjam Port Security' },
-  { code: 'Z-02', name: 'Kovalam Beach Monitored' },
-  { code: 'Z-03', name: 'Shanghumugham Shoreline' },
-  { code: 'Z-04', name: 'Poovar Estuary Watch' },
-  { code: 'Z-05', name: 'Adimalathura Fishing' },
-  { code: 'Z-06', name: 'Chowara Cliff Buffer' },
-  { code: 'Z-07', name: 'Muthalapozhi Approach' },
-  { code: 'Z-08', name: 'Neendakara Outer Harbor' },
-];
+// Max simultaneous <video> decoders on the wall. Playing all 20 feeds at once
+// saturates the browser's decoder/GPU and freezes the page, so only this many
+// stream; the rest are shown as OFFLINE (paused to save bandwidth).
+const MAX_STREAMS = 6;
+
+/** Pick up to `max` LIVE feeds to stream, spreading the picks across coastal zones. */
+function pickStreamingIds(feeds: FleetFeedItem[], max: number): Set<string> {
+  const byZone = new Map<string, FleetFeedItem[]>();
+  feeds.filter(f => f.state === 'LIVE').forEach(f => {
+    byZone.set(f.zoneGroup, [...(byZone.get(f.zoneGroup) ?? []), f]);
+  });
+  const queues = [...byZone.values()];
+  const picked = new Set<string>();
+  while (picked.size < max && queues.some(q => q.length)) {
+    for (const q of queues) {
+      const next = q.shift();
+      if (next && picked.size < max) picked.add(next.id);
+    }
+  }
+  return picked;
+}
 
 export default function FleetWallPage() {
   const navigate = useNavigate();
+  const storeFeeds = useFeedStore(s => s.feeds);
 
   // Filter States
-  const [targetFeedCount, setTargetFeedCount] = useState<20 | 24 | 32>(20);
   const [filterState, setFilterState] = useState<string>('ALL');
   const [filterModality, setFilterModality] = useState<string>('ALL');
-  const [filterPlacement, setFilterPlacement] = useState<string>('ALL');
   const [filterZone, setFilterZone] = useState<string>('ALL');
-  const [pinnedIds, setPinnedIds] = useState<string[]>([
-    'feed-01',
-    'feed-02',
-    'feed-03',
-    'feed-04',
-  ]);
-  const [isPriorityQuadActive, setIsPriorityQuadActive] = useState<boolean>(true);
+  const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+  const [isPriorityQuadActive, setIsPriorityQuadActive] = useState<boolean>(false);
 
-  // Generate 32 feeds for scalable headroom mapped to coastal drone video library
+  // The fleet wall shows the same 20 drone feeds as Live Monitor (so clicking a
+  // tile can highlight that exact feed there).
   const allFeeds: FleetFeedItem[] = useMemo(() => {
-    return Array.from({ length: 32 }, (_, i) => {
-      const coastalVideo = COASTAL_VIDEOS[i % COASTAL_VIDEOS.length];
-      const zone = ZONES_LIST[i % ZONES_LIST.length];
-
-      // Realistic state distribution
-      const state: FeedState =
-        i === 15 ? 'EDGE_SYNC_LAG' :
-        i === 18 ? 'BUFFERING' :
-        i === 22 ? 'RECORDED' :
-        i === 28 ? 'NO_SIGNAL' : 'LIVE';
+    return storeFeeds.slice(0, 20).map((liveFeed, i) => {
+      const place = getFeedPlace(liveFeed);
+      const state: FeedState = liveFeed.state;
 
       // Placement distribution
       const placement: ComputePlacement =
@@ -121,14 +120,14 @@ export default function FleetWallPage() {
         i === 1 || i === 7 ? 'ATTENTION' : 'MONITOR';
 
       return {
-        id: `feed-${String(i + 1).padStart(2, '0')}`,
-        name: coastalVideo.title,
-        uavCode: coastalVideo.uavCode,
-        missionCode: coastalVideo.missionCode,
-        missionTitle: `${coastalVideo.location} Sortie`,
-        modality: coastalVideo.modality,
-        videoSrc: coastalVideo.videoUrl,
-        videoName: coastalVideo.fileName,
+        id: liveFeed.id,
+        name: liveFeed.label,
+        uavCode: liveFeed.uavCode,
+        missionCode: liveFeed.missionCode ?? '',
+        missionTitle: `${place.name}, ${place.district}`,
+        modality: liveFeed.modality,
+        videoSrc: liveFeed.videoSrc,
+        videoName: liveFeed.videoSrc?.split('/').pop(),
         state,
         placement,
         placementLabel,
@@ -136,37 +135,57 @@ export default function FleetWallPage() {
         cfsFps,
         cfsSavingsPct,
         cfsReason,
-        zoneCode: zone.code,
-        zoneName: coastalVideo.location,
+        zoneCode: place.key.toUpperCase().slice(0, 4),
+        zoneName: place.name,
+        zoneGroup: place.zone,
         attention,
         activeAlertCount,
         highestSeverity,
         batteryPct: Math.max(22, 94 - i * 2.1),
         altitudeM: 80 + (i % 6) * 12,
         groundSpeedKnots: 14 + (i % 5) * 3.2,
-        bitrateMbps: state === 'LIVE' ? (coastalVideo.modality === 'THERMAL' ? 4.8 : 7.2) : 0,
+        bitrateMbps: state === 'LIVE' ? (liveFeed.modality === 'THERMAL' ? 4.8 : 7.2) : 0,
         packetLossPct: state === 'EDGE_SYNC_LAG' ? 4.2 : 0.02,
         fpsCurrent: state === 'LIVE' ? cfsFps : 0,
         videoOffsetSec: (i * 14) % 120,
       };
     });
-  }, []);
+  }, [storeFeeds]);
 
-  // Filter based on selected count and filters
+  // Apply filters (zone = coastal zone / port group)
   const visibleFeeds = useMemo(() => {
-    return allFeeds.slice(0, targetFeedCount).filter(f => {
+    return allFeeds.filter(f => {
       const matchState = filterState === 'ALL' || f.state === filterState;
       const matchModality = filterModality === 'ALL' || f.modality === filterModality;
-      const matchPlacement = filterPlacement === 'ALL' || f.placement === filterPlacement;
-      const matchZone = filterZone === 'ALL' || f.zoneCode === filterZone;
-      return matchState && matchModality && matchPlacement && matchZone;
+      const matchZone = filterZone === 'ALL' || f.zoneGroup === filterZone;
+      return matchState && matchModality && matchZone;
     });
-  }, [allFeeds, targetFeedCount, filterState, filterModality, filterPlacement, filterZone]);
+  }, [allFeeds, filterState, filterModality, filterZone]);
 
   // Priority quad feeds
   const priorityQuadFeeds = useMemo(() => {
     return allFeeds.filter(f => pinnedIds.includes(f.id)).slice(0, 4);
   }, [allFeeds, pinnedIds]);
+
+  // Which feeds actually stream video (max MAX_STREAMS across the whole page).
+  // Pinned quad feeds get priority when the quad is shown.
+  const streamingIds = useMemo(() => {
+    const quad = isPriorityQuadActive ? priorityQuadFeeds.filter(f => f.state === 'LIVE') : [];
+    const ids = new Set(quad.slice(0, MAX_STREAMS).map(f => f.id));
+    const rest = pickStreamingIds(visibleFeeds.filter(f => !ids.has(f.id)), MAX_STREAMS - ids.size);
+    rest.forEach(id => ids.add(id));
+    return ids;
+  }, [visibleFeeds, priorityQuadFeeds, isPriorityQuadActive]);
+
+  const zoneCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    allFeeds.forEach(f => m.set(f.zoneGroup, (m.get(f.zoneGroup) ?? 0) + 1));
+    return m;
+  }, [allFeeds]);
+
+  function openInLiveMonitor(feedId: string) {
+    navigate(`/live?feed=${encodeURIComponent(feedId)}&from=fleet`);
+  }
 
   function togglePin(id: string, e: React.MouseEvent) {
     e.stopPropagation();
@@ -189,37 +208,21 @@ export default function FleetWallPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-serif text-lg font-bold">Tactical Fleet Wall</h1>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                {visibleFeeds.length} CONCURRENT FEEDS
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
+                {streamingIds.size} STREAMING
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-500/10 border border-slate-500/20" style={{ color: 'var(--text-muted)' }}>
+                {visibleFeeds.length - [...streamingIds].filter(id => visibleFeeds.some(f => f.id === id)).length} OFFLINE
               </span>
             </div>
-            {/* Rule 1 Compliance Caption */}
             <p className="text-xs font-mono opacity-60">
-              20-feed operating envelope: target — to be benchmarked on approved infrastructure.
+              {filterZone === 'ALL' ? 'All coastal zones' : filterZone} · up to {MAX_STREAMS} live streams at a time to keep the wall responsive
             </p>
           </div>
         </div>
 
-        {/* Headroom Scale Buttons & Priority Quad Toggle */}
+        {/* Priority Quad Toggle */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center p-0.5 rounded-lg border text-xs font-mono font-semibold" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
-            <span className="px-2 text-[10px] opacity-50 uppercase">Grid Scale:</span>
-            {([20, 24, 32] as const).map(count => (
-              <button
-                key={count}
-                onClick={() => setTargetFeedCount(count)}
-                className={cn(
-                  'px-2.5 py-1 rounded-md transition-all cursor-pointer',
-                  targetFeedCount === count
-                    ? 'bg-[var(--sea-600)] text-white shadow-xs font-bold'
-                    : 'opacity-70 hover:opacity-100 hover:bg-[var(--surface-hover)]'
-                )}
-              >
-                {count} Feeds {count === 32 ? '(Headroom)' : ''}
-              </button>
-            ))}
-          </div>
-
           <button
             onClick={() => setIsPriorityQuadActive(prev => !prev)}
             className={cn(
@@ -273,36 +276,23 @@ export default function FleetWallPage() {
             <option value="NIGHT_VISION">NIGHT VISION (NVG Green)</option>
           </select>
 
-          {/* Compute Placement Filter */}
-          <select
-            value={filterPlacement}
-            onChange={e => setFilterPlacement(e.target.value)}
-            className="px-2 py-1 rounded-lg border bg-[var(--panel)] outline-none"
-            style={{ borderColor: 'var(--line)' }}
-          >
-            <option value="ALL">All Compute Placements</option>
-            <option value="CENTRAL_GPU">Central GPU Node</option>
-            <option value="LOCAL_EDGE">Station Edge Laptop</option>
-            <option value="COOP_WORKER">Co-op Edge Pool</option>
-            <option value="POST_MISSION">Post-Mission Batch</option>
-          </select>
-
-          {/* Zone Filter */}
+          {/* Coastal Zone / Port Filter */}
           <select
             value={filterZone}
             onChange={e => setFilterZone(e.target.value)}
             className="px-2 py-1 rounded-lg border bg-[var(--panel)] outline-none"
             style={{ borderColor: 'var(--line)' }}
+            aria-label="Coastal zone"
           >
-            <option value="ALL">All Coastal Zones</option>
-            {ZONES_LIST.map(z => (
-              <option key={z.code} value={z.code}>{z.code} - {z.name}</option>
+            <option value="ALL">All Coastal Zones ({allFeeds.length})</option>
+            {COASTAL_ZONES.map(z => (
+              <option key={z} value={z}>{z} ({zoneCounts.get(z) ?? 0})</option>
             ))}
           </select>
         </div>
 
         <div className="opacity-60 text-[11px]">
-          Showing {visibleFeeds.length} streams · Click any feed to focus into Live Monitor
+          Showing {visibleFeeds.length} feeds · Click any feed to open it in Live Monitor
         </div>
       </div>
 
@@ -324,8 +314,9 @@ export default function FleetWallPage() {
                   key={`pinned-${feed.id}`}
                   feed={feed}
                   isPinned={true}
+                  isStreaming={streamingIds.has(feed.id)}
                   onTogglePin={e => togglePin(feed.id, e)}
-                  onFocus={() => navigate(`/live?feedId=${feed.id}`)}
+                  onFocus={() => openInLiveMonitor(feed.id)}
                 />
               ))}
             </div>
@@ -336,15 +327,26 @@ export default function FleetWallPage() {
 
         {/* Main 4-Column Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-2 pb-6">
-          {visibleFeeds.map(feed => (
-            <FeedTileCard
-              key={feed.id}
-              feed={feed}
-              isPinned={pinnedIds.includes(feed.id)}
-              onTogglePin={e => togglePin(feed.id, e)}
-              onFocus={() => navigate(`/live?feedId=${feed.id}`)}
-            />
-          ))}
+          {visibleFeeds.length === 0 && (
+            <div className="col-span-full text-center py-10 text-sm" style={{ color: 'var(--text-muted)' }}>
+              No feeds match the selected filters.
+            </div>
+          )}
+          {visibleFeeds.map(feed => {
+            const shownInQuad = isPriorityQuadActive && priorityQuadFeeds.some(p => p.id === feed.id);
+            return (
+              <FeedTileCard
+                key={feed.id}
+                feed={feed}
+                isPinned={pinnedIds.includes(feed.id)}
+                // Avoid decoding the same video twice when it's already playing in the quad
+                isStreaming={!shownInQuad && streamingIds.has(feed.id)}
+                offlineNote={shownInQuad ? 'Playing in Priority Quad' : undefined}
+                onTogglePin={e => togglePin(feed.id, e)}
+                onFocus={() => openInLiveMonitor(feed.id)}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
@@ -353,21 +355,30 @@ export default function FleetWallPage() {
 
 // ─── Individual Feed Tile Component ─────────────────────────────
 
-function FeedTileCard({
+const FeedTileCard = memo(function FeedTileCard({
   feed,
   isPinned,
+  isStreaming,
+  offlineNote,
   onTogglePin,
   onFocus,
 }: {
   feed: FleetFeedItem;
   isPinned: boolean;
+  isStreaming: boolean;
+  offlineNote?: string;
   onTogglePin: (e: React.MouseEvent) => void;
   onFocus: () => void;
 }) {
+  const isOffline = feed.state === 'LIVE' && !isStreaming;
   return (
     <div
       onClick={onFocus}
-      className="rounded-xl border overflow-hidden transition-all hover:shadow-lg cursor-pointer group flex flex-col justify-between"
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onFocus(); } }}
+      role="button"
+      tabIndex={0}
+      title="Open this feed in Live Monitor"
+      className="rounded-xl border overflow-hidden transition-all hover:shadow-lg hover:border-[var(--sea-400)] focus-visible:outline-2 focus-visible:outline-sky-500 cursor-pointer group flex flex-col justify-between"
       style={{ background: 'var(--panel)', borderColor: 'var(--line)', minHeight: '225px' }}
     >
       {/* Real-time Coastal Video Canvas */}
@@ -376,6 +387,18 @@ function FeedTileCard({
           <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-center p-2 z-10">
             <span className="text-red-400 font-mono text-xs font-bold mb-0.5">NO SIGNAL</span>
             <span className="text-[10px] font-mono text-white/50">{feed.uavCode}</span>
+          </div>
+        ) : !isStreaming && feed.state !== 'LIVE' ? (
+          // Degraded states (buffering / sync lag / recorded) get their own chip overlay below
+          <div className="absolute inset-0 bg-[#0b1620]" />
+        ) : !isStreaming ? (
+          <div className="absolute inset-0 bg-[#0b1620] flex flex-col items-center justify-center text-center p-2">
+            <span className="text-slate-300 font-mono text-xs font-bold mb-0.5 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-500" /> {offlineNote ? 'PINNED' : 'OFFLINE'}
+            </span>
+            <span className="text-[10px] font-mono text-white/50">
+              {offlineNote ?? 'Stream paused · click to view live'}
+            </span>
           </div>
         ) : (
           <CoastalVideoPlayer
@@ -391,7 +414,7 @@ function FeedTileCard({
         {/* Scanline & Reticle Overlay */}
         <div className="absolute inset-0 pointer-events-none border border-cyan-500/20" />
         <div className="absolute top-2 left-2 text-[10px] font-mono font-bold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs flex items-center gap-1 z-10">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className={cn('w-1.5 h-1.5 rounded-full', isOffline ? 'bg-slate-500' : 'bg-emerald-400 animate-pulse')} />
           <span>{feed.uavCode}</span>
         </div>
 
@@ -450,7 +473,7 @@ function FeedTileCard({
             </span>
           )}
           <span className="font-mono text-[9px] text-white/80 bg-black/50 px-1 py-0.5 rounded">
-            {feed.fpsCurrent.toFixed(1)} FPS
+            {(isOffline ? 0 : feed.fpsCurrent).toFixed(1)} FPS
           </span>
         </div>
       </div>
@@ -511,9 +534,9 @@ function FeedTileCard({
         <div className="pt-2 border-t grid grid-cols-3 gap-1 text-[10px] font-mono opacity-65 text-center" style={{ borderColor: 'var(--line)' }}>
           <div>{feed.batteryPct.toFixed(0)}% BAT</div>
           <div>{feed.altitudeM}m ALT</div>
-          <div>{feed.bitrateMbps} Mbps</div>
+          <div>{isOffline ? 0 : feed.bitrateMbps} Mbps</div>
         </div>
       </div>
     </div>
   );
-}
+});

@@ -17,6 +17,7 @@ import { cn, formatIST } from '@/lib/utils';
 import { FILTER_PRESETS } from '@/lib/videoCatalog';
 import { renderProceduralSea } from '@/lib/proceduralSea';
 import type { Modality } from '@/types';
+import { captureVideoFrame, sha256OfDataUrl, buildPlainAssessment, exportSec65bCertificatePdf } from './sec65bCertificate';
 
 // ─── Sector Definition ────────────────────────────────────────
 
@@ -35,6 +36,8 @@ export interface CoastalSector {
   altitudeM: number;
   hazardLevel: 'HIGH' | 'CRITICAL' | 'MODERATE' | 'LOW';
   operationalNote: string;
+  /** Plain-language concern shown to field police officers */
+  plainConcern: string;
   primaryTarget: {
     trackId: string;
     craftName: string;
@@ -64,6 +67,7 @@ export const KERALA_SECTORS: CoastalSector[] = [
     altitudeM: 84,
     hazardLevel: 'CRITICAL',
     operationalNote: 'Hazardous sandbar bar mouth; heavy surf wave capsizing risk for artisanal motorized country craft.',
+    plainConcern: 'Dangerous sandbar at the harbour mouth. Big waves can overturn small fishing boats here.',
     primaryTarget: {
       trackId: 'TRK-MUTH-104',
       craftName: 'St. Mary (Kettuvalam)',
@@ -95,6 +99,7 @@ export const KERALA_SECTORS: CoastalSector[] = [
     altitudeM: 110,
     hazardLevel: 'HIGH',
     operationalNote: 'Deep-water container berth approach; unauthorized artisanal vessel buffer zone enforcement.',
+    plainConcern: 'Fishing boats are not allowed near the container ship berth. Keep them outside the safety buffer.',
     primaryTarget: {
       trackId: 'TRK-VIZH-208',
       craftName: 'Sea Lord VII',
@@ -125,6 +130,7 @@ export const KERALA_SECTORS: CoastalSector[] = [
     altitudeM: 75,
     hazardLevel: 'MODERATE',
     operationalNote: 'Tourist zone perimeter; unauthorized water-sports demarcation line and night bather safety watch.',
+    plainConcern: 'Busy tourist beach. Speed boats must stay outside the swimming area, especially at night.',
     primaryTarget: {
       trackId: 'TRK-KOVL-019',
       craftName: 'Speedline Delta',
@@ -155,6 +161,7 @@ export const KERALA_SECTORS: CoastalSector[] = [
     altitudeM: 95,
     hazardLevel: 'HIGH',
     operationalNote: 'Ashtamudi Lake bar mouth; high traffic mechanised trawler fleet navigation & night curfew monitoring.',
+    plainConcern: 'Busy harbour mouth with many trawlers. Watch for boats going out during the night ban.',
     primaryTarget: {
       trackId: 'TRK-NDK-312',
       craftName: 'Kadal Kanyaka',
@@ -185,6 +192,7 @@ export const KERALA_SECTORS: CoastalSector[] = [
     altitudeM: 120,
     hazardLevel: 'HIGH',
     operationalNote: 'Naval base approach channel; strict restriction on unmanifested country boats in fairway.',
+    plainConcern: 'Navy area nearby. Unregistered country boats are not allowed in the main shipping channel.',
     primaryTarget: {
       trackId: 'TRK-KCH-551',
       craftName: 'Periyar Queen',
@@ -215,6 +223,7 @@ export const KERALA_SECTORS: CoastalSector[] = [
     altitudeM: 90,
     hazardLevel: 'MODERATE',
     operationalNote: 'Traditional Uru shipbuilding quays and cargo barge littoral zone surveillance.',
+    plainConcern: 'Boat-building yards and cargo barges along the river mouth. Check for unregistered boats.',
     primaryTarget: {
       trackId: 'TRK-BYP-702',
       craftName: 'Malabar Pride',
@@ -245,6 +254,7 @@ export const KERALA_SECTORS: CoastalSector[] = [
     altitudeM: 100,
     hazardLevel: 'MODERATE',
     operationalNote: 'Northern Valapattanam river mouth sandbar; illegal sand dredger and unlicensed boat sweep.',
+    plainConcern: 'River mouth sandbar. Watch for illegal sand-mining boats and unlicensed fishing boats.',
     primaryTarget: {
       trackId: 'TRK-AZH-880',
       craftName: 'Dolphin 02',
@@ -274,6 +284,7 @@ interface ExtractedKeyframe {
   craftName: string;
   classLabel: string;
   speedKnots: number;
+  sectorId: string;
   status: 'SEALED' | 'EVIDENCE_READY';
 }
 
@@ -510,37 +521,83 @@ export default function RecordedAnalysisPage() {
   }, [currentTimeSec, showOverlays, sector, activeModality, videoLoaded, videoError]);
 
   // Extract CKFE Keyframe
-  const handleExtractKeyframe = () => {
+  // The overlay canvas only holds the AI boxes (the video is a separate element),
+  // so the real video frame is composited with the overlay before sealing.
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  const captureKeyframe = useCallback(async (): Promise<ExtractedKeyframe | null> => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-
-    // Snapshot image from canvas
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-    // Deterministic pseudo SHA-256 for legal seal demo
-    const rawStamp = `${sector.code}_${currentTimeSec.toFixed(2)}_${sector.primaryTarget.trackId}`;
-    const pseudoHash = Array.from(rawStamp)
-      .reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0)
-      .toString(16)
-      .padStart(16, '0') + 'e4b98c7103dfa1789c6291a84f0';
-
-    const newKeyframe: ExtractedKeyframe = {
+    const dataUrl = await captureVideoFrame(video, canvas, filterStyle.filter as string | undefined);
+    if (!dataUrl) return null;
+    const timeSec = video?.currentTime ?? currentTimeSec;
+    const sha = await sha256OfDataUrl(dataUrl);
+    return {
       id: `kf-${Date.now()}`,
-      timeSec: currentTimeSec,
+      timeSec,
       timestampIst: formatIST(new Date().toISOString()),
       thumbnailUrl: dataUrl,
-      sha256Hash: pseudoHash,
+      sha256Hash: sha,
       targetTrackId: sector.primaryTarget.trackId,
       craftName: sector.primaryTarget.craftName,
       classLabel: sector.primaryTarget.classLabel,
       speedKnots: sector.primaryTarget.speedKnots,
+      sectorId: sector.id,
       status: 'SEALED',
     };
+  }, [filterStyle, currentTimeSec, sector]);
 
-    setKeyframes(prev => [newKeyframe, ...prev]);
-    setToastMessage(`Keyframe sealed at ${formatTime(currentTimeSec)} (SHA-256: ${pseudoHash.slice(0, 10)}...)`);
+  const handleExtractKeyframe = async () => {
+    if (isCapturing) return;
+    setIsCapturing(true);
+    try {
+      const kf = await captureKeyframe();
+      if (!kf) {
+        setToastMessage('Could not capture the frame. Please wait for the video to load and try again.');
+        return;
+      }
+      setKeyframes(prev => [kf, ...prev]);
+      setToastMessage(`Keyframe sealed at ${formatTime(kf.timeSec)} (SHA-256: ${kf.sha256Hash.slice(0, 10)}...)`);
+    } finally {
+      setIsCapturing(false);
+    }
   };
+
+  // Keyframes belonging to the sector currently on screen
+  const sectorKeyframes = useMemo(() => keyframes.filter(k => k.sectorId === sector.id), [keyframes, sector.id]);
+
+  const handleExportCertificate = async () => {
+    if (isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      let certFrames: (ExtractedKeyframe & { label?: string })[] = selectedKeyframeForCert
+        ? [selectedKeyframeForCert]
+        : [...sectorKeyframes].sort((a, b) => a.timeSec - b.timeSec);
+      if (certFrames.length === 0) {
+        // No sealed frames yet: capture and seal the frame currently shown
+        const kf = await captureKeyframe();
+        if (kf) {
+          setKeyframes(prev => [kf, ...prev]);
+          certFrames = [{ ...kf, label: 'Frame sealed at export' }];
+        }
+      }
+      const name = await exportSec65bCertificatePdf({
+        sector,
+        keyframes: certFrames,
+        videoDurationSec: durationSec,
+      });
+      setToastMessage(`Section 65B certificate exported: ${name}`);
+      setShowSec65bModal(false);
+    } catch (err) {
+      console.error('Sec 65B export failed', err);
+      setToastMessage('PDF export failed. Please try again.');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  const plainAssessment = useMemo(() => buildPlainAssessment(sector), [sector]);
 
   // Format seconds into mm:ss.ms
   const formatTime = (sec: number) => {
@@ -870,13 +927,14 @@ export default function RecordedAnalysisPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleExtractKeyframe}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-xs cursor-pointer text-xs"
+                  disabled={isCapturing}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-xs cursor-pointer text-xs disabled:opacity-60 disabled:cursor-wait"
                 >
                   <Award className="w-3.5 h-3.5" />
-                  Mark Keyframe (CKFE)
+                  {isCapturing ? 'Sealing…' : 'Mark Keyframe (CKFE)'}
                 </button>
                 <button
-                  onClick={() => setShowSec65bModal(true)}
+                  onClick={() => { setSelectedKeyframeForCert(null); setShowSec65bModal(true); }}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-600 text-white font-medium transition-all cursor-pointer text-xs"
                 >
                   <FileText className="w-3.5 h-3.5" />
@@ -929,8 +987,23 @@ export default function RecordedAnalysisPage() {
             </div>
 
             <div className="text-[11px] p-2.5 rounded-lg border bg-[var(--raised)] border-[var(--line)] leading-relaxed">
-              <strong className="text-[var(--text)] block mb-1">Sector Police Assessment:</strong>
-              {sector.operationalNote}
+              <strong className="text-[var(--text)] block mb-1.5">Sector Police Assessment:</strong>
+              <dl className="space-y-1">
+                {plainAssessment.map(row => (
+                  <div key={row.label} className="flex gap-2">
+                    <dt className="w-24 flex-shrink-0 font-semibold text-[var(--text-muted)]">{row.label}</dt>
+                    <dd
+                      className={cn(
+                        'flex-1 text-[var(--text)]',
+                        row.label === 'Risk' && (sector.hazardLevel === 'CRITICAL' || sector.hazardLevel === 'HIGH') && 'font-bold text-red-600 dark:text-red-400',
+                        row.label === 'Action' && 'font-semibold',
+                      )}
+                    >
+                      {row.text}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </div>
 
             <button
@@ -1092,7 +1165,11 @@ export default function RecordedAnalysisPage() {
                 <div><strong>DRONE SORTIE:</strong> {sector.uavCode} (Pilot: {sector.pilot})</div>
                 <div><strong>INCIDENT TARGET:</strong> {sector.primaryTarget.craftName} ({sector.primaryTarget.registrationNo})</div>
                 <div><strong>GENERATED AT:</strong> {formatIST(new Date().toISOString())}</div>
-                <div><strong>CRYPTOGRAPHIC DIGEST:</strong> {selectedKeyframeForCert?.sha256Hash || 'b78a9c1482f09918df20914e6b19a089cf29188a'} (SHA-256)</div>
+                <div><strong>VIDEO FILE:</strong> {sector.videoSrc.split('/').pop()}</div>
+                <div><strong>KEYFRAMES COVERED:</strong> {selectedKeyframeForCert ? `1 (video time ${formatTime(selectedKeyframeForCert.timeSec)})` : sectorKeyframes.length > 0 ? sectorKeyframes.length : 'None yet — the current frame will be sealed on export'}</div>
+                {selectedKeyframeForCert && (
+                  <div className="break-all"><strong>CRYPTOGRAPHIC DIGEST:</strong> {selectedKeyframeForCert.sha256Hash} (SHA-256)</div>
+                )}
               </div>
 
               <div className="space-y-2 text-[11px] text-[var(--text-muted)]">
@@ -1131,14 +1208,12 @@ export default function RecordedAnalysisPage() {
                 Close
               </button>
               <button
-                onClick={() => {
-                  setToastMessage('Section 65B Certificate generated and saved to evidence vault.');
-                  setShowSec65bModal(false);
-                }}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                onClick={handleExportCertificate}
+                disabled={isExportingPdf}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
               >
                 <Download className="w-3.5 h-3.5" />
-                Export Signed Affidavit (.PDF)
+                {isExportingPdf ? 'Generating PDF…' : 'Export Signed Affidavit (.PDF)'}
               </button>
             </div>
           </div>
