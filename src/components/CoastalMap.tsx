@@ -9,7 +9,7 @@ import type { Map as MLMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Alert, Zone } from '@/types';
 import { useMapStore } from '@/lib/store';
-import { ZONES, ALERTS, INITIAL_TELEMETRY, KERALA_COASTAL_SECTORS } from '@/lib/mockData';
+import { ZONES, ALERTS, KERALA_COASTAL_SECTORS } from '@/lib/mockData';
 import { ACTIVE_MISSION_DRONES, KERALA_SEAPORTS, type ActiveDroneMission } from '@/lib/coastalPortsData';
 
 // OpenStreetMap (OSM) Tile Provider URL
@@ -205,6 +205,9 @@ export function CoastalMap({
   const droneMarkersRef = useRef<Record<string, maplibregl.Marker>>({});
   const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
 
+  // Dedicated HTML markers for vertex pins in draw mode
+  const drawingMarkersRef = useRef<maplibregl.Marker[]>([]);
+
   // Drone real-time state for hover popups
   const droneDataRef = useRef<Record<string, {
     uavCode: string;
@@ -259,6 +262,7 @@ export function CoastalMap({
       console.warn('MapLibre notice:', e?.error?.message || e);
     });
 
+    // Map click handler for polygon drawing
     map.on('click', (e) => {
       if (isDrawingPolygonRef.current) {
         onMapClickCoordRef.current?.([e.lngLat.lng, e.lngLat.lat]);
@@ -272,7 +276,7 @@ export function CoastalMap({
       if (showAlerts) addAlertPins(map);
       if (showDrones) renderActiveMissionDrones(map, selectedPortId);
       setupInteractions(map);
-      setupDrawingLayers(map);
+      ensureDrawingLayers(map);
 
       if (highlightAlert) {
         map.jumpTo({ center: [highlightAlert.event.location.lon, highlightAlert.event.location.lat], zoom: 14 });
@@ -297,6 +301,7 @@ export function CoastalMap({
       hoverPopupRef.current?.remove();
       alertMarkersRef.current.forEach(m => m.remove());
       Object.values(droneMarkersRef.current).forEach(m => m.remove());
+      drawingMarkersRef.current.forEach(m => m.remove());
       map.remove();
       mapRef.current = null;
     };
@@ -344,7 +349,6 @@ export function CoastalMap({
   useEffect(() => {
     if (!mapRef.current || !showDrones || !layers.drones || singleDrone) return;
     Object.entries(dronePositions).forEach(([feedId, pos]) => {
-      // Only update if marker exists for this feed (active port filter)
       if (droneMarkersRef.current[feedId]) {
         updateDroneMarker(feedId, pos.lat, pos.lon, pos.headingDeg);
       }
@@ -358,109 +362,150 @@ export function CoastalMap({
     addZones(map, [...ZONES, ...customZones]);
   }, [customZones, showZones]);
 
-  // Update user drawing polygon layer in real-time
+  // ─── Real-Time Yellowish Geofence Drawing & Vertex Pins Update ───
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    const source = map.getSource('user-drawn-geofence') as maplibregl.GeoJSONSource | undefined;
-    if (!source) return;
+    // Ensure dedicated fill and line drawing layers exist
+    ensureDrawingLayers(map);
+
+    // Remove previous vertex pins
+    drawingMarkersRef.current.forEach(m => m.remove());
+    drawingMarkersRef.current = [];
+
+    const fillSrc = map.getSource('drawn-geofence-fill-source') as maplibregl.GeoJSONSource | undefined;
+    const lineSrc = map.getSource('drawn-geofence-line-source') as maplibregl.GeoJSONSource | undefined;
 
     if (!isDrawingPolygon || drawingVertices.length === 0) {
-      source.setData({ type: 'FeatureCollection', features: [] });
+      fillSrc?.setData({ type: 'FeatureCollection', features: [] });
+      lineSrc?.setData({ type: 'FeatureCollection', features: [] });
       return;
     }
 
-    const features: GeoJSON.Feature[] = [];
-
-    // Polygon fill and outline if >= 3 vertices
-    if (drawingVertices.length >= 3) {
-      features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [[...drawingVertices, drawingVertices[0]]],
-        },
-        properties: {},
-      });
-    }
-
-    // Line connecting vertices if >= 2 vertices
-    if (drawingVertices.length >= 2) {
-      features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: drawingVertices,
-        },
-        properties: {},
-      });
-    }
-
-    // Point circles on each vertex with sequence index
+    // 1. Create prominent glowing vertex pins for every clicked point
     drawingVertices.forEach((coord, idx) => {
-      features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: coord,
-        },
-        properties: { index: idx + 1 },
-      });
+      const el = document.createElement('div');
+      el.style.cssText = 'position: relative; pointer-events: none;';
+      el.innerHTML = `
+        <div style="
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          background: #FACC15;
+          border: 2.5px solid #000000;
+          color: #000000;
+          font-family: monospace;
+          font-size: 11px;
+          font-weight: 900;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 14px rgba(250, 204, 21, 1), 0 3px 8px rgba(0, 0, 0, 0.85);
+          transform: translate(-50%, -50%);
+        ">
+          ${idx + 1}
+        </div>
+      `;
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat(coord)
+        .addTo(map);
+      drawingMarkersRef.current.push(marker);
     });
 
-    source.setData({
-      type: 'FeatureCollection',
-      features,
-    });
+    // 2. Yellowish Translucent Zone Fill (active when >= 3 points)
+    if (fillSrc) {
+      if (drawingVertices.length >= 3) {
+        fillSrc.setData({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[...drawingVertices, drawingVertices[0]]],
+          },
+          properties: {},
+        });
+      } else {
+        fillSrc.setData({ type: 'FeatureCollection', features: [] });
+      }
+    }
+
+    // 3. Yellow Connecting Perimeter Lines (connects all marked points, closes loop if >= 3)
+    if (lineSrc) {
+      const lineCoords =
+        drawingVertices.length >= 3
+          ? [...drawingVertices, drawingVertices[0]]
+          : drawingVertices.length >= 2
+          ? drawingVertices
+          : [];
+
+      if (lineCoords.length >= 2) {
+        lineSrc.setData({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: lineCoords,
+          },
+          properties: {},
+        });
+      } else {
+        lineSrc.setData({ type: 'FeatureCollection', features: [] });
+      }
+    }
   }, [isDrawingPolygon, drawingVertices]);
 
-  function setupDrawingLayers(map: MLMap) {
-    if (map.getSource('user-drawn-geofence')) return;
+  function ensureDrawingLayers(map: MLMap) {
+    // 1. Polygon Fill Source & Layer (Yellowish fill)
+    if (!map.getSource('drawn-geofence-fill-source')) {
+      map.addSource('drawn-geofence-fill-source', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
 
-    map.addSource('user-drawn-geofence', {
-      type: 'geojson',
-      data: { type: 'FeatureCollection', features: [] },
-    });
+      map.addLayer({
+        id: 'drawn-geofence-fill',
+        type: 'fill',
+        source: 'drawn-geofence-fill-source',
+        paint: {
+          'fill-color': '#FACC15',
+          'fill-opacity': 0.38,
+        },
+      });
+    }
 
-    map.addLayer({
-      id: 'user-drawn-fill',
-      type: 'fill',
-      source: 'user-drawn-geofence',
-      filter: ['==', '$type', 'Polygon'],
-      paint: {
-        'fill-color': '#0284c7',
-        'fill-opacity': 0.35,
-      },
-    });
+    // 2. Polygon Perimeter Line Source & Layers (Yellow lines with dark casing for contrast)
+    if (!map.getSource('drawn-geofence-line-source')) {
+      map.addSource('drawn-geofence-line-source', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
 
-    map.addLayer({
-      id: 'user-drawn-line',
-      type: 'line',
-      source: 'user-drawn-geofence',
-      paint: {
-        'line-color': '#38bdf8',
-        'line-width': 3,
-        'line-dasharray': [2, 1],
-      },
-    });
+      // Dark under-casing for high visibility against ocean water or land
+      map.addLayer({
+        id: 'drawn-geofence-line-casing',
+        type: 'line',
+        source: 'drawn-geofence-line-source',
+        paint: {
+          'line-color': '#78350F',
+          'line-width': 6.5,
+          'line-opacity': 0.6,
+        },
+      });
 
-    map.addLayer({
-      id: 'user-drawn-points',
-      type: 'circle',
-      source: 'user-drawn-geofence',
-      filter: ['==', '$type', 'Point'],
-      paint: {
-        'circle-radius': 6,
-        'circle-color': '#ffffff',
-        'circle-stroke-color': '#0284c7',
-        'circle-stroke-width': 2.5,
-      },
-    });
+      // Bright yellow dashed perimeter line
+      map.addLayer({
+        id: 'drawn-geofence-line',
+        type: 'line',
+        source: 'drawn-geofence-line-source',
+        paint: {
+          'line-color': '#FACC15',
+          'line-width': 4,
+          'line-dasharray': [3, 2],
+        },
+      });
+    }
   }
 
   function renderActiveMissionDrones(map: MLMap, portId: string = 'ALL') {
-    // Clear existing drone markers
     Object.values(droneMarkersRef.current).forEach(m => m.remove());
     droneMarkersRef.current = {};
 
@@ -477,7 +522,6 @@ export function CoastalMap({
       return;
     }
 
-    // Filter by port
     const activeList = portId === 'ALL'
       ? ACTIVE_MISSION_DRONES
       : ACTIVE_MISSION_DRONES.filter(d => d.portId === portId);
@@ -522,6 +566,9 @@ export function CoastalMap({
     el.style.cursor = 'pointer';
     el.title = 'Active Mission Drone';
     el.addEventListener('click', (e) => {
+      if (isDrawingPolygonRef.current) {
+        return;
+      }
       e.stopPropagation();
       hoverPopupRef.current?.remove();
       onDroneClickRef.current?.(feedId);
@@ -539,8 +586,9 @@ export function CoastalMap({
       </svg>
     `;
 
-    // ── Mouse Hover Popup with DRONE ID, MISSION ID, LOCATION, OPERATOR NAME, TIME DATE ──
+    // Mouse Hover Popup with DRONE ID, MISSION ID, LOCATION, OPERATOR NAME, TIME DATE
     el.addEventListener('mouseenter', () => {
+      if (isDrawingPolygonRef.current) return;
       const map = mapRef.current;
       if (!map) return;
       hoverPopupRef.current?.remove();
@@ -588,6 +636,11 @@ export function CoastalMap({
       const fillId = `zone-fill-${zone.id}`;
       const borderId = `zone-border-${zone.id}`;
 
+      // Custom zones created by user are displayed in yellowish color
+      const isCustom = zone.id.startsWith('z-custom');
+      const fillColor = isCustom ? '#FACC15' : (zone.color || '#C8352E');
+      const borderColor = isCustom ? '#EAB308' : (zone.color || '#C8352E');
+
       if (map.getSource(sourceId)) {
         (map.getSource(sourceId) as maplibregl.GeoJSONSource).setData({
           type: 'Feature',
@@ -611,8 +664,8 @@ export function CoastalMap({
         type: 'fill',
         source: sourceId,
         paint: {
-          'fill-color': zone.color || '#C8352E',
-          'fill-opacity': 0.25,
+          'fill-color': fillColor,
+          'fill-opacity': isCustom ? 0.38 : 0.25,
         },
       });
 
@@ -621,9 +674,9 @@ export function CoastalMap({
         type: 'line',
         source: sourceId,
         paint: {
-          'line-color': zone.color || '#C8352E',
-          'line-width': 2.5,
-          'line-dasharray': zone.type === 'RESTRICTED' ? [4, 2] : [1],
+          'line-color': borderColor,
+          'line-width': isCustom ? 3.5 : 2.5,
+          'line-dasharray': zone.type === 'RESTRICTED' || isCustom ? [4, 2] : [1],
         },
       });
     });
@@ -648,6 +701,7 @@ export function CoastalMap({
 
       alertMarkersRef.current.push(marker);
       el.addEventListener('click', (e) => {
+        if (isDrawingPolygonRef.current) return;
         e.stopPropagation();
         hoverPopupRef.current?.remove();
         onAlertClickRef.current?.(alert.id);
@@ -700,6 +754,7 @@ export function CoastalMap({
     el.appendChild(inner);
 
     el.addEventListener('mouseenter', () => {
+      if (isDrawingPolygonRef.current) return;
       const map = mapRef.current;
       if (!map) return;
       hoverPopupRef.current?.remove();
@@ -741,7 +796,13 @@ export function CoastalMap({
         s.name.toLowerCase().includes(zone.name.split(' ')[0].toLowerCase())
       ) || KERALA_COASTAL_SECTORS[0];
 
-      map.on('click', `zone-fill-${zone.id}`, () => onZoneClickRef.current?.(zone.id));
+      map.on('click', `zone-fill-${zone.id}`, (e) => {
+        if (isDrawingPolygonRef.current) {
+          onMapClickCoordRef.current?.([e.lngLat.lng, e.lngLat.lat]);
+          return;
+        }
+        onZoneClickRef.current?.(zone.id);
+      });
 
       map.on('mousemove', `zone-fill-${zone.id}`, (e) => {
         if (isDrawingPolygonRef.current) return;

@@ -150,12 +150,12 @@ function SaveGeofenceModal({ vertices, onClose, onSubmit }: SaveGeofenceModalPro
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-lg rounded-2xl border shadow-2xl bg-[var(--raised)] border-[var(--line)] overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-[var(--line)] flex items-center justify-between bg-[var(--surface-muted)]">
           <div className="flex items-center gap-2.5">
-            <Shield className="w-5 h-5 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
+            <Shield className="w-5 h-5 text-yellow-500" />
             <div>
               <h3 className="font-serif text-sm font-bold text-[var(--text)]">Submit Geofence to Central Command Center</h3>
               <p className="text-[11px] font-mono text-[var(--text-muted)]">Transmit polygon coordinates for Supervisor review and AI detection</p>
@@ -180,7 +180,7 @@ function SaveGeofenceModal({ vertices, onClose, onSubmit }: SaveGeofenceModalPro
               required
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl text-sm border font-medium bg-[var(--panel)] border-[var(--line)] text-[var(--text)] outline-none focus:border-[var(--sea-500)]"
+              className="w-full px-3 py-2 rounded-xl text-sm border font-medium bg-[var(--panel)] border-[var(--line)] text-[var(--text)] outline-none focus:border-yellow-500"
               placeholder="e.g. Vizhinjam Outer Anchorage High-Security Zone"
             />
           </div>
@@ -193,7 +193,7 @@ function SaveGeofenceModal({ vertices, onClose, onSubmit }: SaveGeofenceModalPro
               <select
                 value={zoneType}
                 onChange={e => setZoneType(e.target.value as ZoneType)}
-                className="w-full px-3 py-2 rounded-xl text-xs border font-sans bg-[var(--panel)] border-[var(--line)] text-[var(--text)] outline-none"
+                className="w-full px-3 py-2 rounded-xl text-xs font-sans bg-[var(--panel)] border-[var(--line)] text-[var(--text)] outline-none"
               >
                 <option value="RESTRICTED">Restricted (High Priority)</option>
                 <option value="HARBOUR">Harbour / Naval Anchorage</option>
@@ -210,7 +210,7 @@ function SaveGeofenceModal({ vertices, onClose, onSubmit }: SaveGeofenceModalPro
               <select
                 value={sensitivity}
                 onChange={e => setSensitivity(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs border font-sans bg-[var(--panel)] border-[var(--line)] text-[var(--text)] outline-none"
+                className="w-full px-3 py-2 rounded-xl text-xs font-sans bg-[var(--panel)] border-[var(--line)] text-[var(--text)] outline-none"
               >
                 <option value="VERY_HIGH">VERY HIGH (Immediate Triage)</option>
                 <option value="HIGH">HIGH (Standard Patrol Alert)</option>
@@ -223,7 +223,7 @@ function SaveGeofenceModal({ vertices, onClose, onSubmit }: SaveGeofenceModalPro
           <div className="p-3 rounded-xl border border-[var(--line)] bg-[var(--surface-muted)] space-y-2">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="font-bold text-[var(--text)]">Polygon Boundary Coordinates</span>
-              <span className="text-[var(--sea-600)] dark:text-[var(--sea-accent)] font-bold">{vertices.length} Vertices Placed</span>
+              <span className="text-yellow-600 dark:text-yellow-400 font-bold">{vertices.length} Vertices Placed</span>
             </div>
             <div className="max-h-28 overflow-y-auto font-mono text-[11px] text-[var(--text-muted)] space-y-1">
               {vertices.map((v, i) => (
@@ -236,8 +236,8 @@ function SaveGeofenceModal({ vertices, onClose, onSubmit }: SaveGeofenceModalPro
           </div>
 
           {/* Transmit Notice */}
-          <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-xs text-yellow-800 dark:text-yellow-300 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-yellow-500" />
             <span>
               Coordinates will be encrypted and transmitted to the <strong>Kerala Police Central Command Center</strong>. A Supervisor Review Ticket will be logged and automated edge detection rules will be armed.
             </span>
@@ -255,7 +255,7 @@ function SaveGeofenceModal({ vertices, onClose, onSubmit }: SaveGeofenceModalPro
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-[var(--sea-600)] hover:bg-[var(--sea-700)] text-white flex items-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-yellow-500 hover:bg-yellow-400 text-slate-950 flex items-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? (
                 <span>Transmitting...</span>
@@ -322,6 +322,7 @@ export default function MapGIS() {
   function handleSaveGeofenceSubmit(name: string, type: ZoneType, _sensitivity: string) {
     if (drawVertices.length < 3) return;
 
+    // Saved zones are explicitly styled in yellowish color
     const newZone: Zone = {
       id: `z-custom-${Date.now()}`,
       code: `Z-CUSTOM-${customZones.length + 1}`,
@@ -329,7 +330,7 @@ export default function MapGIS() {
       type,
       profileId: 'zp-restricted-24x7',
       version: 1,
-      color: type === 'RESTRICTED' ? '#C8352E' : type === 'HARBOUR' ? '#2B7FA6' : '#E06A3B',
+      color: '#EAB308',
       geometry: {
         type: 'Polygon',
         coordinates: [[...drawVertices, drawVertices[0]]],
@@ -349,7 +350,23 @@ export default function MapGIS() {
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden flex flex-col">
+    <div className="relative w-full h-full overflow-hidden select-none">
+      {/* ─── Full-width Map Canvas ─── */}
+      <div className="absolute inset-0 z-0">
+        <CoastalMap
+          height="100%"
+          className="w-full h-full"
+          showAlerts={false}
+          showDrones={true}
+          showZones={true}
+          selectedPortId={selectedPortId}
+          isDrawingPolygon={isDrawing}
+          drawingVertices={drawVertices}
+          onMapClickCoord={handleMapClickCoord}
+          customZones={customZones}
+        />
+      </div>
+
       {/* ─── Top Tactical Control Bar ─── */}
       <div
         className="absolute top-4 left-4 right-4 z-20 pointer-events-none flex items-start justify-between gap-4"
@@ -383,17 +400,17 @@ export default function MapGIS() {
 
           <div className="h-4 w-px bg-[var(--line)]" />
 
-          {/* Draw Geofence Button (Available to Operators & Supervisors) */}
+          {/* Draw Geofence Button */}
           {canEditGeofence && !isDrawing && (
             <button
               onClick={() => {
                 setIsDrawing(true);
                 setDrawVertices([]);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-[var(--sea-600)] hover:bg-[var(--sea-700)] text-white shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-yellow-500 hover:bg-yellow-400 text-slate-950 shadow-md cursor-pointer"
               title="Draw a custom geofence polygon by placing vertices on the map"
             >
-              <Pentagon className="w-3.5 h-3.5" />
+              <Pentagon className="w-3.5 h-3.5 text-slate-950" />
               <span>Draw Geofence</span>
             </button>
           )}
@@ -409,20 +426,23 @@ export default function MapGIS() {
       {/* ─── Active Polygon Drawing Controls Toolbar ─── */}
       {isDrawing && (
         <div
-          className="absolute top-20 left-4 z-20 pointer-events-auto p-3 rounded-2xl border shadow-2xl backdrop-blur-md bg-[var(--raised)] border-[var(--line)] max-w-md animate-in slide-in-from-top-2 duration-200"
+          className="absolute top-20 left-4 z-20 pointer-events-auto p-3.5 rounded-2xl border shadow-2xl backdrop-blur-md bg-[var(--raised)] border-[var(--line)] max-w-md animate-in slide-in-from-top-2 duration-200"
         >
           <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-2.5">
             <div className="flex items-center gap-2">
-              <Pentagon className="w-4 h-4 text-[var(--sea-600)] dark:text-[var(--sea-accent)]" />
+              <Pentagon className="w-4 h-4 text-yellow-500 animate-pulse" />
               <span className="font-serif text-xs font-bold text-[var(--text)]">Geofence Polygon Drawing</span>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[var(--sea-100)] text-[var(--sea-800)] dark:bg-[var(--sea-900)] dark:text-[var(--sea-200)]">
-              {drawVertices.length} {drawVertices.length === 1 ? 'point' : 'points'}
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30">
+              {drawVertices.length} {drawVertices.length === 1 ? 'point marked' : 'points marked'}
             </span>
           </div>
 
           <p className="text-[11px] font-sans text-[var(--text-muted)] mb-3 leading-relaxed">
-            Click on the coastline map to plot boundary vertices (minimum 3 points required to form a closed geofence perimeter).
+            {drawVertices.length === 0 && 'Click anywhere on the map to place vertex 1.'}
+            {drawVertices.length === 1 && 'Vertex 1 marked. Click map to connect vertex 2.'}
+            {drawVertices.length === 2 && '2 vertices connected! Click a 3rd point to close and create geofence zone.'}
+            {drawVertices.length >= 3 && `Yellow geofence zone active with ${drawVertices.length} connected points! Click map to add more points or click Save Geofence.`}
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -449,7 +469,12 @@ export default function MapGIS() {
             <button
               onClick={() => setShowSaveModal(true)}
               disabled={drawVertices.length < 3}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--sea-600)] hover:bg-[var(--sea-700)] text-white transition-colors disabled:opacity-40 cursor-pointer ml-auto"
+              className={cn(
+                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs transition-all ml-auto cursor-pointer',
+                drawVertices.length >= 3
+                  ? 'bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold shadow-md'
+                  : 'bg-[var(--surface-muted)] text-[var(--text-muted)] opacity-50 cursor-not-allowed'
+              )}
               title="Save Geofence and submit coordinates to Central Command Center"
             >
               <CheckCircle2 className="w-3.5 h-3.5" /> Save Geofence
@@ -481,22 +506,6 @@ export default function MapGIS() {
           </button>
         </div>
       )}
-
-      {/* ─── Full-width Map Canvas ─── */}
-      <div className="flex-1 w-full h-full relative">
-        <CoastalMap
-          height="100%"
-          className="absolute inset-0"
-          showAlerts={false}
-          showDrones={true}
-          showZones={true}
-          selectedPortId={selectedPortId}
-          isDrawingPolygon={isDrawing}
-          drawingVertices={drawVertices}
-          onMapClickCoord={handleMapClickCoord}
-          customZones={customZones}
-        />
-      </div>
 
       {/* ─── Save Geofence Modal ─── */}
       {showSaveModal && (
