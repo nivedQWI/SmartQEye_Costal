@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal — App Router
+// SmartQEye Coastal â€” App Router
 // As specified in Costal Police .docx
 // ============================================================
 
@@ -56,7 +56,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// ─── Page loading skeleton ────────────────────────────────────
+// â”€â”€â”€ Page loading skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function PageSkeleton() {
   return (
@@ -67,7 +67,7 @@ function PageSkeleton() {
   );
 }
 
-// ─── Auth & Role guards ───────────────────────────────────────
+// â”€â”€â”€ Auth & Role guards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -97,7 +97,7 @@ function CatchAll() {
   return <Navigate to="/login" replace />;
 }
 
-// ─── App ─────────────────────────────────────────────────────
+// â”€â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function App() {
   return (
@@ -134,8 +134,8 @@ export default function App() {
               <Route path="anomaly-monitor" element={<RequireRole path="/anomaly-monitor"><AnomalyMonitorPage /></RequireRole>} />
 
               {/* Intelligence */}
-              <Route path="contacts" element={<RequireRole path="/contacts"><ContactsPage /></RequireRole>} />
-              <Route path="contacts/:id" element={<RequireRole path="/contacts/:id"><ContactDetailPage /></RequireRole>} />
+              <Route path="contacts" element={<Navigate to="/coastal-context" replace />} />
+              <Route path="contacts/:id" element={<Navigate to="/coastal-context" replace />} />
               <Route path="coastal-context" element={<RequireRole path="/coastal-context"><CoastalContextPage /></RequireRole>} />
 
               {/* Evidence & Review */}

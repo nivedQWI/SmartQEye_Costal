@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal — Role-Based Access Control Configuration
+// SmartQEye Coastal â€” Role-Based Access Control Configuration
 // Per ROLE_BASED_ACCESS_CONTROL.md & UI_AND_SIDEBAR_NAVIGATION.md
 // ============================================================
 
@@ -64,8 +64,6 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfigItem> = {
       '/person-reid',
       '/intrusion-detection',
       '/anomaly-monitor',
-      '/contacts',
-      '/contacts/:id',
       '/incidents',
       '/incidents/:id',
       '/config/zones',

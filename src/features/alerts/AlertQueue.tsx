@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal — Alert Queue (/alerts)
+// SmartQEye Coastal â€” Alert Queue (/alerts)
 // Filterable, sortable table with right preview pane
 // Keyboard: J/K to move, A to ack, E to escalate, Enter to open
 // ============================================================
@@ -15,7 +15,7 @@ import { alertsApi } from '@/lib/api';
 import { can } from '@/lib/roleConfig';
 import type { Alert, Severity, AlertStatus, UserRole } from '@/types';
 
-// ─── Filter bar ───────────────────────────────────────────────
+// â”€â”€â”€ Filter bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 const STATUSES: AlertStatus[] = ['NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'UNDER_REVIEW', 'ESCALATED', 'RESOLVED', 'FALSE_ALERT'];
@@ -111,7 +111,7 @@ function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filt
   );
 }
 
-// ─── Alert row ────────────────────────────────────────────────
+// â”€â”€â”€ Alert row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function AlertRow({
   alert, isSelected, onClick, onAck, onEscalate, role,
@@ -174,7 +174,7 @@ function AlertRow({
             opacity: isSelected ? 0.9 : 0.7,
           }}
         >
-          {alert.event.zone?.name ?? '—'}
+          {alert.event.zone?.name ?? 'â€”'}
         </div>
       </td>
 
@@ -188,7 +188,7 @@ function AlertRow({
 
       {/* Contact */}
       <td className="pr-3 py-2.5 w-20 text-xs font-mono font-bold" style={{ color: 'var(--sea-accent)' }}>
-        {alert.event.contact?.code ?? '—'}
+        {alert.event.contact?.code ?? 'â€”'}
       </td>
 
       {/* Status */}
@@ -250,7 +250,7 @@ function AlertRow({
               }}
               onClick={e => { e.stopPropagation(); onEscalate(); }}
             >
-              ↑
+              â†‘
             </button>
           )}
         </div>
@@ -259,7 +259,7 @@ function AlertRow({
   );
 }
 
-// ─── Preview pane ─────────────────────────────────────────────
+// â”€â”€â”€ Preview pane â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => void; role: UserRole }) {
   const navigate = useNavigate();
@@ -308,7 +308,7 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
           onClick={onClose}
           aria-label="Close preview"
         >
-          ×
+          Ã—
         </button>
       </div>
 
@@ -325,7 +325,7 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
                 className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border flex items-center justify-center text-xs font-mono font-medium"
                 style={{ background: '#0a2233', borderColor: 'var(--line)', color: 'var(--sea-200)' }}
               >
-                {i === 0 ? <span className="text-sm">▶</span> : `KF-${i + 1}`}
+                {i === 0 ? <span className="text-sm">â–¶</span> : `KF-${i + 1}`}
               </div>
             ))}
           </div>
@@ -383,7 +383,7 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
           <div className="rounded-xl p-3 space-y-2 border shadow-xs" style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}>
             {alert.event.rationale.factors.slice(0, 4).map((f, i) => (
               <div key={i} className="flex items-start gap-2 text-xs">
-                <span className="font-bold flex-shrink-0 mt-0.5" style={{ color: 'var(--sea-accent)' }}>•</span>
+                <span className="font-bold flex-shrink-0 mt-0.5" style={{ color: 'var(--sea-accent)' }}>â€¢</span>
                 <div className="flex-1">
                   <span className="font-semibold" style={{ color: 'var(--text)' }}>{f.factorName}:</span>{' '}
                   <span className="font-mono font-bold" style={{ color: 'var(--text)' }}>{f.value}{f.unit ? ` ${f.unit}` : ''}</span>
@@ -461,7 +461,7 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
               onChange={e => setFalseAlertReason(e.target.value)}
               className="w-full rounded-lg text-xs p-2.5 border resize-none outline-none focus:ring-1 focus:ring-[var(--sea-400)]"
               style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)', minHeight: '68px' }}
-              placeholder="Explain why this alert is a false positive…"
+              placeholder="Explain why this alert is a false positiveâ€¦"
             />
             <div className="flex gap-2 mt-2">
               <button
@@ -487,7 +487,15 @@ function PreviewPane({ alert, onClose, role }: { alert: Alert; onClose: () => vo
   );
 }
 
-// ─── Alert Queue page ─────────────────────────────────────────
+// â”€â”€â”€ Alert Queue page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+const EXCLUDED_ALERT_EVENT_TYPES = new Set([
+  'repeated_shoreline_approach',
+  'convergence',
+  'prolonged_proximity',
+  'abandoned_object',
+  'unusual_stationary',
+]);
 
 export default function AlertQueue() {
   const { alerts, updateAlert } = useAlertStore();
@@ -589,7 +597,7 @@ export default function AlertQueue() {
               </span>
             )}
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded text-[10px] border font-mono font-semibold" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}>↵</kbd>
+              <kbd className="px-1.5 py-0.5 rounded text-[10px] border font-mono font-semibold" style={{ background: 'var(--raised)', borderColor: 'var(--line)', color: 'var(--text)' }}>â†µ</kbd>
               <span className="font-sans text-xs ml-0.5">open</span>
             </span>
             <span className="ml-auto font-sans text-xs font-bold" style={{ color: 'var(--text)' }}>{filtered.length} alerts</span>

@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal — Typed API Client
+// SmartQEye Coastal â€” Typed API Client
 // All data access goes through here.
 // Swap the mock implementations for real fetch calls to
 // FastAPI without changing any import in the rest of the app.
@@ -34,7 +34,7 @@ const liveClient = new LiveApiClient();
 const isLive = () => runtimeConfig.API_MODE === 'live';
 
 
-// ─── Pagination ──────────────────────────────────────────────
+// â”€â”€â”€ Pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface Page<T> {
   items: T[];
@@ -72,11 +72,11 @@ export interface EventFilters {
   pageSize?: number;
 }
 
-// Simulated latency (ms) — remove when using real API
+// Simulated latency (ms) â€” remove when using real API
 const MOCK_LATENCY = 120;
 const delay = (ms = MOCK_LATENCY) => new Promise<void>(r => setTimeout(r, ms));
 
-// ─── Alerts ──────────────────────────────────────────────────
+// â”€â”€â”€ Alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const alertsApi = {
   async list(filters: AlertFilters = {}): Promise<Page<Alert>> {
@@ -201,7 +201,7 @@ export const contactsApi = {
   },
 };
 
-// ─── Zones ───────────────────────────────────────────────────
+// â”€â”€â”€ Zones â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const zonesApi = {
   async list(): Promise<Zone[]> {
@@ -233,7 +233,7 @@ export const zonesApi = {
   },
 };
 
-// ─── Missions ─────────────────────────────────────────────────
+// â”€â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const missionsApi = {
   async list(): Promise<Mission[]> {
@@ -247,7 +247,7 @@ export const missionsApi = {
   },
 };
 
-// ─── Feeds ───────────────────────────────────────────────────
+// â”€â”€â”€ Feeds â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const feedsApi = {
   async list(): Promise<Feed[]> {
@@ -261,7 +261,7 @@ export const feedsApi = {
   },
 };
 
-// ─── Events / History ────────────────────────────────────────
+// â”€â”€â”€ Events / History â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const eventsApi = {
   async list(filters: EventFilters = {}): Promise<Page<CoastalEvent>> {
@@ -283,7 +283,7 @@ export const eventsApi = {
   },
 };
 
-// ─── System Health ────────────────────────────────────────────
+// â”€â”€â”€ System Health â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const healthApi = {
   async get(): Promise<SystemHealth> {
@@ -292,7 +292,7 @@ export const healthApi = {
   },
 };
 
-// ─── Auth (mock) ──────────────────────────────────────────────
+// â”€â”€â”€ Auth (mock) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const MOCK_USERS: User[] = [
   { id: 'u-op1', username: 'op.rajan', fullName: 'Rajan K.', rankTitle: 'HC', role: 'OPERATOR', unitName: 'Vizhinjam Coastal Police Station', email: 'rajan@kp.gov.in' },
@@ -324,7 +324,7 @@ export const authApi = {
   },
 };
 
-// ─── UAVs ────────────────────────────────────────────────────
+// â”€â”€â”€ UAVs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const uavsApi = {
   async list() {
@@ -333,7 +333,7 @@ export const uavsApi = {
   },
 };
 
-// ─── Phase 3: Context Profiles ─────────────────────────────────────────────
+// â”€â”€â”€ Phase 3: Context Profiles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const contextProfilesApi = {
   async list(): Promise<ContextProfileDetail[]> {
@@ -370,7 +370,7 @@ export const contextProfilesApi = {
   },
 };
 
-// ─── Phase 3: Alert Rules ───────────────────────────────────────────────────
+// â”€â”€â”€ Phase 3: Alert Rules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface HistoricalReplayResult {
   ruleCode: string;
@@ -438,7 +438,7 @@ export const rulesApi = {
   },
 };
 
-// ─── Phase 3: Abandoned & Stationary Objects ────────────────────────────────
+// â”€â”€â”€ Phase 3: Abandoned & Stationary Objects â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const abandonedObjectsApi = {
   async list(): Promise<AbandonedObjectRecord[]> {
@@ -472,7 +472,7 @@ export const abandonedObjectsApi = {
   },
 };
 
-// ─── Phase 4: Cryptographic Audit Trail API ─────────────────────────────────
+// â”€â”€â”€ Phase 4: Cryptographic Audit Trail API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const LIVE_AUDIT_TRAIL: AuditEntry[] = [...AUDIT_TRAIL_SEED];
 
@@ -629,7 +629,7 @@ export const auditApi = {
   },
 };
 
-// ─── Phase 4: Incidents & ELIR API ──────────────────────────────────────────
+// â”€â”€â”€ Phase 4: Incidents & ELIR API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const LIVE_INCIDENTS: IncidentRecord[] = [...INCIDENTS_DATA];
 
@@ -788,7 +788,7 @@ export const incidentsApi = {
   },
 };
 
-// ─── Phase 4: Administration & RBAC API ─────────────────────────────────────
+// â”€â”€â”€ Phase 4: Administration & RBAC API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const ADMIN_USERS: AdminUser[] = KERALA_POLICE_ROSTER.map((officer, i) => ({
   id: officer.id,

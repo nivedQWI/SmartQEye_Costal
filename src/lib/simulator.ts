@@ -1,5 +1,5 @@
 // ============================================================
-// SmartQEye Coastal — Real-time Simulator
+// SmartQEye Coastal Ã¢â‚¬â€ Real-time Simulator
 // Fake WebSocket / event emitter that keeps the UI "live"
 // ============================================================
 
@@ -10,7 +10,7 @@ import {
   ALERTS, INITIAL_FEEDS, INITIAL_TELEMETRY, INITIAL_HEALTH, CONTACTS, KERALA_COASTAL_SECTORS,
 } from './mockData';
 
-// ─── Event types ─────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Event types Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 export type SimulatorEvent =
   | { type: 'ALERT_NEW';       payload: Alert }
@@ -22,7 +22,7 @@ export type SimulatorEvent =
 
 type Listener = (event: SimulatorEvent) => void;
 
-// ─── Simulator class ─────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Simulator class Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 class CoastalSimulator {
   private listeners: Set<Listener> = new Set();
@@ -33,7 +33,7 @@ class CoastalSimulator {
   private alertIndex = ALERTS.length;
   private running = false;
 
-  // ── Drone paths patrolling across Kerala Coastal Sectors ──
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Drone paths patrolling across Kerala Coastal Sectors Ã¢â€â‚¬Ã¢â€â‚¬
   private dronePaths: Record<string, {
     lat: number; lon: number; heading: number; dLat: number; dLon: number;
     anchorLat: number; anchorLon: number;
@@ -96,8 +96,8 @@ class CoastalSimulator {
     // Feed state updates every 8s
     this.intervals.push(setInterval(() => this.tickFeeds(), 8000));
 
-    // New alerts every 5-15s (randomized)
-    this.scheduleNextAlert();
+    // Periodic alerts disabled
+    // this.scheduleNextAlert();
 
     // Health updates every 5s
     this.intervals.push(setInterval(() => this.tickHealth(), 5000));
@@ -188,7 +188,7 @@ class CoastalSimulator {
     const severities: Severity[] = ['CRITICAL', 'HIGH', 'HIGH', 'MEDIUM', 'MEDIUM', 'MEDIUM', 'LOW', 'LOW', 'INFO', 'INFO'];
     const severity = severities[Math.floor(Math.random() * severities.length)];
 
-    const eventTypes = ['loitering', 'vessel_detected', 'zone_entry', 'repeated_shoreline_approach', 'crowd_threshold_exceeded', 'convergence', 'intrusion', 'course_speed_change'];
+    const eventTypes = ['loitering', 'vessel_detected', 'zone_entry', 'crowd_threshold_exceeded', 'intrusion', 'course_speed_change'];
     const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)] as Alert['event']['type'];
 
     const contactIdx = Math.floor(Math.random() * CONTACTS.length);

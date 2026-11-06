@@ -1,36 +1,73 @@
 // ============================================================
 // SmartQEye Coastal — History & Playback (/history)
+// Synchronized Forensic Video Playback from History & Playback Video
 // ============================================================
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Calendar, List, Map, Clock, Filter, Video } from 'lucide-react';
+import {
+  Search, Calendar, List, Map, Clock, Filter, Video,
+  ChevronLeft, Play, RotateCcw, Shield, ExternalLink
+} from 'lucide-react';
 import { eventsApi } from '@/lib/api';
 import type { EventFilters } from '@/lib/api';
 import { cn, formatIST, formatISTFull, eventTypeLabel, formatCoords } from '@/lib/utils';
 import { SeverityChip } from '@/components/SeverityChip';
 import { ModalityChip } from '@/components/FeedStateChip';
 import { CoastalMap } from '@/components/CoastalMap';
-import { DroneVideoPlayer } from '@/components/DroneVideoPlayer';
 import type { CoastalEvent } from '@/types';
 
 type ViewMode = 'list' | 'map' | 'timeline' | 'playback';
 
-// ─── Facet filters ────────────────────────────────────────────
+// ── Facet filters ────────────────────────────────────────────────────────────
 
-// Event types that are NOT shown in History & Playback (removed per demo review)
+// Event types that are removed from History & Playback
 const HIDDEN_EVENT_TYPES = new Set([
-  'prolonged_proximity',
-  'recurring_zone_entry',
+  'convergence',
+  'unusual_stationary',
   'zone_dwell_exceeded',
+  'loitering_zone_dwell_exceeded',
   'repeated_shoreline_approach',
+  'abandoned_object',
 ]);
 
 const EVENT_TYPES = [
-  'intrusion', 'zone_entry',
-  'loitering', 'crowd_threshold_exceeded', 'convergence', 'vessel_detected',
-  'person_detected', 'vehicle_detected', 'course_speed_change',
+  'intrusion',
+  'zone_entry',
+  'recurring_zone_entry',
+  'course_speed_change',
+  'vessel_detected',
+  'person_detected',
+  'vehicle_detected',
+  'crowd_threshold_exceeded',
+  'loitering',
 ];
+
+/**
+ * Maps an event type to its video in 'History & Playback Video'
+ */
+export function getHistoryVideoUrl(eventType: string): string {
+  const norm = (eventType || '').toLowerCase();
+  switch (norm) {
+    case 'intrusion':
+      return '/videos/History & Playback Video/Intrusion.mp4';
+    case 'course_speed_change':
+      return '/videos/History & Playback Video/Course  Speed Change.mp4';
+    case 'person_detected':
+      return '/videos/History & Playback Video/Person Detected.mp4';
+    case 'vehicle_detected':
+      return '/videos/History & Playback Video/Vehicle Detected.mp4';
+    case 'vessel_detected':
+      return '/videos/History & Playback Video/Vessel Detected.mp4';
+    case 'recurring_zone_entry':
+    case 'zone_entry':
+      return '/videos/History & Playback Video/Recurring Zone Entry.mp4';
+    case 'prolonged_proximity':
+      return '/videos/History & Playback Video/Prolonged Proximity.mp4';
+    default:
+      return '/videos/History & Playback Video/Intrusion.mp4';
+  }
+}
 
 interface FacetSidebarProps {
   filters: EventFilters;
@@ -128,7 +165,7 @@ function FacetSidebar({ filters, onChange }: FacetSidebarProps) {
 
         {/* Reset */}
         <button
-          className="w-full py-1.5 text-xs rounded-lg border opacity-60 hover:opacity-100 transition-opacity"
+          className="w-full py-1.5 text-xs rounded-lg border opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
           style={{ borderColor: 'var(--line)' }}
           onClick={() => onChange({})}
         >
@@ -139,12 +176,12 @@ function FacetSidebar({ filters, onChange }: FacetSidebarProps) {
   );
 }
 
-// ─── Event row ────────────────────────────────────────────────
+// ── Event row ────────────────────────────────────────────────────────────────
 
 function EventRow({ event, onClick }: { event: CoastalEvent; onClick: () => void }) {
   return (
     <tr
-      className="border-b cursor-pointer hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)] transition-colors"
+      className="border-b cursor-pointer hover:bg-[var(--sand-100)] dark:hover:bg-[var(--raised)] transition-colors group"
       style={{ borderColor: 'var(--line)' }}
       onClick={onClick}
     >
@@ -154,26 +191,29 @@ function EventRow({ event, onClick }: { event: CoastalEvent; onClick: () => void
         </span>
       </td>
       <td className="pr-3 py-2.5">
-        <div className="text-sm font-medium">{eventTypeLabel(event.type)}</div>
+        <div className="text-sm font-semibold flex items-center gap-1.5 group-hover:text-[var(--sea-accent)] transition-colors">
+          <span>{eventTypeLabel(event.type)}</span>
+          <Video className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--sea-accent)]" />
+        </div>
         {event.zone && <div className="text-xs opacity-50 truncate max-w-[200px]">{event.zone.name}</div>}
       </td>
       <td className="pr-3 py-2.5 w-20">
-        <span className="font-mono text-xs">{event.uav.code}</span>
+        <span className="font-mono text-xs font-medium">{event.uav.code}</span>
       </td>
       <td className="pr-3 py-2.5 w-20">
-        {event.contact && <span className="font-mono text-xs" style={{ color: 'var(--sea-accent)' }}>{event.contact.code}</span>}
+        {event.contact && <span className="font-mono text-xs font-bold" style={{ color: 'var(--sea-accent)' }}>{event.contact.code}</span>}
       </td>
       <td className="pr-3 py-2.5 w-16">
         {event.modality && <ModalityChip modality={event.modality} size="sm" />}
       </td>
-      <td className="pr-4 py-2.5 w-20 text-xs font-mono opacity-50">
+      <td className="pr-4 py-2.5 w-24 text-xs font-mono opacity-50">
         {formatCoords(event.location.lat, event.location.lon).split(' ')[0]}
       </td>
     </tr>
   );
 }
 
-// ─── Timeline view ────────────────────────────────────────────
+// ── Timeline view ────────────────────────────────────────────────────────────
 
 function TimelineView({ events }: { events: CoastalEvent[] }) {
   const grouped = events.slice(0, 50).reduce((acc, ev) => {
@@ -223,7 +263,7 @@ function TimelineView({ events }: { events: CoastalEvent[] }) {
   );
 }
 
-// ─── History page ─────────────────────────────────────────────
+// ── History page ─────────────────────────────────────────────────────────────
 
 export default function HistoryPlayback() {
   const [filters, setFilters] = useState<EventFilters>({});
@@ -235,7 +275,6 @@ export default function HistoryPlayback() {
   const { data: rawData, isLoading } = useQuery({
     queryKey: ['events', 'history-visible', filters, page],
     queryFn: async () => {
-      // Fetch everything matching the filters, drop hidden event types, then paginate
       const all = await eventsApi.list({ ...filters, page: 1, pageSize: 10_000 });
       const visible = all.items.filter(e => !HIDDEN_EVENT_TYPES.has(e.type));
       const start = (page - 1) * 50;
@@ -254,6 +293,9 @@ export default function HistoryPlayback() {
     (e.location.name ?? '').toLowerCase().includes(q)
   );
 
+  // Determine current video URL for selected event
+  const currentVideoUrl = selectedEvent ? getHistoryVideoUrl(selectedEvent.type) : getHistoryVideoUrl('intrusion');
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* Facet sidebar */}
@@ -263,6 +305,17 @@ export default function HistoryPlayback() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center gap-3 px-4 py-2.5 border-b flex-shrink-0" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
+          {/* Back button if in playback mode */}
+          {viewMode === 'playback' && (
+            <button
+              onClick={() => setViewMode('list')}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-pointer hover:bg-[var(--raised)] transition-colors"
+              style={{ borderColor: 'var(--line)', color: 'var(--sea-accent)' }}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Back to Event List
+            </button>
+          )}
+
           {/* Search */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border flex-1 max-w-sm" style={{ borderColor: 'var(--line)', background: 'var(--raised)' }}>
             <Search className="w-3.5 h-3.5 opacity-40 flex-shrink-0" />
@@ -286,7 +339,7 @@ export default function HistoryPlayback() {
             ] as const).map(([mode, icon]) => (
               <button
                 key={mode}
-                className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors', viewMode === mode ? 'text-white' : 'opacity-50')}
+                className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors cursor-pointer', viewMode === mode ? 'text-white' : 'opacity-50')}
                 style={{ background: viewMode === mode ? 'var(--sea-600)' : 'var(--raised)' }}
                 onClick={() => setViewMode(mode)}
               >
@@ -308,14 +361,35 @@ export default function HistoryPlayback() {
             </div>
           ) : viewMode === 'playback' ? (
             <div className="flex h-full overflow-hidden">
-              <div className="flex-1 flex flex-col min-w-0 bg-black">
-                <DroneVideoPlayer
-                  sceneName="vizhinjam_patrol"
-                  initialModality={selectedEvent?.modality ?? 'RGB'}
-                  highlightContactId={selectedEvent?.contact?.code}
-                  className="flex-1 w-full h-full"
+              {/* Left: Synchronized Video Stream */}
+              <div className="flex-1 flex flex-col min-w-0 bg-black relative">
+                <video
+                  key={currentVideoUrl}
+                  controls
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  src={currentVideoUrl}
+                  className="w-full h-full object-contain"
                 />
+
+                {/* Video HUD badge */}
+                <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-xs border border-white/20 rounded-lg px-3 py-1.5 text-xs font-mono text-white pointer-events-none z-10 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="font-bold text-sky-300">
+                    {selectedEvent ? eventTypeLabel(selectedEvent.type).toUpperCase() : 'SURVEILLANCE ARCHIVE'}
+                  </span>
+                  <span className="text-white/40">|</span>
+                  <span className="text-amber-300">{selectedEvent?.uav.code ?? 'UAV-01'}</span>
+                  <span className="text-white/40">|</span>
+                  <span className="text-white/70">
+                    {selectedEvent ? formatIST(selectedEvent.occurredAt) : 'LIVE REPLAY'}
+                  </span>
+                </div>
               </div>
+
+              {/* Right: Forensic Playback Record */}
               <div className="w-80 flex-shrink-0 border-l p-4 overflow-y-auto space-y-4" style={{ background: 'var(--panel)', borderColor: 'var(--line)' }}>
                 <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--line)' }}>
                   <h3 className="font-serif text-sm font-bold">Forensic Playback Record</h3>
@@ -325,7 +399,7 @@ export default function HistoryPlayback() {
                   <div className="space-y-3 text-xs">
                     <div>
                       <div className="font-medium opacity-60 uppercase tracking-wider mb-1">Event Type</div>
-                      <div className="font-semibold text-sm">{eventTypeLabel(selectedEvent.type)}</div>
+                      <div className="font-semibold text-sm text-[var(--sea-accent)]">{eventTypeLabel(selectedEvent.type)}</div>
                     </div>
                     <div>
                       <div className="font-medium opacity-60 uppercase tracking-wider mb-1">Timestamp (IST)</div>
@@ -333,12 +407,14 @@ export default function HistoryPlayback() {
                     </div>
                     <div>
                       <div className="font-medium opacity-60 uppercase tracking-wider mb-1">UAV &amp; Mission</div>
-                      <div className="font-mono">{selectedEvent.uav.code} · {selectedEvent.mission.code}</div>
+                      <div className="font-mono">{selectedEvent.uav.code} • {selectedEvent.mission.code}</div>
+                      <div className="text-[11px] opacity-70 mt-0.5">{selectedEvent.mission.title}</div>
                     </div>
                     {selectedEvent.contact && (
                       <div>
                         <div className="font-medium opacity-60 uppercase tracking-wider mb-1">Persistent Coastal Contact</div>
                         <div className="font-mono font-bold text-[var(--sea-accent)]">{selectedEvent.contact.code}</div>
+                        <div className="text-[11px] opacity-70">Class: {selectedEvent.contact.class}</div>
                       </div>
                     )}
                     {selectedEvent.zone && (
@@ -349,8 +425,15 @@ export default function HistoryPlayback() {
                       </div>
                     )}
                     <div>
-                      <div className="font-medium opacity-60 uppercase tracking-wider mb-1">GPS Coordinates</div>
-                      <div className="font-mono">{formatCoords(selectedEvent.location.lat, selectedEvent.location.lon)}</div>
+                      <div className="font-medium opacity-60 uppercase tracking-wider mb-1">GPS Coordinates &amp; Location</div>
+                      <div className="font-mono font-semibold">{formatCoords(selectedEvent.location.lat, selectedEvent.location.lon)}</div>
+                      <div className="text-[11px] opacity-70 mt-0.5">{selectedEvent.location.name}</div>
+                    </div>
+                    <div className="pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
+                      <div className="font-medium opacity-60 uppercase tracking-wider mb-1">Media Archive Source</div>
+                      <div className="font-mono text-[11px] text-sky-400 truncate" title={currentVideoUrl}>
+                        {currentVideoUrl.split('/').pop()}
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -375,12 +458,19 @@ export default function HistoryPlayback() {
                       <th className="pr-3 py-2 w-20">UAV</th>
                       <th className="pr-3 py-2 w-20">Contact</th>
                       <th className="pr-3 py-2 w-16">Modality</th>
-                      <th className="pr-4 py-2 w-20">Location</th>
+                      <th className="pr-4 py-2 w-24">Location</th>
                     </tr>
                   </thead>
                   <tbody>
                     {events.map(ev => (
-                      <EventRow key={ev.id} event={ev} onClick={() => { setSelectedEvent(ev); setViewMode('playback'); }} />
+                      <EventRow
+                        key={ev.id}
+                        event={ev}
+                        onClick={() => {
+                          setSelectedEvent(ev);
+                          setViewMode('playback');
+                        }}
+                      />
                     ))}
                   </tbody>
                 </table>
@@ -388,11 +478,11 @@ export default function HistoryPlayback() {
               {/* Pagination */}
               <div className="flex items-center justify-between px-4 py-2 border-t text-xs flex-shrink-0" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>
-                  Page {page} · {events.length} of {data?.total} events
+                  Page {page} • {events.length} of {data?.total} events
                 </span>
                 <div className="flex gap-1">
-                  <button className="px-2.5 py-1 rounded border disabled:opacity-30 hover:opacity-80 transition-opacity" style={{ borderColor: 'var(--line)' }} disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>←</button>
-                  <button className="px-2.5 py-1 rounded border disabled:opacity-30 hover:opacity-80 transition-opacity" style={{ borderColor: 'var(--line)' }} disabled={!data || page * 50 >= data.total} onClick={() => setPage(p => p + 1)}>→</button>
+                  <button className="px-2.5 py-1 rounded border disabled:opacity-30 hover:opacity-80 transition-opacity cursor-pointer" style={{ borderColor: 'var(--line)' }} disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>←</button>
+                  <button className="px-2.5 py-1 rounded border disabled:opacity-30 hover:opacity-80 transition-opacity cursor-pointer" style={{ borderColor: 'var(--line)' }} disabled={!data || page * 50 >= data.total} onClick={() => setPage(p => p + 1)}>→</button>
                 </div>
               </div>
             </div>
