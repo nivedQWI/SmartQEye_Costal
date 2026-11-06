@@ -177,7 +177,7 @@ export const useAlertStore = create<AlertState>((set, get) => ({
     set(state => ({
       alerts: [alert, ...state.alerts],
       unreadCount: state.unreadCount + 1,
-      criticalBanner: null,
+      criticalBanner: alert.severity === 'CRITICAL' && alert.status === 'NEW' ? alert : state.criticalBanner,
     }));
   },
 
