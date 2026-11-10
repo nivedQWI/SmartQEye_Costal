@@ -59,60 +59,103 @@ const ALL_ROLES: UserRole[] = ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR']
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: 'Tactical Ops',
-    titleMl: 'ടാക്ടിക്കൽ ഓപ്സ്',
+    title: '1. Command Centre',
+    titleMl: 'കമാൻഡ് സെന്റർ',
     items: [
-      { to: '/overview',           label: 'Overview Dashboard',  labelKey: 'nav_command_center', icon: Activity,        roles: ['OPERATOR'] },
-      { to: '/',                   label: 'Command Center',      labelKey: 'nav_command_center', icon: LayoutDashboard, roles: ALL_ROLES },
-      { to: '/live',               label: 'Live Monitor',        labelKey: 'nav_live',           icon: Monitor,         roles: ALL_ROLES },
-      { to: '/recorded-analysis',  label: 'Recorded Analysis',                                   icon: Video,           roles: ALL_ROLES },
-      { to: '/fleet',              label: 'Fleet Wall',          labelKey: 'nav_fleet_wall',     icon: Grid,            roles: ALL_ROLES },
-      { to: '/alerts',             label: 'Alerts',              labelKey: 'nav_alerts',         icon: Bell,            roles: ['SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'], badgeKey: 'alerts' },
-      { to: '/missions',           label: 'Mission Control',     labelKey: 'nav_missions',       icon: Anchor,          roles: ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN'] },
-      { to: '/map',                label: 'Map / GIS',           labelKey: 'nav_map',            icon: Map,             roles: ALL_ROLES },
-      { to: '/history',            label: 'History Playback',    labelKey: 'nav_history',        icon: History,         roles: ALL_ROLES },
+      { to: '/',                   label: 'Command Centre',      labelKey: 'nav_command_center', icon: LayoutDashboard, roles: ALL_ROLES },
+      { to: '/overview',           label: 'Operational Overview',labelKey: 'nav_command_center', icon: Activity,        roles: ALL_ROLES },
+      { to: '/fleet',              label: 'Multi-Feed Fleet Wall',labelKey: 'nav_fleet_wall',    icon: Grid,            roles: ALL_ROLES },
     ]
   },
   {
-    title: 'AI Analytics',
-    titleMl: 'എഐ അനലിറ്റിക്സ്',
+    title: '2. Video & AI Analytics',
+    titleMl: 'വീഡിയോ & എഐ അനലിറ്റിക്സ്',
     items: [
-      { to: '/crowd-analytics',    label: 'Crowd Analytics',     labelKey: 'nav_crowd',          icon: Users,           roles: ALL_ROLES },
-      { to: '/vehicle-maritime',   label: 'Vehicle & Maritime',  labelKey: 'nav_vehicle',        icon: Car,             roles: ALL_ROLES },
+      { to: '/live',               label: 'Live Feeds Monitor',  labelKey: 'nav_live',           icon: Monitor,         roles: ALL_ROLES },
+      { to: '/recorded-analysis',  label: 'Recorded Analysis (Ref)',                              icon: Video,           roles: ALL_ROLES },
+      { to: '/vehicle-maritime',   label: 'Vessel & Vehicle AI', labelKey: 'nav_vehicle',        icon: Car,             roles: ALL_ROLES },
+      { to: '/crowd-analytics',    label: 'Crowd & Person Count',labelKey: 'nav_crowd',          icon: Users,           roles: ALL_ROLES },
+      { to: '/intrusion-detection',label: 'Restricted Intrusion',labelKey: 'nav_intrusion',      icon: ShieldAlert,     roles: ALL_ROLES },
       { to: '/person-reid',        label: 'Person Re-ID',        labelKey: 'nav_reid',           icon: ScanFace,        roles: ALL_ROLES },
-      { to: '/intrusion-detection',label: 'Intrusion Geofence',  labelKey: 'nav_intrusion',      icon: ShieldAlert,     roles: ALL_ROLES },
-      { to: '/anomaly-monitor',    label: 'Anomaly Monitor',     labelKey: 'nav_anomaly',        icon: AlertOctagon,    roles: ALL_ROLES },
+      { to: '/anomaly-monitor',    label: 'Abnormal Behaviour',  labelKey: 'nav_anomaly',        icon: AlertOctagon,    roles: ALL_ROLES },
     ]
   },
   {
-    title: 'Intelligence & Evidence',
-    titleMl: 'ഇന്റലിജൻസ് & തെളിവുകൾ',
+    title: '3. Coastal Intelligence',
+    titleMl: 'കോസ്റ്റൽ ഇന്റലിജൻസ്',
     items: [
-      { to: '/incidents',          label: 'Incident Records',    labelKey: 'nav_incidents',      icon: FolderArchive,   roles: ALL_ROLES },
-      { to: '/coastal-context',    label: 'Coastal Contact Intel',                                 icon: Anchor,          roles: ['OPERATOR', 'SUPERVISOR'] },
+      { to: '/coastal-context',    label: 'Kerala Context Intel',                                 icon: Anchor,          roles: ALL_ROLES },
+      { to: '/contacts',           label: 'Persistent Contacts',                                 icon: Anchor,          roles: ALL_ROLES },
     ]
   },
   {
-    title: 'Administration',
+    title: '4. GIS & Telemetry',
+    titleMl: 'ജിഐഎസ് & ടെലിമെട്രി',
+    items: [
+      { to: '/map',                label: 'Coastal Tactical Map',labelKey: 'nav_map',            icon: Map,             roles: ALL_ROLES },
+      { to: '/missions',           label: 'UAV Fleet Missions',  labelKey: 'nav_missions',       icon: Anchor,          roles: ALL_ROLES },
+      { to: '/config/zones',       label: 'Zones & Geofences',   labelKey: 'nav_config_zones',   icon: Sliders,         roles: ALL_ROLES },
+    ]
+  },
+  {
+    title: '5. Alerts & Events',
+    titleMl: 'അലേർട്ടുകൾ & ഇവന്റുകൾ',
+    items: [
+      { to: '/alerts',             label: 'Priority Alert Queue',labelKey: 'nav_alerts',         icon: Bell,            roles: ALL_ROLES, badgeKey: 'alerts' },
+      { to: '/config/alerts',      label: 'Alert Rules Config',  labelKey: 'nav_config_alerts',  icon: Settings2,       roles: ALL_ROLES },
+    ]
+  },
+  {
+    title: '6. Evidence & Incidents',
+    titleMl: 'തെളിവുകൾ & സംഭവങ്ങൾ',
+    items: [
+      { to: '/incidents',          label: 'Evidence Packages',   labelKey: 'nav_incidents',      icon: FolderArchive,   roles: ALL_ROLES },
+    ]
+  },
+  {
+    title: '7. Historical Intelligence',
+    titleMl: 'ചരിത്ര ഇന്റലിജൻസ്',
+    items: [
+      { to: '/history',            label: 'Search & Playback',   labelKey: 'nav_history',        icon: History,         roles: ALL_ROLES },
+      { to: '/reports',            label: 'Court-Ready Reports', labelKey: 'nav_reports',        icon: FileText,        roles: ALL_ROLES },
+    ]
+  },
+  {
+    title: '8. AI Model Management',
+    titleMl: 'എഐ മോഡൽ മാനേജ്‌മെന്റ്',
+    items: [
+      { to: '/models',             label: 'Model Registry & Benchmark', labelKey: 'nav_models',  icon: Cpu,             roles: ALL_ROLES },
+    ]
+  },
+  {
+    title: '9. System & Deployment',
+    titleMl: 'സിസ്റ്റം & വിന്യാസം',
+    items: [
+      { to: '/deployment',         label: 'Central GPU & Edge Nodes', labelKey: 'nav_deployment', icon: Server,         roles: ALL_ROLES },
+    ]
+  },
+  {
+    title: '10. Integrations',
+    titleMl: 'ഇന്റഗ്രേഷൻസ്',
+    items: [
+      { to: '/integrations',       label: 'UAV / GCS & Police APIs', labelKey: 'nav_integrations', icon: Network,       roles: ALL_ROLES },
+    ]
+  },
+  {
+    title: '11. Administration & Security',
     titleMl: 'അഡ്മിനിസ്ട്രേഷൻ',
     items: [
-      { to: '/health',             label: 'System Health',       labelKey: 'nav_health',         icon: Activity,        roles: ALL_ROLES },
-      { to: '/models',             label: 'AI Models Cluster',   labelKey: 'nav_models',         icon: Cpu,             roles: ALL_ROLES },
-      { to: '/admin',              label: 'Administration',      labelKey: 'nav_admin',          icon: Shield,          roles: ['SYS_ADMIN', 'SUPERVISOR', 'AUDITOR'] },
-      { to: '/audit',              label: 'Audit Log',           labelKey: 'nav_audit',          icon: ScrollText,      roles: ['SYS_ADMIN', 'AUDITOR'] },
-      { to: '/config/zones',       label: 'Zones & Context',     labelKey: 'nav_config_zones',   icon: Sliders,         roles: ['SUPERVISOR'] },
-      { to: '/config/alerts',      label: 'Alert Configuration', labelKey: 'nav_config_alerts',  icon: Settings2,       roles: ['SUPERVISOR', 'SYS_ADMIN'] },
-      { to: '/deployment',         label: 'Deployment & Compute',labelKey: 'nav_deployment',     icon: Server,          roles: ['SYS_ADMIN'] },
-      { to: '/integrations',       label: 'API & Integrations',  labelKey: 'nav_integrations',   icon: Network,         roles: ['SYS_ADMIN'] },
-      { to: '/acceptance',         label: 'Acceptance Console',  labelKey: 'nav_acceptance',     icon: CheckSquare,     roles: ['SYS_ADMIN', 'AUDITOR'] },
-      { to: '/help',               label: 'Help & Training',     labelKey: 'nav_help',           icon: GraduationCap,   roles: ALL_ROLES },
+      { to: '/admin',              label: 'Operator & Roles',    labelKey: 'nav_admin',          icon: Shield,          roles: ALL_ROLES },
+      { to: '/audit',              label: 'Audit Trail & Logs',  labelKey: 'nav_audit',          icon: ScrollText,      roles: ALL_ROLES },
+      { to: '/acceptance',         label: 'Compliance Testing',  labelKey: 'nav_acceptance',     icon: CheckSquare,     roles: ALL_ROLES },
     ]
   },
   {
-    title: 'Analytics & Reporting',
-    titleMl: 'അനലിറ്റിക്സ് & റിപ്പോർട്ടിംഗ്',
+    title: '12. System Health',
+    titleMl: 'സിസ്റ്റം ആരോഗ്യം',
     items: [
-      { to: '/reports',            label: 'Police Reports',      labelKey: 'nav_reports',        icon: FileText,        roles: ALL_ROLES },
+      { to: '/health',             label: 'Hardware & GPU Health', labelKey: 'nav_health',       icon: Activity,        roles: ALL_ROLES },
+      { to: '/help',               label: 'SOP & Operations Manual', labelKey: 'nav_help',       icon: GraduationCap,   roles: ALL_ROLES },
     ]
   },
 ];

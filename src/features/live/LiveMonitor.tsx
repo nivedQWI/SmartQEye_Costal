@@ -32,7 +32,7 @@ interface FeedTileProps {
 
 const FeedTile = memo(function FeedTile({ feed, isActive, isFocus: _isFocus, onClick, onDoubleClick, showOverlays: _showOverlays }: FeedTileProps) {
   const stateColour = {
-    LIVE: '#2ECC71', BUFFERING: '#E0A526', NO_SIGNAL: '#C8352E', RECORDED: '#2B7FA6', EDGE_SYNC_LAG: '#9B59B6',
+    LIVE: '#2ECC71', BUFFERING: '#E0A526', NO_SIGNAL: '#C8352E', RECORDED: '#2B7FA6', EDGE_SYNC_LAG: '#9B59B6', TERMINATED: '#C8352E',
   }[feed.state];
 
   return (

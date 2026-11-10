@@ -17,6 +17,7 @@ const STATE_STYLE: Record<FeedState, string> = {
   NO_SIGNAL:     'text-red-700 bg-red-100 border-red-300 dark:text-red-300 dark:bg-red-900/30 dark:border-red-700',
   RECORDED:      'text-sky-700 bg-sky-100 border-sky-300 dark:text-sky-300 dark:bg-sky-900/30 dark:border-sky-700',
   EDGE_SYNC_LAG: 'text-purple-700 bg-purple-100 border-purple-300 dark:text-purple-300 dark:bg-purple-900/30 dark:border-purple-700',
+  TERMINATED:    'text-red-700 bg-red-100 border-red-300 dark:text-red-300 dark:bg-red-900/30 dark:border-red-700',
 };
 
 const STATE_DOT: Record<FeedState, string> = {
@@ -25,6 +26,7 @@ const STATE_DOT: Record<FeedState, string> = {
   NO_SIGNAL:     'bg-red-600',
   RECORDED:      'bg-sky-500',
   EDGE_SYNC_LAG: 'bg-purple-500',
+  TERMINATED:    'bg-red-600',
 };
 
 export function FeedStateChip({ state, size = 'md', className }: FeedStateChipProps) {
@@ -107,6 +109,7 @@ export function PortholeRing({ state, children, className }: PortholeRingProps) 
     NO_SIGNAL: 'ring-no-signal',
     RECORDED: 'ring-recorded',
     EDGE_SYNC_LAG: 'ring-edge-sync',
+    TERMINATED: 'ring-no-signal',
   }[state];
 
   return (

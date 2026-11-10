@@ -10,7 +10,7 @@ import type { Geometry } from 'geojson';
 export type Severity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AttentionLevel = 'RECORD_ONLY' | 'MONITOR' | 'ATTENTION' | 'CRITICAL';
 export type AlertStatus = 'NEW' | 'ACKNOWLEDGED' | 'ASSIGNED' | 'UNDER_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'FALSE_ALERT' | 'CLOSED';
-export type FeedState = 'LIVE' | 'BUFFERING' | 'NO_SIGNAL' | 'RECORDED' | 'EDGE_SYNC_LAG';
+export type FeedState = 'LIVE' | 'BUFFERING' | 'NO_SIGNAL' | 'RECORDED' | 'EDGE_SYNC_LAG' | 'TERMINATED';
 export type ContactClass =
   | 'VESSEL'
   | 'SMALL_CRAFT'
@@ -163,6 +163,8 @@ export interface Feed {
   resolution?: string;
   streamUrl?: string;
   videoSrc?: string;
+  streamType?: 'RTSP' | 'RTMP' | 'HLS' | 'MP4';
+  isTerminated?: boolean;
   filterType?: 'NONE' | 'THERMAL' | 'NIGHT_VISION';
   thumbnailUrl?: string;
   telemetry?: TelemetrySample;

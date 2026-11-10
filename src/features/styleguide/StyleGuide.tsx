@@ -208,7 +208,7 @@ export default function StyleGuide() {
               <div className="flex gap-3">
                 {FEED_STATES.map(state => {
                   const colours: Record<FeedState, string> = {
-                    LIVE: '#2ECC71', BUFFERING: '#E0A526', NO_SIGNAL: '#C8352E', RECORDED: '#2B7FA6', EDGE_SYNC_LAG: '#9B59B6',
+                    LIVE: '#2ECC71', BUFFERING: '#E0A526', NO_SIGNAL: '#C8352E', RECORDED: '#2B7FA6', EDGE_SYNC_LAG: '#9B59B6', TERMINATED: '#C8352E',
                   };
                   return (
                     <div

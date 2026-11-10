@@ -213,6 +213,16 @@ export const useAlertStore = create<AlertState>((set, get) => ({
 
 // ─── Feeds ───────────────────────────────────────────────────
 
+export interface AddFeedInput {
+  label: string;
+  videoSrc: string;
+  uavCode?: string;
+  missionCode?: string;
+  modality?: 'RGB' | 'THERMAL' | 'NIGHT_VISION';
+  streamType?: 'RTSP' | 'RTMP' | 'HLS' | 'MP4';
+  portId?: string;
+}
+
 interface FeedState {
   feeds: Feed[];
   telemetry: Record<string, TelemetrySample>;
@@ -220,6 +230,11 @@ interface FeedState {
   activeFeedId: string | null;
   gridLayout: 1 | 4 | 9 | 16;
   modalityOverride: Record<string, 'RGB' | 'THERMAL' | 'SPLIT'>;
+  addFeed: (input: AddFeedInput) => void;
+  terminateFeed: (id: string) => void;
+  resumeFeed: (id: string) => void;
+  removeFeed: (id: string) => void;
+  restoreDefaultFeeds: () => void;
   updateFeed: (feed: Feed) => void;
   updateTelemetry: (sample: TelemetrySample) => void;
   pinFeed: (id: string) => void;
@@ -229,33 +244,105 @@ interface FeedState {
   setModalityOverride: (feedId: string, modality: 'RGB' | 'THERMAL' | 'SPLIT') => void;
 }
 
-export const useFeedStore = create<FeedState>((set) => ({
-  feeds: INITIAL_FEEDS,
-  telemetry: {},
-  pinnedFeedIds: INITIAL_FEEDS.filter(f => f.isPinned).map(f => f.id),
-  activeFeedId: 'f-01',
-  gridLayout: 4,
-  modalityOverride: {},
+function detectStreamType(url: string): 'RTSP' | 'RTMP' | 'HLS' | 'MP4' {
+  if (url.startsWith('rtsp://')) return 'RTSP';
+  if (url.startsWith('rtmp://')) return 'RTMP';
+  if (url.includes('.m3u8')) return 'HLS';
+  return 'MP4';
+}
 
-  updateFeed: (feed) =>
-    set(state => ({ feeds: state.feeds.map(f => f.id === feed.id ? feed : f) })),
+export const useFeedStore = create<FeedState>()(
+  persist(
+    (set, get) => ({
+      feeds: INITIAL_FEEDS,
+      telemetry: {},
+      pinnedFeedIds: INITIAL_FEEDS.filter(f => f.isPinned).map(f => f.id),
+      activeFeedId: 'f-01',
+      gridLayout: 4,
+      modalityOverride: {},
 
-  updateTelemetry: (sample) =>
-    set(state => ({ telemetry: { ...state.telemetry, [sample.feedId]: sample } })),
+      addFeed: (input) => {
+        const type = input.streamType || detectStreamType(input.videoSrc);
+        const newId = `feed-custom-${Date.now()}`;
+        const uav = input.uavCode || `UAV-${String(get().feeds.length + 1).padStart(2, '0')}`;
+        const newFeed: Feed = {
+          id: newId,
+          uavCode: uav,
+          missionCode: input.missionCode || 'M-2026-LIVE',
+          label: input.label || `${uav} Live Feed`,
+          modality: input.modality || 'RGB',
+          state: 'LIVE',
+          streamUrl: input.videoSrc,
+          videoSrc: input.videoSrc,
+          streamType: type,
+          isTerminated: false,
+          latencyMs: type === 'RTSP' || type === 'RTMP' ? 140 : 45,
+          fpsCurrent: 30,
+          fpsTarget: 30,
+          bitrateMbps: 4.5,
+          resolution: '1920x1080',
+          lastFrameAt: new Date().toISOString(),
+        };
+        set(state => ({
+          feeds: [newFeed, ...state.feeds],
+          activeFeedId: newId,
+        }));
+      },
 
-  pinFeed: (id) =>
-    set(state => ({
-      pinnedFeedIds: state.pinnedFeedIds.includes(id) ? state.pinnedFeedIds : [...state.pinnedFeedIds, id],
-    })),
+      terminateFeed: (id) =>
+        set(state => ({
+          feeds: state.feeds.map(f =>
+            f.id === id ? { ...f, state: 'TERMINATED', isTerminated: true } : f
+          ),
+        })),
 
-  unpinFeed: (id) =>
-    set(state => ({ pinnedFeedIds: state.pinnedFeedIds.filter(pid => pid !== id) })),
+      resumeFeed: (id) =>
+        set(state => ({
+          feeds: state.feeds.map(f =>
+            f.id === id ? { ...f, state: 'LIVE', isTerminated: false } : f
+          ),
+        })),
 
-  setActiveFeed: (id) => set({ activeFeedId: id }),
-  setGridLayout: (layout) => set({ gridLayout: layout }),
-  setModalityOverride: (feedId, modality) =>
-    set(state => ({ modalityOverride: { ...state.modalityOverride, [feedId]: modality } })),
-}));
+      removeFeed: (id) =>
+        set(state => ({
+          feeds: state.feeds.filter(f => f.id !== id),
+          activeFeedId: state.activeFeedId === id ? (state.feeds[0]?.id ?? null) : state.activeFeedId,
+        })),
+
+      restoreDefaultFeeds: () =>
+        set({
+          feeds: INITIAL_FEEDS,
+          activeFeedId: 'f-01',
+        }),
+
+      updateFeed: (feed) =>
+        set(state => ({ feeds: state.feeds.map(f => f.id === feed.id ? feed : f) })),
+
+      updateTelemetry: (sample) =>
+        set(state => ({ telemetry: { ...state.telemetry, [sample.feedId]: sample } })),
+
+      pinFeed: (id) =>
+        set(state => ({
+          pinnedFeedIds: state.pinnedFeedIds.includes(id) ? state.pinnedFeedIds : [...state.pinnedFeedIds, id],
+        })),
+
+      unpinFeed: (id) =>
+        set(state => ({ pinnedFeedIds: state.pinnedFeedIds.filter(pid => pid !== id) })),
+
+      setActiveFeed: (id) => set({ activeFeedId: id }),
+      setGridLayout: (layout) => set({ gridLayout: layout }),
+      setModalityOverride: (feedId, modality) =>
+        set(state => ({ modalityOverride: { ...state.modalityOverride, [feedId]: modality } })),
+    }),
+    {
+      name: 'sqeye-feeds-v2',
+      partialize: (state) => ({
+        feeds: state.feeds,
+        pinnedFeedIds: state.pinnedFeedIds,
+      }),
+    }
+  )
+);
 
 // ─── Map / GIS ───────────────────────────────────────────────
 

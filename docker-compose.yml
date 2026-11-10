@@ -1,4 +1,14 @@
 services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: smartqeye-mediamtx
+    restart: unless-stopped
+    ports:
+      - "8554:8554"   # RTSP
+      - "1935:1935"   # RTMP
+      - "8888:8888"   # HLS
+      - "8889:8889"   # WebRTC WHEP
+
   context-engine:
     build:
       context: ./backend
@@ -21,6 +31,7 @@ services:
     container_name: smartqeye-coastal-app
     restart: unless-stopped
     ports:
+      - "8081:8080"
       - "8080:8080"
       - "80:8080"
     volumes:

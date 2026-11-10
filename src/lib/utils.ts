@@ -108,6 +108,7 @@ export const FEED_STATE_LABELS: Record<FeedState, string> = {
   NO_SIGNAL:     'No Signal',
   RECORDED:      'Recorded',
   EDGE_SYNC_LAG: 'Edge Sync Lag',
+  TERMINATED:    'Terminated',
 };
 
 export const FEED_STATE_RING: Record<FeedState, string> = {
@@ -116,6 +117,7 @@ export const FEED_STATE_RING: Record<FeedState, string> = {
   NO_SIGNAL:     'ring-no-signal',
   RECORDED:      'ring-recorded',
   EDGE_SYNC_LAG: 'ring-edge-sync',
+  TERMINATED:    'ring-no-signal',
 };
 
 export const FEED_STATE_COLOUR: Record<FeedState, string> = {
@@ -124,6 +126,7 @@ export const FEED_STATE_COLOUR: Record<FeedState, string> = {
   NO_SIGNAL:     '#C8352E',
   RECORDED:      '#2B7FA6',
   EDGE_SYNC_LAG: '#9B59B6',
+  TERMINATED:    '#E74C3C',
 };
 
 // ─── Contact class ────────────────────────────────────────────
