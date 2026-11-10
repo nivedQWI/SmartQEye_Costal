@@ -1,87 +1,48 @@
 // ============================================================
 // SmartQEye Coastal — Login Page
-// Full-screen Harbor photograph + Light yellowish gradient overlay + Centered white card
+// Clean & Secure Username and Password Authentication Form
 // ============================================================
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Shield, Lock } from 'lucide-react';
+import { Eye, EyeOff, Shield, LogIn } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
-import { ROLE_CONFIG, ROLES_LIST, getRoleDisplayName } from '@/lib/roleConfig';
 import { authApi } from '@/lib/api';
-import type { UserRole } from '@/types';
-
-type Step = 'credentials' | 'mfa';
 
 export default function LoginPage() {
-  const [step, setStep] = useState<Step>('credentials');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('OPERATOR');
-  const [username, setUsername] = useState(() => {
-    const users = authApi.getMockUsers();
-    return users.find(u => u.role === 'OPERATOR')?.username ?? 'op.rajan';
-  });
+  const [username, setUsername] = useState('op.rajan');
   const [password, setPassword] = useState('admin123');
-  const [mfaCode, setMfaCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login, isAuthenticated, user, devRole } = useAuthStore();
+  const { login, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isAuthenticated) {
-      const activeRole = user?.role ?? devRole ?? 'OPERATOR';
-      const landing = ROLE_CONFIG[activeRole]?.landing ?? '/';
-      navigate(landing, { replace: true });
+      navigate('/', { replace: true });
     }
-  }, [isAuthenticated, user, devRole, navigate]);
+  }, [isAuthenticated, navigate]);
 
-  function handleRoleChange(newRole: UserRole) {
-    setSelectedRole(newRole);
-    setError('');
-    const mockUser = authApi.getMockUsers().find(u => u.role === newRole);
-    if (mockUser) {
-      setUsername(mockUser.username);
-    }
-    setPassword('admin123');
-  }
-
-  async function handleCredentials(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (!username.trim() || !password) {
+      setError('Please enter both username and password.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const operatorUser = authApi.getMockUsers().find(u => u.role === 'OPERATOR') ?? authApi.getMockUsers()[0];
-      await login(operatorUser.username, password || 'admin123', '000000');
+      const mockUsers = authApi.getMockUsers();
+      const matched = mockUsers.find(
+        u => u.username.toLowerCase() === username.trim().toLowerCase()
+      ) ?? mockUsers.find(u => u.role === 'OPERATOR') ?? mockUsers[0];
+
+      await login(matched.username, password, '000000');
       navigate('/');
     } catch {
-      setError('Authentication failed. Please check credentials.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleMfa(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const roleMockUser = authApi.getMockUsers().find(u => u.role === selectedRole) ?? authApi.getMockUsers()[0];
-      await login(roleMockUser.username, password, mfaCode);
-      navigate(ROLE_CONFIG[roleMockUser.role].landing);
-    } catch {
-      setError('Authentication failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSSO() {
-    setLoading(true);
-    try {
-      const operatorUser = authApi.getMockUsers().find(u => u.role === 'OPERATOR') ?? authApi.getMockUsers()[0];
-      await login(operatorUser.username, 'admin123', '000000');
-      navigate('/');
+      setError('Invalid username or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -96,7 +57,6 @@ export default function LoginPage() {
         backgroundPosition: 'center',
       }}
     >
-
       {/* ── Gradient Color Overlay (matching light yellowish gradient layered over photo) ── */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -142,194 +102,91 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {step === 'credentials' ? (
-            <>
-              <div className="mb-5 text-center">
-                <h2 className="font-serif text-xl font-semibold" style={{ color: 'var(--ink-900)' }}>
-                  Sign In
-                </h2>
-              </div>
+          <div className="mb-5 text-center">
+            <h2 className="font-serif text-xl font-semibold" style={{ color: 'var(--ink-900)' }}>
+              Sign In
+            </h2>
+          </div>
 
-              {/* Single Operator Station Banner */}
-              <div className="mb-4 p-3 rounded-xl border flex items-center justify-between" style={{ background: 'var(--sand-100)', borderColor: 'var(--sand-300)' }}>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[var(--sea-600)] text-white flex items-center justify-center font-bold font-mono text-xs">
-                    OP
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold" style={{ color: 'var(--ink-900)' }}>Officer Rajan K.</div>
-                    <div className="text-[10px] font-mono opacity-70" style={{ color: 'var(--ink-700)' }}>Tactical Operator (Full Operations Access)</div>
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                  ALL PAGES ACTIVE
-                </span>
-              </div>
-
-              {/* SSO Button */}
-              <button
-                id="login-sso"
-                type="button"
-                onClick={handleSSO}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl mb-4 font-medium text-sm transition-all border hover:opacity-90 disabled:opacity-50 shadow-sm"
-                style={{ background: 'var(--sea-600)', color: 'white', borderColor: 'var(--sea-600)' }}
+          {/* Simple Clean Username and Password Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="login-username"
+                className="block text-xs font-semibold mb-1.5"
+                style={{ color: 'var(--ink-800)' }}
               >
-                <Shield className="w-4 h-4" />
-                Sign in with Police SSO
-              </button>
+                Username
+              </label>
+              <input
+                id="login-username"
+                type="text"
+                required
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="Enter username"
+                autoComplete="username"
+                className="w-full px-3.5 py-2.5 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
+                style={{
+                  background: 'var(--sand-50)',
+                  borderColor: 'var(--sand-300)',
+                  color: 'var(--ink-900)',
+                }}
+              />
+            </div>
 
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px" style={{ background: 'var(--sand-300)' }} />
-                <span className="text-xs uppercase font-mono tracking-wider opacity-60" style={{ color: 'var(--ink-600)' }}>
-                  or
-                </span>
-                <div className="flex-1 h-px" style={{ background: 'var(--sand-300)' }} />
-              </div>
-
-              <form onSubmit={handleCredentials} className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="login-username"
-                    className="block text-xs font-semibold mb-1.5"
-                    style={{ color: 'var(--ink-800)' }}
-                  >
-                    Username
-                  </label>
-                  <input
-                    id="login-username"
-                    type="text"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    placeholder="police.username"
-                    autoComplete="username"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
-                    style={{
-                      background: 'var(--sand-50)',
-                      borderColor: 'var(--sand-300)',
-                      color: 'var(--ink-900)',
-                    }}
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="login-password"
-                    className="block text-xs font-semibold mb-1.5"
-                    style={{ color: 'var(--ink-800)' }}
-                  >
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="login-password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      autoComplete="current-password"
-                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
-                      style={{
-                        background: 'var(--sand-50)',
-                        borderColor: 'var(--sand-300)',
-                        color: 'var(--ink-900)',
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-90"
-                      style={{ color: 'var(--ink-900)' }}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {error && (
-                  <p role="alert" className="text-xs text-red-600 font-semibold">
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full py-2.5 px-4 rounded-xl font-medium text-sm transition-all hover:opacity-90 shadow-md"
-                  style={{ background: 'var(--ink-900)', color: '#FFFFFF' }}
-                >
-                  Continue
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => setStep('credentials')}
-                className="text-xs mb-4 flex items-center gap-1 font-semibold transition-opacity opacity-80 hover:opacity-100"
-                style={{ color: 'var(--sea-600)' }}
+            <div>
+              <label
+                htmlFor="login-password"
+                className="block text-xs font-semibold mb-1.5"
+                style={{ color: 'var(--ink-800)' }}
               >
-                ← Back to credentials
-              </button>
-              <div className="flex items-center gap-3 mb-5">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'var(--sea-100)' }}
-                >
-                  <Lock className="w-5 h-5" style={{ color: 'var(--sea-600)' }} />
-                </div>
-                <div>
-                  <h2 className="font-serif text-lg font-semibold" style={{ color: 'var(--ink-900)' }}>
-                    Two-Factor Authentication
-                  </h2>
-                  <p className="text-xs" style={{ color: 'var(--ink-600)' }}>
-                    Enter the 6-digit code from your authenticator app
-                  </p>
-                </div>
-              </div>
-
-              <form onSubmit={handleMfa} className="space-y-4">
-                <div>
-                  <label htmlFor="login-mfa" className="sr-only">
-                    Authentication Code
-                  </label>
-                  <input
-                    id="login-mfa"
-                    type="text"
-                    value={mfaCode}
-                    onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="000000"
-                    maxLength={6}
-                    className="w-full text-center px-3 py-3 rounded-xl text-2xl font-mono tracking-[0.5em] border outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
-                    style={{
-                      background: 'var(--sand-50)',
-                      borderColor: 'var(--sand-300)',
-                      color: 'var(--ink-900)',
-                    }}
-                    autoFocus
-                  />
-                </div>
-                <p className="text-xs text-center font-medium opacity-70" style={{ color: 'var(--ink-600)' }}>
-                  Demo: enter any 6 digits and click Verify
-                </p>
-
-                {error && (
-                  <p role="alert" className="text-xs text-red-600 text-center font-semibold">
-                    {error}
-                  </p>
-                )}
-
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  autoComplete="current-password"
+                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs"
+                  style={{
+                    background: 'var(--sand-50)',
+                    borderColor: 'var(--sand-300)',
+                    color: 'var(--ink-900)',
+                  }}
+                />
                 <button
-                  type="submit"
-                  disabled={loading || mfaCode.length < 6}
-                  className="w-full py-2.5 px-4 rounded-xl font-medium text-sm transition-all hover:opacity-90 disabled:opacity-50 shadow-md"
-                  style={{ background: 'var(--sea-600)', color: 'white' }}
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-90 cursor-pointer"
+                  style={{ color: 'var(--ink-900)' }}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {loading ? 'Verifying…' : 'Verify & Sign In'}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </form>
-            </>
-          )}
+              </div>
+            </div>
+
+            {error && (
+              <p role="alert" className="text-xs text-red-600 font-semibold">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-medium text-sm transition-all hover:opacity-90 shadow-md cursor-pointer disabled:opacity-50 mt-2"
+              style={{ background: 'var(--ink-900)', color: '#FFFFFF' }}
+            >
+              <LogIn className="w-4 h-4" />
+              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
+            </button>
+          </form>
         </div>
 
         {/* ── Classification notice below card ── */}
