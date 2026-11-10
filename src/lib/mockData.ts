@@ -151,16 +151,49 @@ export const ZONES: Zone[] = [
   },
 ];
 
-// ─── UAVs ─────────────────────────────────────────────────────
+// ─── UAVs & Drone Slots (20 Unified Coastal Surveillance Drones) ──
 
-export const UAVS: Uav[] = [
-  { id: 'u-01', droneCode: 'UAV-01', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-001-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
-  { id: 'u-02', droneCode: 'UAV-02', makeModel: 'DJI Matrice 350 RTK', serialNo: 'MAT-002-KP', adapterType: 'dji_sdk', hasOnboardCompute: false, isActive: true },
-  { id: 'u-03', droneCode: 'UAV-03', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-003-KP', adapterType: 'mavlink', hasOnboardCompute: true, isActive: true },
-  { id: 'u-04', droneCode: 'UAV-04', makeModel: 'Asteria Falcon Eye', serialNo: 'FE-004-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
-  { id: 'u-05', droneCode: 'UAV-05', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-005-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
-  { id: 'u-06', droneCode: 'UAV-06', makeModel: 'ideaForge SWITCH', serialNo: 'ISW-006-KP', adapterType: 'mavlink', hasOnboardCompute: false, isActive: true },
+export interface DroneSlotDefinition {
+  slotIndex: number; // 1 to 20
+  code: string;      // UAV-01 to UAV-20
+  sector: string;    // Display sector name
+  district: string;  // Kerala coastal district
+  defaultModality: 'RGB' | 'THERMAL' | 'NIGHT_VISION';
+  makeModel: string;
+}
+
+export const DRONE_SLOTS_20: DroneSlotDefinition[] = [
+  { slotIndex: 1,  code: 'UAV-01', sector: 'Vizhinjam Deepwater Port', district: 'Thiruvananthapuram', defaultModality: 'RGB', makeModel: 'DJI Matrice 350 RTK' },
+  { slotIndex: 2,  code: 'UAV-02', sector: 'Kovalam Lighthouse Beach', district: 'Thiruvananthapuram', defaultModality: 'RGB', makeModel: 'DJI Matrice 350 RTK' },
+  { slotIndex: 3,  code: 'UAV-03', sector: 'Poovar Estuary Sector', district: 'Thiruvananthapuram', defaultModality: 'RGB', makeModel: 'Asteria Falcon Eye' },
+  { slotIndex: 4,  code: 'UAV-04', sector: 'Shanghumugham Coast', district: 'Thiruvananthapuram', defaultModality: 'RGB', makeModel: 'Asteria Falcon Eye' },
+  { slotIndex: 5,  code: 'UAV-05', sector: 'Muthalapozhi Harbour Mouth', district: 'Thiruvananthapuram', defaultModality: 'RGB', makeModel: 'ideaForge SWITCH' },
+  { slotIndex: 6,  code: 'UAV-06', sector: 'Varkala Cliff Sea Wall', district: 'Thiruvananthapuram', defaultModality: 'RGB', makeModel: 'ideaForge SWITCH' },
+  { slotIndex: 7,  code: 'UAV-07', sector: 'Neendakara Fishing Harbour', district: 'Kollam', defaultModality: 'RGB', makeModel: 'DJI Matrice 350 RTK' },
+  { slotIndex: 8,  code: 'UAV-08', sector: 'Thangassery Port Breakwater', district: 'Kollam', defaultModality: 'THERMAL', makeModel: 'ideaForge NETRA V4' },
+  { slotIndex: 9,  code: 'UAV-09', sector: 'Alappuzha Beach & Pier', district: 'Alappuzha', defaultModality: 'RGB', makeModel: 'DJI Matrice 350 RTK' },
+  { slotIndex: 10, code: 'UAV-10', sector: 'Arthunkal Coastal Sector', district: 'Alappuzha', defaultModality: 'RGB', makeModel: 'ideaForge SWITCH' },
+  { slotIndex: 11, code: 'UAV-11', sector: 'Kochi Port & Naval Channel', district: 'Ernakulam', defaultModality: 'RGB', makeModel: 'DJI Matrice 350 RTK' },
+  { slotIndex: 12, code: 'UAV-12', sector: 'Fort Kochi & Vypin Channel', district: 'Ernakulam', defaultModality: 'THERMAL', makeModel: 'ideaForge NETRA V4' },
+  { slotIndex: 13, code: 'UAV-13', sector: 'Munambam Fishing Harbour', district: 'Ernakulam', defaultModality: 'RGB', makeModel: 'Asteria Falcon Eye' },
+  { slotIndex: 14, code: 'UAV-14', sector: 'Ponnani Port & Estuary', district: 'Malappuram', defaultModality: 'RGB', makeModel: 'DJI Matrice 350 RTK' },
+  { slotIndex: 15, code: 'UAV-15', sector: 'Beypore Deep Harbour', district: 'Kozhikode', defaultModality: 'RGB', makeModel: 'ideaForge SWITCH' },
+  { slotIndex: 16, code: 'UAV-16', sector: 'Kozhikode South Beach Approach', district: 'Kozhikode', defaultModality: 'NIGHT_VISION', makeModel: 'Adani Hermes 900 MALE' },
+  { slotIndex: 17, code: 'UAV-17', sector: 'Koyilandy Marine Sector', district: 'Kozhikode', defaultModality: 'RGB', makeModel: 'Asteria Falcon Eye' },
+  { slotIndex: 18, code: 'UAV-18', sector: 'Thalassery Pier & Fort Coast', district: 'Kannur', defaultModality: 'RGB', makeModel: 'DJI Matrice 350 RTK' },
+  { slotIndex: 19, code: 'UAV-19', sector: 'Azhikkal Port & Valapattanam', district: 'Kannur', defaultModality: 'RGB', makeModel: 'ideaForge SWITCH' },
+  { slotIndex: 20, code: 'UAV-20', sector: 'Bekal Fort & Kasaragod Border', district: 'Kasaragod', defaultModality: 'RGB', makeModel: 'Adani Hermes 900 MALE' },
 ];
+
+export const UAVS: Uav[] = DRONE_SLOTS_20.map(slot => ({
+  id: `u-${String(slot.slotIndex).padStart(2, '0')}`,
+  droneCode: slot.code,
+  makeModel: slot.makeModel,
+  serialNo: `KP-UAV-${String(slot.slotIndex).padStart(3, '0')}`,
+  adapterType: slot.makeModel.includes('DJI') ? 'dji_sdk' : 'mavlink',
+  hasOnboardCompute: slot.slotIndex % 3 === 0,
+  isActive: true,
+}));
 
 // ─── Missions ─────────────────────────────────────────────────
 

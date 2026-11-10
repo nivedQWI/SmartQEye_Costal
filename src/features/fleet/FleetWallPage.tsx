@@ -1,7 +1,8 @@
 // ============================================================
 // SmartQEye Coastal — Tactical Fleet Wall & Stream Management
-// Unified operational multi-feed overview displaying all ingested
-// RTSP, RTMP, HLS, and MP4 video streams with Operator Termination & No Signal handling
+// Unified operational multi-feed overview displaying all 20 UAV
+// surveillance stations (UAV-01 to UAV-20) with active RTSP, RTMP,
+// HLS, and MP4 video streams, Operator Termination & Tactical NO SIGNAL fallback
 // ============================================================
 
 import { useState, useMemo, useEffect } from 'react';
@@ -15,21 +16,30 @@ import { CoastalVideoPlayer } from '@/components/CoastalVideoPlayer';
 import { AddStreamModal } from '@/components/AddStreamModal';
 import { useFeedStore, useMissionStore } from '@/lib/store';
 import { resolveVideoUrl, saveUploadedVideo, removeUploadedVideo } from '@/lib/videoStorage';
+import { DRONE_SLOTS_20, DroneSlotDefinition } from '@/lib/mockData';
 import { getFeedPlace } from '@/lib/feedLocations';
 import type { Feed, FeedState } from '@/types';
 
+interface AttachTargetState {
+  code: string;
+  sector: string;
+  district: string;
+  modality: 'RGB' | 'THERMAL' | 'NIGHT_VISION';
+  feedId?: string;
+}
+
 export default function FleetWallPage() {
   const navigate = useNavigate();
-  const { feeds, terminateFeed, resumeFeed, removeFeed, attachStreamToFeed, restoreDefaultFeeds } = useFeedStore();
+  const { feeds, terminateFeed, resumeFeed, removeFeed, attachStreamToFeed, addFeed, restoreDefaultFeeds } = useFeedStore();
   const { stopMission } = useMissionStore();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [filterModality, setFilterModality] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
-  const [gridColumns, setGridColumns] = useState<'auto' | '1' | '2' | '3' | '4'>('auto');
+  const [gridColumns, setGridColumns] = useState<'auto' | '1' | '2' | '3' | '4' | '5'>('auto');
 
-  // Attach Stream to specific feed modal state
-  const [attachFeedTarget, setAttachFeedTarget] = useState<Feed | null>(null);
+  // Attach Stream modal state
+  const [attachTarget, setAttachTarget] = useState<AttachTargetState | null>(null);
   const [attachStreamUrl, setAttachStreamUrl] = useState('');
   const [attachStreamType, setAttachStreamType] = useState<'RTMP' | 'RTSP' | 'HLS' | 'MP4'>('RTMP');
   const [attachFileInput, setAttachFileInput] = useState<File | null>(null);
@@ -51,20 +61,51 @@ export default function FleetWallPage() {
     return () => { mounted = false; };
   }, []);
 
-  // Filter feeds based on operator selection
-  const filteredFeeds = useMemo(() => {
-    return feeds.filter(feed => {
-      if (filterModality !== 'ALL' && feed.modality !== filterModality) return false;
-      if (filterStatus === 'LIVE' && feed.state !== 'LIVE') return false;
-      if (filterStatus === 'TERMINATED' && feed.state !== 'TERMINATED') return false;
-      if (filterStatus === 'NO_SIGNAL' && feed.state !== 'NO_SIGNAL') return false;
+  // 20 Drone Slots Data Mapping (UAV-01 through UAV-20)
+  const slots20WithData = useMemo(() => {
+    const assignedFeedIds = new Set<string>();
+
+    return DRONE_SLOTS_20.map((slot, index) => {
+      // 1. Direct match by uavCode
+      let feed = feeds.find(f => f.uavCode === slot.code && !assignedFeedIds.has(f.id));
+      // 2. Fallback to unassigned feed
+      if (!feed && feeds[index] && !assignedFeedIds.has(feeds[index].id) && !DRONE_SLOTS_20.some(s => s.code === feeds[index].uavCode)) {
+        feed = feeds[index];
+      }
+      if (feed) {
+        assignedFeedIds.add(feed.id);
+      }
+
+      const hasVideo = Boolean(feed?.videoSrc && feed.videoSrc.trim() && feed.state !== 'NO_SIGNAL');
+      const isTerminated = feed ? (feed.state === 'TERMINATED' || feed.isTerminated) : false;
+      const isNoSignal = !hasVideo;
+      const modality = feed?.modality || slot.defaultModality;
+
+      return {
+        slot,
+        feed,
+        hasVideo,
+        isNoSignal,
+        isTerminated,
+        modality,
+      };
+    });
+  }, [feeds]);
+
+  // Filter slots based on operator selection
+  const filteredSlots = useMemo(() => {
+    return slots20WithData.filter(item => {
+      if (filterModality !== 'ALL' && item.modality !== filterModality) return false;
+      if (filterStatus === 'LIVE' && (!item.hasVideo || item.isTerminated)) return false;
+      if (filterStatus === 'TERMINATED' && !item.isTerminated) return false;
+      if (filterStatus === 'NO_SIGNAL' && !item.isNoSignal) return false;
       return true;
     });
-  }, [feeds, filterModality, filterStatus]);
+  }, [slots20WithData, filterModality, filterStatus]);
 
-  const activeLiveCount = feeds.filter(f => f.state === 'LIVE').length;
-  const terminatedCount = feeds.filter(f => f.state === 'TERMINATED').length;
-  const noSignalCount = feeds.filter(f => f.state === 'NO_SIGNAL' || !f.videoSrc).length;
+  const activeLiveCount = slots20WithData.filter(s => s.hasVideo && !s.isTerminated).length;
+  const terminatedCount = slots20WithData.filter(s => s.isTerminated).length;
+  const noSignalCount = slots20WithData.filter(s => s.isNoSignal).length;
 
   // Determine grid CSS
   const gridClass = useMemo(() => {
@@ -72,26 +113,42 @@ export default function FleetWallPage() {
     if (gridColumns === '2') return 'grid-cols-1 md:grid-cols-2';
     if (gridColumns === '3') return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
     if (gridColumns === '4') return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
+    if (gridColumns === '5') return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
 
-    // Auto layout based on feed count
-    const count = filteredFeeds.length;
-    if (count <= 1) return 'grid-cols-1';
-    if (count <= 4) return 'grid-cols-1 md:grid-cols-2';
-    if (count <= 9) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
-    return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
-  }, [gridColumns, filteredFeeds.length]);
+    // Auto layout for 20 drone grid
+    return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
+  }, [gridColumns]);
 
   async function handleAttachStreamSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!attachFeedTarget) return;
+    if (!attachTarget) return;
 
+    const targetUavCode = attachTarget.code;
+    const targetFeedId = attachTarget.feedId;
+
+    let streamUrl = '';
     if (attachStreamType === 'MP4' && attachFileInput) {
-      const url = await saveUploadedVideo(attachFeedTarget.id, attachFileInput);
-      attachStreamToFeed(attachFeedTarget.id, url, 'MP4');
+      const feedId = targetFeedId || `feed-${targetUavCode.toLowerCase()}-${Date.now()}`;
+      streamUrl = await saveUploadedVideo(feedId, attachFileInput);
     } else if (attachStreamUrl.trim()) {
-      attachStreamToFeed(attachFeedTarget.id, attachStreamUrl.trim(), attachStreamType);
+      streamUrl = attachStreamUrl.trim();
     }
-    setAttachFeedTarget(null);
+
+    if (!streamUrl) return;
+
+    if (targetFeedId) {
+      attachStreamToFeed(targetFeedId, streamUrl, attachStreamType);
+    } else {
+      addFeed({
+        uavCode: targetUavCode,
+        label: `${targetUavCode} Live Feed (${attachTarget.sector})`,
+        videoSrc: streamUrl,
+        streamType: attachStreamType,
+        modality: attachTarget.modality,
+      });
+    }
+
+    setAttachTarget(null);
     setAttachStreamUrl('');
     setAttachFileInput(null);
   }
@@ -127,11 +184,11 @@ export default function FleetWallPage() {
                 </span>
               )}
               <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-500/10 border border-slate-500/20 text-slate-300">
-                TOTAL SORTIES: {feeds.length}
+                20 UAV STATIONS ACTIVE
               </span>
             </div>
             <p className="text-xs font-mono opacity-60">
-              Active Mission Ingestion Wall · All Ingested RTSP &amp; RTMP Live Feeds Displayed Simultaneously
+              Full 20-Drone Command Grid · Live Ingested Streams with Tactical NO SIGNAL Fallback for All Fleet Units
             </p>
           </div>
         </div>
@@ -217,11 +274,11 @@ export default function FleetWallPage() {
           </span>
           <div className="flex rounded-lg overflow-hidden border border-white/10">
             {[
-              { id: 'auto', label: 'AUTO' },
-              { id: '1', label: '1x1' },
+              { id: 'auto', label: 'AUTO (5x4)' },
               { id: '2', label: '2x2' },
               { id: '3', label: '3x3' },
               { id: '4', label: '4x4' },
+              { id: '5', label: '5 Cols' },
             ].map(l => (
               <button
                 key={l.id}
@@ -238,44 +295,32 @@ export default function FleetWallPage() {
         </div>
       </div>
 
-      {/* ── Main Multi-Feed Video Grid ── */}
+      {/* ── Main Multi-Feed 20-Drone Video Grid ── */}
       <div className="flex-1 overflow-y-auto p-4">
-        {filteredFeeds.length === 0 ? (
+        {filteredSlots.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center p-8 text-center">
             <div className="p-4 rounded-3xl bg-sky-500/10 border border-sky-500/20 text-sky-400 mb-3">
               <Video className="w-12 h-12 opacity-80" />
             </div>
-            <h3 className="font-serif text-lg font-bold text-slate-200">No Active Mission Feeds Ingested</h3>
+            <h3 className="font-serif text-lg font-bold text-slate-200">No Drones Match Current Filter</h3>
             <p className="text-xs font-mono text-slate-400 max-w-md mt-1 mb-5 leading-relaxed">
-              Feeds appear on the Fleet Wall exclusively when UAV surveillance missions are deployed in Mission Control. You can also ingest standalone RTSP or RTMP streams directly.
+              Adjust filters or clear your selection to view all 20 tactical drone feeds.
             </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate('/missions')}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold shadow-lg transition-all active:scale-95 cursor-pointer"
-              >
-                <Anchor className="w-4 h-4" />
-                <span>Go to Mission Control &amp; Deploy Sortie</span>
-              </button>
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 border border-white/10 font-mono text-xs font-bold transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Ingest Standalone Stream</span>
-              </button>
-            </div>
+            <button
+              onClick={() => { setFilterStatus('ALL'); setFilterModality('ALL'); }}
+              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold cursor-pointer"
+            >
+              Reset Filters (Show All 20 Drones)
+            </button>
           </div>
         ) : (
-          <div className={cn('grid gap-4', gridClass)}>
-            {filteredFeeds.map(feed => {
-              const place = getFeedPlace(feed);
-              const isTerminated = feed.state === 'TERMINATED' || feed.isTerminated;
-              const isNoSignal = feed.state === 'NO_SIGNAL' || !feed.videoSrc || feed.videoSrc.trim() === '';
+          <div className={cn('grid gap-3.5', gridClass)}>
+            {filteredSlots.map(({ slot, feed, hasVideo, isNoSignal, isTerminated, modality }) => {
+              const place = feed ? getFeedPlace(feed) : { name: slot.sector };
 
               return (
                 <div
-                  key={feed.id}
+                  key={slot.code}
                   className="rounded-2xl border overflow-hidden flex flex-col transition-all shadow-md group hover:border-sky-500/50"
                   style={{
                     background: '#040d16',
@@ -293,10 +338,10 @@ export default function FleetWallPage() {
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-mono font-bold text-sky-400 text-xs">
-                        {feed.uavCode}
+                        {slot.code}
                       </span>
-                      <span className="font-medium text-slate-200 text-xs truncate max-w-[130px]" title={feed.label}>
-                        {feed.label}
+                      <span className="font-medium text-slate-200 text-xs truncate max-w-[130px]" title={feed?.label || slot.sector}>
+                        {feed?.label || slot.sector}
                       </span>
                     </div>
 
@@ -308,7 +353,7 @@ export default function FleetWallPage() {
                         </span>
                       ) : isNoSignal ? (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                          <Radio className="w-2.5 h-2.5 text-amber-400" />
+                          <Radio className="w-2.5 h-2.5 text-amber-400 animate-pulse" />
                           NO SIGNAL
                         </span>
                       ) : (
@@ -320,7 +365,7 @@ export default function FleetWallPage() {
 
                       {/* Protocol Badge */}
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-sky-950/80 text-sky-300 border border-sky-500/30">
-                        {feed.streamType || (feed.videoSrc?.includes('.m3u8') ? 'HLS' : isNoSignal ? 'OFFLINE' : 'MP4')}
+                        {feed?.streamType || (feed?.videoSrc?.includes('.m3u8') ? 'HLS' : isNoSignal ? 'STANDBY' : 'MP4')}
                       </span>
                     </div>
                   </div>
@@ -329,7 +374,7 @@ export default function FleetWallPage() {
                   <div className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center">
                     {isNoSignal ? (
                       /* ── Dedicated Tactical NO SIGNAL Display ── */
-                      <div className="absolute inset-0 bg-[#060e17] flex flex-col items-center justify-center p-4 text-center z-10 overflow-hidden">
+                      <div className="absolute inset-0 bg-[#060e17] flex flex-col items-center justify-center p-3 text-center z-10 overflow-hidden">
                         {/* Scanlines */}
                         <div
                           className="absolute inset-0 pointer-events-none opacity-20"
@@ -337,21 +382,27 @@ export default function FleetWallPage() {
                             backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 3px)',
                           }}
                         />
-                        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-2 relative">
-                          <Radio className="w-6 h-6 animate-pulse text-amber-400" />
-                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                        <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-1.5 relative">
+                          <Radio className="w-5 h-5 animate-pulse text-amber-400" />
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500 animate-ping" />
                         </div>
-                        <div className="font-mono text-xs font-extrabold text-amber-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                        <div className="font-mono text-xs font-extrabold text-amber-400 uppercase tracking-widest flex items-center gap-1.5 mb-0.5">
                           <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse" />
                           NO SIGNAL
                         </div>
-                        <p className="text-[10px] font-mono text-slate-400 max-w-[210px] leading-relaxed mb-3">
-                          Sensor carrier offline · No RTSP/RTMP stream attached
+                        <p className="text-[10px] font-mono text-slate-400 max-w-[210px] leading-relaxed mb-2.5">
+                          Sensor carrier offline · {slot.district} Sector Standby
                         </p>
                         <button
                           type="button"
                           onClick={() => {
-                            setAttachFeedTarget(feed);
+                            setAttachTarget({
+                              code: slot.code,
+                              sector: slot.sector,
+                              district: slot.district,
+                              modality: slot.defaultModality,
+                              feedId: feed?.id,
+                            });
                             setAttachStreamUrl('');
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-sky-600 hover:bg-sky-500 text-white cursor-pointer shadow-md transition-all active:scale-95 z-20"
@@ -360,7 +411,7 @@ export default function FleetWallPage() {
                           <span>Attach Stream Link</span>
                         </button>
                       </div>
-                    ) : (
+                    ) : feed ? (
                       <CoastalVideoPlayer
                         feedId={feed.id}
                         src={feed.videoSrc || ''}
@@ -374,21 +425,29 @@ export default function FleetWallPage() {
                         showHudOverlay={true}
                         onResume={() => resumeFeed(feed.id)}
                         onAttachStream={() => {
-                          setAttachFeedTarget(feed);
+                          setAttachTarget({
+                            code: slot.code,
+                            sector: slot.sector,
+                            district: slot.district,
+                            modality: slot.defaultModality,
+                            feedId: feed.id,
+                          });
                           setAttachStreamUrl('');
                         }}
                         className="w-full h-full"
                       />
-                    )}
+                    ) : null}
 
                     {/* Quick Focus Button in top corner */}
-                    <button
-                      onClick={() => navigate(`/live?feed=${encodeURIComponent(feed.id)}`)}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-sky-600 text-white opacity-0 group-hover:opacity-100 transition-all z-20 cursor-pointer"
-                      title="Focus on this feed in Live Monitor"
-                    >
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    </button>
+                    {feed && (
+                      <button
+                        onClick={() => navigate(`/live?feed=${encodeURIComponent(feed.id)}`)}
+                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-sky-600 text-white opacity-0 group-hover:opacity-100 transition-all z-20 cursor-pointer"
+                        title="Focus on this feed in Live Monitor"
+                      >
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Tile Bottom Command & Control Bar */}
@@ -399,14 +458,14 @@ export default function FleetWallPage() {
                     <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 truncate">
                       <span>{place.name}</span>
                       <span className="opacity-40">·</span>
-                      <span className="text-slate-300 font-semibold">{isNoSignal ? 'N/A' : (feed.resolution || '1080p')}</span>
+                      <span className="text-slate-300 font-semibold">{isNoSignal ? slot.district : (feed?.resolution || '1080p')}</span>
                       <span className="opacity-40">·</span>
-                      <span>{isNoSignal ? '--' : `≈${feed.latencyMs || 45}ms`}</span>
+                      <span>{isNoSignal ? slot.makeModel.split(' ')[0] : `≈${feed?.latencyMs || 45}ms`}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
                       {/* Operator Stream Termination Button */}
-                      {isTerminated ? (
+                      {isTerminated && feed ? (
                         <button
                           onClick={() => resumeFeed(feed.id)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer transition-colors shadow-xs"
@@ -415,7 +474,7 @@ export default function FleetWallPage() {
                           <Play className="w-3 h-3 fill-white" />
                           <span>Resume</span>
                         </button>
-                      ) : !isNoSignal ? (
+                      ) : !isNoSignal && feed ? (
                         <button
                           onClick={() => terminateFeed(feed.id)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-red-600/90 hover:bg-red-500 text-white cursor-pointer transition-colors shadow-xs active:scale-95"
@@ -430,7 +489,13 @@ export default function FleetWallPage() {
                       {isNoSignal && (
                         <button
                           onClick={() => {
-                            setAttachFeedTarget(feed);
+                            setAttachTarget({
+                              code: slot.code,
+                              sector: slot.sector,
+                              district: slot.district,
+                              modality: slot.defaultModality,
+                              feedId: feed?.id,
+                            });
                             setAttachStreamUrl('');
                           }}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-sky-600 hover:bg-sky-500 text-white cursor-pointer transition-colors shadow-xs"
@@ -441,18 +506,20 @@ export default function FleetWallPage() {
                         </button>
                       )}
 
-                      {/* End Mission Button */}
-                      <button
-                        onClick={() => {
-                          removeUploadedVideo(feed.id);
-                          stopMission(feed.id);
-                          removeFeed(feed.id);
-                        }}
-                        className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
-                        title="End this mission sortie"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {/* End Mission Button if active feed */}
+                      {feed && (
+                        <button
+                          onClick={() => {
+                            removeUploadedVideo(feed.id);
+                            stopMission(feed.id);
+                            removeFeed(feed.id);
+                          }}
+                          className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+                          title="End this mission sortie"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -463,7 +530,7 @@ export default function FleetWallPage() {
       </div>
 
       {/* ── Attach Stream Modal for NO SIGNAL tile ── */}
-      {attachFeedTarget && (
+      {attachTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in">
           <div
             className="w-full max-w-md rounded-2xl border p-5 shadow-2xl flex flex-col gap-4 text-xs font-mono"
@@ -473,11 +540,11 @@ export default function FleetWallPage() {
               <div className="flex items-center gap-2">
                 <Link2 className="w-4 h-4 text-sky-400" />
                 <h3 className="font-serif text-sm font-bold text-white">
-                  Attach Stream to {attachFeedTarget.uavCode}
+                  Attach Stream to {attachTarget.code}
                 </h3>
               </div>
               <button
-                onClick={() => setAttachFeedTarget(null)}
+                onClick={() => setAttachTarget(null)}
                 className="text-slate-400 hover:text-white cursor-pointer"
               >
                 ✕
@@ -566,7 +633,7 @@ export default function FleetWallPage() {
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
                 <button
                   type="button"
-                  onClick={() => setAttachFeedTarget(null)}
+                  onClick={() => setAttachTarget(null)}
                   className="px-3.5 py-1.5 rounded-lg border border-white/10 hover:bg-white/10 text-slate-300 cursor-pointer"
                 >
                   Cancel

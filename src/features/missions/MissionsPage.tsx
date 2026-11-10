@@ -45,7 +45,7 @@ export default function MissionsPage() {
   const { feeds } = useFeedStore();
 
   const [squadron, setSquadron] = useState<Squadron>('ALPHA');
-  const [missionName, setMissionName] = useState('');
+  const [missionName, setMissionName] = useState('Monitoring');
   const [missionId, setMissionId] = useState(generateMissionId('ALPHA'));
   const [selectedDroneId, setSelectedDroneId] = useState(UAVS[0].id);
   const [videoSourceType, setVideoSourceType] = useState<VideoSourceType>('RTMP');
@@ -54,8 +54,8 @@ export default function MissionsPage() {
   const [stagedVideoFile, setStagedVideoFile] = useState<string | null>(null);
   const [stagedVideoUrl, setStagedVideoUrl] = useState<string | null>(null);
   const [srtFile, setSrtFile] = useState<string | null>(null);
-  const [pilotName, setPilotName] = useState('');
-  const [location, setLocation] = useState('');
+  const [pilotName, setPilotName] = useState('Viswanath');
+  const [location, setLocation] = useState('Trivandrum');
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
   // Selected preview mission from active missions
@@ -142,7 +142,9 @@ export default function MissionsPage() {
     setTimeout(() => setSuccessToast(null), 6000);
 
     // Reset form for next mission
-    setMissionName('');
+    setMissionName('Monitoring');
+    setPilotName('Viswanath');
+    setLocation('Trivandrum');
     setVideoSourceUrl('');
     setStagedRawFile(null);
     setStagedVideoFile(null);

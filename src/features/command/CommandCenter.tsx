@@ -2,7 +2,7 @@
 // SmartQEye Coastal — Primary Command Centre Dashboard
 // Unified operational command interface covering:
 // - Live Coastal GIS Map (Kerala Coast & Seaports)
-// - Dynamic Live Video Wall (Shows all inputted RTSP/RTMP/HLS/MP4 streams)
+// - Dynamic Live Video Wall (16-Slot Drone Video Grid: UAV-01 to UAV-16)
 // - Tactical KPI Metrics Row
 // - Priority Event Queue (DEMO/SIMULATED)
 // - Single Operator Central Command
@@ -21,7 +21,7 @@ import { AddStreamModal } from '@/components/AddStreamModal';
 import { SeverityChip, SeverityDot } from '@/components/SeverityChip';
 import { useAlertStore, useFeedStore, useMapStore, useMissionStore } from '@/lib/store';
 import { cn, formatIST, eventTypeLabel } from '@/lib/utils';
-import { KERALA_COASTAL_SECTORS } from '@/lib/mockData';
+import { KERALA_COASTAL_SECTORS, DRONE_SLOTS_20 } from '@/lib/mockData';
 import { getFeedPlace } from '@/lib/feedLocations';
 import type { Alert, Feed } from '@/types';
 
@@ -151,8 +151,36 @@ export default function CommandCenter() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const activeMission = missions.find(m => m.id === activeMissionId);
-  const liveFeedsCount = feeds.filter(f => f.state === 'LIVE').length;
-  const terminatedCount = feeds.filter(f => f.state === 'TERMINATED').length;
+
+  // 16 Drone Slots Configuration (UAV-01 through UAV-16)
+  const DRONE_SLOTS_16 = useMemo(() => DRONE_SLOTS_20.slice(0, 16), []);
+
+  const slots16WithData = useMemo(() => {
+    const assignedIds = new Set<string>();
+    return DRONE_SLOTS_16.map((slot, index) => {
+      // 1. Primary match by UAV code
+      let feed = feeds.find(f => f.uavCode === slot.code && !assignedIds.has(f.id));
+      // 2. Fallback to unassigned feed
+      if (!feed && feeds[index] && !assignedIds.has(feeds[index].id) && !DRONE_SLOTS_16.some(s => s.code === feeds[index].uavCode)) {
+        feed = feeds[index];
+      }
+      if (feed) {
+        assignedIds.add(feed.id);
+      }
+      const hasVideo = Boolean(feed?.videoSrc && feed.videoSrc.trim() && feed.state !== 'NO_SIGNAL');
+      const isTerminated = feed ? (feed.state === 'TERMINATED' || feed.isTerminated) : false;
+      return {
+        slot,
+        feed,
+        hasVideo,
+        isTerminated,
+      };
+    });
+  }, [feeds, DRONE_SLOTS_16]);
+
+  const slots16LiveCount = useMemo(() => {
+    return slots16WithData.filter(s => s.hasVideo && !s.isTerminated).length;
+  }, [slots16WithData]);
 
   const focus = useMemo(() => {
     return { center: KERALA_VIEW.center, zoom: KERALA_VIEW.zoom };
@@ -178,7 +206,7 @@ export default function CommandCenter() {
           </span>
 
           <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30">
-            STREAMS: {liveFeedsCount}/{feeds.length} ONLINE
+            STREAMS: {slots16LiveCount}/16 ONLINE
           </span>
 
           <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
@@ -231,7 +259,7 @@ export default function CommandCenter() {
         style={{ background: '#050f1a', borderColor: 'var(--line)' }}
       >
         <div className="rounded-xl p-2.5 bg-[#091724] border border-white/10 flex flex-col items-center justify-center text-center">
-          <div className="font-mono font-extrabold text-lg text-sky-400">{liveFeedsCount} / {feeds.length}</div>
+          <div className="font-mono font-extrabold text-lg text-sky-400">{slots16LiveCount} / 16</div>
           <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Online Streams</div>
         </div>
 
@@ -289,7 +317,7 @@ export default function CommandCenter() {
           </div>
         )}
 
-        {/* 2. Live Video Feeds Wall (Shows all inputted RTSP / RTMP / MP4 streams) */}
+        {/* 2. Live Video Feeds Wall (16 Drone Video Grid View: UAV-01 to UAV-16) */}
         {(viewMode === 'COMBINED' || viewMode === 'WALL_ONLY') && (
           <div
             className={cn(
@@ -302,7 +330,7 @@ export default function CommandCenter() {
               <div className="flex items-center gap-2">
                 <Video className="w-4 h-4 text-sky-400" />
                 <h3 className="font-serif text-xs font-bold uppercase tracking-wider text-white">
-                  Live Video Wall ({feeds.length} Streams)
+                  Live Video Wall ({slots16LiveCount}/16 Active)
                 </h3>
               </div>
               <div className="flex items-center gap-2">
@@ -315,112 +343,156 @@ export default function CommandCenter() {
               </div>
             </div>
 
-            {/* Feeds Scroll Area */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {feeds.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center p-6 text-center">
-                  <Video className="w-10 h-10 text-sky-400/40 mb-2" />
-                  <p className="font-semibold text-slate-300 text-xs">No Active Video Feeds</p>
-                  <p className="text-[11px] font-mono text-slate-500 max-w-[220px] mt-1 mb-3">
-                    Deploy sorties in Mission Control to stream live feeds to the command wall.
-                  </p>
-                  <button
-                    onClick={() => navigate('/missions')}
-                    className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold cursor-pointer"
-                  >
-                    + Deploy Sortie in Mission Control
-                  </button>
-                </div>
-              ) : (
-                feeds.map(feed => {
-                const place = getFeedPlace(feed);
-                const isTerminated = feed.state === 'TERMINATED' || feed.isTerminated;
+            {/* 16 Drone Slots Grid View */}
+            <div className="flex-1 overflow-y-auto p-2.5">
+              <div className={cn(
+                'grid gap-2',
+                viewMode === 'WALL_ONLY' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2'
+              )}>
+                {slots16WithData.map(({ slot, feed, hasVideo, isTerminated }) => {
+                  const place = feed ? getFeedPlace(feed) : { name: slot.sector };
 
-                return (
-                  <div
-                    key={feed.id}
-                    className="rounded-xl border overflow-hidden flex flex-col shadow-md transition-all group"
-                    style={{
-                      background: '#030911',
-                      borderColor: isTerminated ? 'rgba(239,68,68,0.4)' : 'rgba(56,189,248,0.25)',
-                    }}
-                  >
-                    {/* Feed Tile Top Bar */}
-                    <div className="flex items-center justify-between px-2.5 py-1.5 bg-[#091724] border-b border-white/10 text-xs">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-mono font-bold text-sky-400 text-xs">{feed.uavCode}</span>
-                        <span className="font-medium text-slate-300 text-xs truncate max-w-[130px]">{feed.label}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-500/30">
-                          {feed.streamType || (feed.videoSrc?.includes('.m3u8') ? 'HLS' : 'MP4')}
-                        </span>
-                        {isTerminated ? (
-                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-500/40">
-                            STOPPED
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            LIVE
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Feed Player */}
-                    <div className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center">
-                      <CoastalVideoPlayer
-                        feedId={feed.id}
-                        src={feed.videoSrc || ''}
-                        modality={feed.modality}
-                        state={feed.state}
-                        isTerminated={isTerminated}
-                        streamType={feed.streamType}
-                        autoPlay={!isTerminated}
-                        muted={true}
-                        loop={true}
-                        showHudOverlay={true}
-                        onResume={() => resumeFeed(feed.id)}
-                        className="w-full h-full"
-                      />
-
-                      {/* Expand Button */}
-                      <button
-                        onClick={() => navigate(`/live?feed=${encodeURIComponent(feed.id)}`)}
-                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-sky-600 text-white opacity-0 group-hover:opacity-100 transition-all z-20 cursor-pointer"
-                        title="Focus in Live Monitor"
+                  if (hasVideo && feed) {
+                    return (
+                      <div
+                        key={slot.code}
+                        className="rounded-xl border overflow-hidden flex flex-col shadow-md transition-all group"
+                        style={{
+                          background: '#030911',
+                          borderColor: isTerminated ? 'rgba(239,68,68,0.4)' : 'rgba(56,189,248,0.25)',
+                        }}
                       >
-                        <Maximize2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                        {/* Feed Tile Top Bar */}
+                        <div className="flex items-center justify-between px-2 py-1 bg-[#091724] border-b border-white/10 text-xs">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <span className="font-mono font-bold text-sky-400 text-[11px]">{slot.code}</span>
+                            <span className="font-medium text-slate-300 text-[11px] truncate max-w-[100px]" title={feed.label}>
+                              {feed.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <span className="text-[8px] font-mono font-bold px-1 py-0.2 rounded bg-sky-950/80 text-sky-300 border border-sky-500/30">
+                              {feed.streamType || (feed.videoSrc?.includes('.m3u8') ? 'HLS' : 'MP4')}
+                            </span>
+                            {isTerminated ? (
+                              <span className="text-[8px] font-mono font-bold px-1 py-0.2 rounded bg-red-950/80 text-red-300 border border-red-500/40">
+                                STOPPED
+                              </span>
+                            ) : (
+                              <span className="text-[8px] font-mono font-bold px-1 py-0.2 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 flex items-center gap-0.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                LIVE
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                    {/* Feed Tile Bottom Controls */}
-                    <div className="flex items-center justify-between px-2.5 py-1.5 bg-[#06101a] border-t border-white/10 text-[11px] font-mono">
-                      <span className="text-slate-400 truncate">{place.name}</span>
-                      <div className="flex items-center gap-1.5">
-                        {isTerminated ? (
+                        {/* Feed Player Viewport */}
+                        <div className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center">
+                          <CoastalVideoPlayer
+                            feedId={feed.id}
+                            src={feed.videoSrc || ''}
+                            modality={feed.modality}
+                            state={feed.state}
+                            isTerminated={isTerminated}
+                            streamType={feed.streamType}
+                            autoPlay={!isTerminated}
+                            muted={true}
+                            loop={true}
+                            showHudOverlay={true}
+                            onResume={() => resumeFeed(feed.id)}
+                            className="w-full h-full"
+                          />
                           <button
-                            onClick={() => resumeFeed(feed.id)}
-                            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
+                            onClick={() => navigate(`/live?feed=${encodeURIComponent(feed.id)}`)}
+                            className="absolute top-1.5 right-1.5 p-1 rounded-md bg-black/60 hover:bg-sky-600 text-white opacity-0 group-hover:opacity-100 transition-all z-20 cursor-pointer"
+                            title="Focus in Live Monitor"
                           >
-                            <Play className="w-2.5 h-2.5 fill-white" />
-                            <span>Resume</span>
+                            <Maximize2 className="w-3 h-3" />
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => terminateFeed(feed.id)}
-                            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 hover:bg-red-500 text-white cursor-pointer"
-                          >
-                            <Square className="w-2.5 h-2.5 fill-white" />
-                            <span>Stop</span>
-                          </button>
-                        )}
+                        </div>
+
+                        {/* Feed Tile Bottom Controls */}
+                        <div className="flex items-center justify-between px-2 py-1 bg-[#06101a] border-t border-white/10 text-[10px] font-mono">
+                          <span className="text-slate-400 truncate max-w-[100px]">{place.name}</span>
+                          <div className="flex items-center gap-1">
+                            {isTerminated ? (
+                              <button
+                                onClick={() => resumeFeed(feed.id)}
+                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
+                              >
+                                <Play className="w-2 h-2 fill-white" />
+                                <span>Resume</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => terminateFeed(feed.id)}
+                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-600 hover:bg-red-500 text-white cursor-pointer"
+                              >
+                                <Square className="w-2 h-2 fill-white" />
+                                <span>Stop</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // No Signal Slot Tile
+                  return (
+                    <div
+                      key={slot.code}
+                      className="rounded-xl border overflow-hidden flex flex-col shadow-md transition-all group bg-[#040c15]"
+                      style={{
+                        borderColor: 'rgba(245, 158, 11, 0.25)',
+                      }}
+                    >
+                      {/* Slot Top Bar */}
+                      <div className="flex items-center justify-between px-2 py-1 bg-[#071320] border-b border-white/10 text-xs">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className="font-mono font-bold text-amber-400/90 text-[11px]">{slot.code}</span>
+                          <span className="font-medium text-slate-400 text-[11px] truncate max-w-[100px]" title={slot.sector}>
+                            {slot.sector}
+                          </span>
+                        </div>
+                        <span className="text-[8px] font-mono font-bold px-1 py-0.2 rounded bg-amber-950/80 text-amber-400 border border-amber-500/30 flex items-center gap-0.5">
+                          <Radio className="w-2 h-2 text-amber-400 animate-pulse" />
+                          NO SIGNAL
+                        </span>
+                      </div>
+
+                      {/* Tactical NO SIGNAL Viewport */}
+                      <div className="relative aspect-video w-full bg-[#02070e] overflow-hidden flex flex-col items-center justify-center p-2 text-center">
+                        <div
+                          className="absolute inset-0 pointer-events-none opacity-20"
+                          style={{
+                            backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 3px)',
+                          }}
+                        />
+                        <Radio className="w-5 h-5 text-amber-500/80 mb-0.5 animate-pulse" />
+                        <span className="font-mono text-[10px] font-extrabold text-amber-400 tracking-wider">
+                          NO SIGNAL
+                        </span>
+                        <span className="text-[8px] font-mono text-slate-500 truncate max-w-[120px]">
+                          Standby · Sensor Offline
+                        </span>
+                      </div>
+
+                      {/* Bottom Info Bar */}
+                      <div className="flex items-center justify-between px-2 py-1 bg-[#030911] border-t border-white/10 text-[9px] font-mono text-slate-500">
+                        <span className="truncate max-w-[100px]">{slot.district}</span>
+                        <button
+                          onClick={() => navigate('/missions')}
+                          className="text-sky-400 hover:text-sky-300 font-bold hover:underline cursor-pointer"
+                        >
+                          + Sortie
+                        </button>
                       </div>
                     </div>
-                  </div>
-                );
-              }))}
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
