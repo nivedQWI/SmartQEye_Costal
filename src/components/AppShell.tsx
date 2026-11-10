@@ -59,12 +59,13 @@ const ALL_ROLES: UserRole[] = ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR']
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: '1. Command Centre',
-    titleMl: 'കമാൻഡ് സെന്റർ',
+    title: '1. Command Operations',
+    titleMl: 'കമാൻഡ് ഓപ്പറേഷൻസ്',
     items: [
       { to: '/',                   label: 'Command Centre',      labelKey: 'nav_command_center', icon: LayoutDashboard, roles: ALL_ROLES },
+      { to: '/missions',           label: 'Mission Control',     labelKey: 'nav_missions',       icon: Anchor,          roles: ALL_ROLES },
+      { to: '/fleet',              label: 'Tactical Fleet Wall', labelKey: 'nav_fleet_wall',     icon: Grid,            roles: ALL_ROLES },
       { to: '/overview',           label: 'Operational Overview',labelKey: 'nav_command_center', icon: Activity,        roles: ALL_ROLES },
-      { to: '/fleet',              label: 'Multi-Feed Fleet Wall',labelKey: 'nav_fleet_wall',    icon: Grid,            roles: ALL_ROLES },
     ]
   },
   {
@@ -93,7 +94,6 @@ const NAV_SECTIONS: NavSection[] = [
     titleMl: 'ജിഐഎസ് & ടെലിമെട്രി',
     items: [
       { to: '/map',                label: 'Coastal Tactical Map',labelKey: 'nav_map',            icon: Map,             roles: ALL_ROLES },
-      { to: '/missions',           label: 'UAV Fleet Missions',  labelKey: 'nav_missions',       icon: Anchor,          roles: ALL_ROLES },
       { to: '/config/zones',       label: 'Zones & Geofences',   labelKey: 'nav_config_zones',   icon: Sliders,         roles: ALL_ROLES },
     ]
   },

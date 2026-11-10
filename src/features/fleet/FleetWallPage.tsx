@@ -1,30 +1,36 @@
 // ============================================================
 // SmartQEye Coastal — Tactical Fleet Wall & Stream Management
 // Unified operational multi-feed overview displaying all ingested
-// RTSP, RTMP, HLS, and MP4 video streams with Operator Termination
+// RTSP, RTMP, HLS, and MP4 video streams with Operator Termination & No Signal handling
 // ============================================================
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Monitor, Plus, Square, Play, Trash2, Filter, Layers, Maximize2,
-  Radio, Video, ShieldAlert, RefreshCw, Eye
+  Radio, Video, ShieldAlert, RefreshCw, Eye, Anchor, ChevronLeft, Link2, AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CoastalVideoPlayer } from '@/components/CoastalVideoPlayer';
 import { AddStreamModal } from '@/components/AddStreamModal';
-import { useFeedStore } from '@/lib/store';
+import { useFeedStore, useMissionStore } from '@/lib/store';
 import { getFeedPlace } from '@/lib/feedLocations';
 import type { Feed, FeedState } from '@/types';
 
 export default function FleetWallPage() {
   const navigate = useNavigate();
-  const { feeds, terminateFeed, resumeFeed, removeFeed, restoreDefaultFeeds } = useFeedStore();
+  const { feeds, terminateFeed, resumeFeed, removeFeed, attachStreamToFeed, restoreDefaultFeeds } = useFeedStore();
+  const { stopMission } = useMissionStore();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [filterModality, setFilterModality] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [gridColumns, setGridColumns] = useState<'auto' | '1' | '2' | '3' | '4'>('auto');
+
+  // Attach Stream to specific feed modal state
+  const [attachFeedTarget, setAttachFeedTarget] = useState<Feed | null>(null);
+  const [attachStreamUrl, setAttachStreamUrl] = useState('');
+  const [attachStreamType, setAttachStreamType] = useState<'RTMP' | 'RTSP' | 'HLS' | 'MP4'>('RTMP');
 
   // Filter feeds based on operator selection
   const filteredFeeds = useMemo(() => {
@@ -32,12 +38,14 @@ export default function FleetWallPage() {
       if (filterModality !== 'ALL' && feed.modality !== filterModality) return false;
       if (filterStatus === 'LIVE' && feed.state !== 'LIVE') return false;
       if (filterStatus === 'TERMINATED' && feed.state !== 'TERMINATED') return false;
+      if (filterStatus === 'NO_SIGNAL' && feed.state !== 'NO_SIGNAL') return false;
       return true;
     });
   }, [feeds, filterModality, filterStatus]);
 
   const activeLiveCount = feeds.filter(f => f.state === 'LIVE').length;
   const terminatedCount = feeds.filter(f => f.state === 'TERMINATED').length;
+  const noSignalCount = feeds.filter(f => f.state === 'NO_SIGNAL' || !f.videoSrc).length;
 
   // Determine grid CSS
   const gridClass = useMemo(() => {
@@ -54,6 +62,14 @@ export default function FleetWallPage() {
     return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
   }, [gridColumns, filteredFeeds.length]);
 
+  function handleAttachStreamSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!attachFeedTarget || !attachStreamUrl.trim()) return;
+    attachStreamToFeed(attachFeedTarget.id, attachStreamUrl.trim(), attachStreamType);
+    setAttachFeedTarget(null);
+    setAttachStreamUrl('');
+  }
+
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* ── Top Header ── */}
@@ -66,12 +82,18 @@ export default function FleetWallPage() {
             <Monitor className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-serif text-lg font-bold text-white">Tactical Fleet Wall</h1>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                {activeLiveCount} ACTIVE
+                {activeLiveCount} LIVE
               </span>
+              {noSignalCount > 0 && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                  <Radio className="w-2.5 h-2.5 text-amber-400" />
+                  {noSignalCount} NO SIGNAL
+                </span>
+              )}
               {terminatedCount > 0 && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1">
                   <Square className="w-2.5 h-2.5 fill-red-400" />
@@ -79,31 +101,40 @@ export default function FleetWallPage() {
                 </span>
               )}
               <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-500/10 border border-slate-500/20 text-slate-300">
-                TOTAL: {feeds.length}
+                TOTAL SORTIES: {feeds.length}
               </span>
             </div>
             <p className="text-xs font-mono opacity-60">
-              Kerala Police Coastal Drone & Camera Ingestion Grid · All Ingested Streams Displayed Simultaneously
+              Active Mission Ingestion Wall · All Ingested RTSP &amp; RTMP Live Feeds Displayed Simultaneously
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {/* Mission Control Navigation Button */}
+          <button
+            onClick={() => navigate('/missions')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 transition-all cursor-pointer"
+          >
+            <Anchor className="w-3.5 h-3.5" />
+            <span>Mission Control</span>
+          </button>
+
           {/* Add Stream Button */}
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>+ Add Video Stream / RTSP</span>
+            <span>+ Ingest RTSP / RTMP</span>
           </button>
 
-          {/* Reset to Default */}
+          {/* Resync Feeds from Active Missions */}
           <button
             onClick={restoreDefaultFeeds}
-            title="Reset to default demonstration fleet"
-            className="p-2 rounded-lg border border-white/10 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            title="Resync feeds from active missions"
+            className="p-2 rounded-lg border border-white/10 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
@@ -122,7 +153,7 @@ export default function FleetWallPage() {
 
           {/* Status Filter */}
           <div className="flex rounded-lg overflow-hidden border border-white/10">
-            {['ALL', 'LIVE', 'TERMINATED'].map(status => (
+            {['ALL', 'LIVE', 'NO_SIGNAL', 'TERMINATED'].map(status => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
@@ -131,7 +162,7 @@ export default function FleetWallPage() {
                   filterStatus === status ? 'bg-sky-600 text-white font-bold' : 'bg-black/30 opacity-70 hover:opacity-100'
                 )}
               >
-                {status}
+                {status.replace('_', ' ')}
               </button>
             ))}
           </div>
@@ -185,24 +216,36 @@ export default function FleetWallPage() {
       <div className="flex-1 overflow-y-auto p-4">
         {filteredFeeds.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-            <Video className="w-12 h-12 text-slate-500 mb-3 opacity-50" />
-            <h3 className="font-serif text-base font-bold text-slate-300">No Video Feeds Ingested</h3>
-            <p className="text-xs font-mono text-slate-500 max-w-sm mt-1 mb-4">
-              Click below to provide an RTSP link, RTMP URL, or MP4 video to start streaming live.
+            <div className="p-4 rounded-3xl bg-sky-500/10 border border-sky-500/20 text-sky-400 mb-3">
+              <Video className="w-12 h-12 opacity-80" />
+            </div>
+            <h3 className="font-serif text-lg font-bold text-slate-200">No Active Mission Feeds Ingested</h3>
+            <p className="text-xs font-mono text-slate-400 max-w-md mt-1 mb-5 leading-relaxed">
+              Feeds appear on the Fleet Wall exclusively when UAV surveillance missions are deployed in Mission Control. You can also ingest standalone RTSP or RTMP streams directly.
             </p>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold shadow-md cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add First Video Stream</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/missions')}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold shadow-lg transition-all active:scale-95 cursor-pointer"
+              >
+                <Anchor className="w-4 h-4" />
+                <span>Go to Mission Control &amp; Deploy Sortie</span>
+              </button>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 border border-white/10 font-mono text-xs font-bold transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Ingest Standalone Stream</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className={cn('grid gap-4', gridClass)}>
             {filteredFeeds.map(feed => {
               const place = getFeedPlace(feed);
               const isTerminated = feed.state === 'TERMINATED' || feed.isTerminated;
+              const isNoSignal = feed.state === 'NO_SIGNAL' || !feed.videoSrc || feed.videoSrc.trim() === '';
 
               return (
                 <div
@@ -210,7 +253,11 @@ export default function FleetWallPage() {
                   className="rounded-2xl border overflow-hidden flex flex-col transition-all shadow-md group hover:border-sky-500/50"
                   style={{
                     background: '#040d16',
-                    borderColor: isTerminated ? 'rgba(239, 68, 68, 0.4)' : 'rgba(56, 189, 248, 0.25)',
+                    borderColor: isTerminated
+                      ? 'rgba(239, 68, 68, 0.4)'
+                      : isNoSignal
+                      ? 'rgba(245, 158, 11, 0.35)'
+                      : 'rgba(56, 189, 248, 0.25)',
                   }}
                 >
                   {/* Tile Header Bar */}
@@ -222,7 +269,7 @@ export default function FleetWallPage() {
                       <span className="font-mono font-bold text-sky-400 text-xs">
                         {feed.uavCode}
                       </span>
-                      <span className="font-medium text-slate-200 text-xs truncate max-w-[130px]">
+                      <span className="font-medium text-slate-200 text-xs truncate max-w-[130px]" title={feed.label}>
                         {feed.label}
                       </span>
                     </div>
@@ -233,6 +280,11 @@ export default function FleetWallPage() {
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-red-950/80 text-red-300 border border-red-500/40">
                           TERMINATED
                         </span>
+                      ) : isNoSignal ? (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                          <Radio className="w-2.5 h-2.5 text-amber-400" />
+                          NO SIGNAL
+                        </span>
                       ) : (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -242,26 +294,65 @@ export default function FleetWallPage() {
 
                       {/* Protocol Badge */}
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-sky-950/80 text-sky-300 border border-sky-500/30">
-                        {feed.streamType || (feed.videoSrc?.includes('.m3u8') ? 'HLS' : 'MP4')}
+                        {feed.streamType || (feed.videoSrc?.includes('.m3u8') ? 'HLS' : isNoSignal ? 'OFFLINE' : 'MP4')}
                       </span>
                     </div>
                   </div>
 
                   {/* Video Viewport Container */}
                   <div className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center">
-                    <CoastalVideoPlayer
-                      src={feed.videoSrc || '/videos/RGB_1.mp4'}
-                      modality={feed.modality}
-                      state={feed.state}
-                      isTerminated={isTerminated}
-                      streamType={feed.streamType}
-                      autoPlay={!isTerminated}
-                      muted={true}
-                      loop={true}
-                      showHudOverlay={true}
-                      onResume={() => resumeFeed(feed.id)}
-                      className="w-full h-full"
-                    />
+                    {isNoSignal ? (
+                      /* ── Dedicated Tactical NO SIGNAL Display ── */
+                      <div className="absolute inset-0 bg-[#060e17] flex flex-col items-center justify-center p-4 text-center z-10 overflow-hidden">
+                        {/* Scanlines */}
+                        <div
+                          className="absolute inset-0 pointer-events-none opacity-20"
+                          style={{
+                            backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 3px)',
+                          }}
+                        />
+                        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-2 relative">
+                          <Radio className="w-6 h-6 animate-pulse text-amber-400" />
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                        </div>
+                        <div className="font-mono text-xs font-extrabold text-amber-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse" />
+                          NO SIGNAL
+                        </div>
+                        <p className="text-[10px] font-mono text-slate-400 max-w-[210px] leading-relaxed mb-3">
+                          Sensor carrier offline · No RTSP/RTMP stream attached
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAttachFeedTarget(feed);
+                            setAttachStreamUrl('');
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-sky-600 hover:bg-sky-500 text-white cursor-pointer shadow-md transition-all active:scale-95 z-20"
+                        >
+                          <Link2 className="w-3.5 h-3.5" />
+                          <span>Attach Stream Link</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <CoastalVideoPlayer
+                        src={feed.videoSrc || ''}
+                        modality={feed.modality}
+                        state={feed.state}
+                        isTerminated={isTerminated}
+                        streamType={feed.streamType}
+                        autoPlay={!isTerminated}
+                        muted={true}
+                        loop={true}
+                        showHudOverlay={true}
+                        onResume={() => resumeFeed(feed.id)}
+                        onAttachStream={() => {
+                          setAttachFeedTarget(feed);
+                          setAttachStreamUrl('');
+                        }}
+                        className="w-full h-full"
+                      />
+                    )}
 
                     {/* Quick Focus Button in top corner */}
                     <button
@@ -281,9 +372,9 @@ export default function FleetWallPage() {
                     <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 truncate">
                       <span>{place.name}</span>
                       <span className="opacity-40">·</span>
-                      <span className="text-slate-300 font-semibold">{feed.resolution || '1080p'}</span>
+                      <span className="text-slate-300 font-semibold">{isNoSignal ? 'N/A' : (feed.resolution || '1080p')}</span>
                       <span className="opacity-40">·</span>
-                      <span>≈{feed.latencyMs || 45}ms</span>
+                      <span>{isNoSignal ? '--' : `≈${feed.latencyMs || 45}ms`}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -297,27 +388,43 @@ export default function FleetWallPage() {
                           <Play className="w-3 h-3 fill-white" />
                           <span>Resume</span>
                         </button>
-                      ) : (
+                      ) : !isNoSignal ? (
                         <button
                           onClick={() => terminateFeed(feed.id)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-red-600/90 hover:bg-red-500 text-white cursor-pointer transition-colors shadow-xs active:scale-95"
-                          title="Terminate video stream"
+                          title="Terminate this video stream"
                         >
                           <Square className="w-3 h-3 fill-white" />
                           <span>Stop Stream</span>
                         </button>
-                      )}
+                      ) : null}
 
-                      {/* Remove custom feed button */}
-                      {feed.id.startsWith('feed-custom-') && (
+                      {/* Attach Link if No Signal */}
+                      {isNoSignal && (
                         <button
-                          onClick={() => removeFeed(feed.id)}
-                          className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
-                          title="Delete this stream"
+                          onClick={() => {
+                            setAttachFeedTarget(feed);
+                            setAttachStreamUrl('');
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-sky-600 hover:bg-sky-500 text-white cursor-pointer transition-colors shadow-xs"
+                          title="Attach stream link to this feed"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Link2 className="w-3 h-3" />
+                          <span>Attach</span>
                         </button>
                       )}
+
+                      {/* End Mission Button */}
+                      <button
+                        onClick={() => {
+                          stopMission(feed.id);
+                          removeFeed(feed.id);
+                        }}
+                        className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+                        title="End this mission sortie"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -327,7 +434,95 @@ export default function FleetWallPage() {
         )}
       </div>
 
-      {/* Ingestion Modal */}
+      {/* ── Attach Stream Modal for NO SIGNAL tile ── */}
+      {attachFeedTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in">
+          <div
+            className="w-full max-w-md rounded-2xl border p-5 shadow-2xl flex flex-col gap-4 text-xs font-mono"
+            style={{ background: '#091828', borderColor: 'rgba(56, 189, 248, 0.3)' }}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-sky-400" />
+                <h3 className="font-serif text-sm font-bold text-white">
+                  Attach Stream to {attachFeedTarget.uavCode}
+                </h3>
+              </div>
+              <button
+                onClick={() => setAttachFeedTarget(null)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAttachStreamSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[11px] text-slate-300 font-bold mb-1">
+                  Stream Protocol
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(['RTMP', 'RTSP', 'HLS', 'MP4'] as const).map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setAttachStreamType(p)}
+                      className={cn(
+                        'py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer',
+                        attachStreamType === p
+                          ? 'bg-sky-600 text-white border-sky-500'
+                          : 'bg-black/40 border-white/10 text-slate-300 hover:border-white/30'
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-300 font-bold mb-1">
+                  Endpoint URL
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={attachStreamUrl}
+                  onChange={e => setAttachStreamUrl(e.target.value)}
+                  placeholder={
+                    attachStreamType === 'RTMP'
+                      ? 'rtmp://127.0.0.1:1935/live/uav01'
+                      : attachStreamType === 'RTSP'
+                      ? 'rtsp://user:pass@camera.coastal.gov.in:554/live'
+                      : attachStreamType === 'HLS'
+                      ? 'https://stream.coastal.gov.in/live/stream.m3u8'
+                      : 'https://domain.com/video.mp4'
+                  }
+                  className="w-full px-3 py-2 rounded-xl border border-white/20 bg-black/40 text-white outline-none focus:border-sky-500 font-mono text-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setAttachFeedTarget(null)}
+                  className="px-3.5 py-1.5 rounded-lg border border-white/10 hover:bg-white/10 text-slate-300 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold cursor-pointer shadow-md"
+                >
+                  Attach &amp; Start Streaming
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Global Ingestion Modal */}
       <AddStreamModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}

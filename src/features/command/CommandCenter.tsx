@@ -145,7 +145,7 @@ function LayerToggles() {
 export default function CommandCenter() {
   const navigate = useNavigate();
   const { feeds, terminateFeed, resumeFeed } = useFeedStore();
-  const { missions, activeMissionId } = useMissionStore();
+  const { missions, activeMissionId, activeMissions } = useMissionStore();
 
   const [viewMode, setViewMode] = useState<'COMBINED' | 'MAP_ONLY' | 'WALL_ONLY'>('COMBINED');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -236,7 +236,7 @@ export default function CommandCenter() {
         </div>
 
         <div className="rounded-xl p-2.5 bg-[#091724] border border-white/10 flex flex-col items-center justify-center text-center">
-          <div className="font-mono font-extrabold text-lg text-amber-400">04</div>
+          <div className="font-mono font-extrabold text-lg text-amber-400">{String(activeMissions.length).padStart(2, '0')}</div>
           <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Active Missions</div>
         </div>
 
@@ -317,7 +317,22 @@ export default function CommandCenter() {
 
             {/* Feeds Scroll Area */}
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {feeds.map(feed => {
+              {feeds.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+                  <Video className="w-10 h-10 text-sky-400/40 mb-2" />
+                  <p className="font-semibold text-slate-300 text-xs">No Active Video Feeds</p>
+                  <p className="text-[11px] font-mono text-slate-500 max-w-[220px] mt-1 mb-3">
+                    Deploy sorties in Mission Control to stream live feeds to the command wall.
+                  </p>
+                  <button
+                    onClick={() => navigate('/missions')}
+                    className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold cursor-pointer"
+                  >
+                    + Deploy Sortie in Mission Control
+                  </button>
+                </div>
+              ) : (
+                feeds.map(feed => {
                 const place = getFeedPlace(feed);
                 const isTerminated = feed.state === 'TERMINATED' || feed.isTerminated;
 
@@ -356,7 +371,7 @@ export default function CommandCenter() {
                     {/* Feed Player */}
                     <div className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center">
                       <CoastalVideoPlayer
-                        src={feed.videoSrc || '/videos/RGB_1.mp4'}
+                        src={feed.videoSrc || ''}
                         modality={feed.modality}
                         state={feed.state}
                         isTerminated={isTerminated}
@@ -404,7 +419,7 @@ export default function CommandCenter() {
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
           </div>
         )}

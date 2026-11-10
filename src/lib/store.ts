@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Alert, Feed, TelemetrySample, SystemHealth, User, UserRole, Mission, Permission } from '@/types';
+import type { Alert, Feed, TelemetrySample, SystemHealth, User, UserRole, Mission, Permission, MissionSortie, VideoSourceType } from '@/types';
 import { ALERTS, INITIAL_FEEDS, INITIAL_HEALTH, MISSIONS } from '@/lib/mockData';
 import { authApi } from '@/lib/api';
 import { DEFAULT_ROLE_PERMISSIONS, hasPermission as checkPermission } from '@/lib/permissions';
@@ -231,6 +231,8 @@ interface FeedState {
   gridLayout: 1 | 4 | 9 | 16;
   modalityOverride: Record<string, 'RGB' | 'THERMAL' | 'SPLIT'>;
   addFeed: (input: AddFeedInput) => void;
+  syncMissionFeed: (sortie: MissionSortie) => void;
+  attachStreamToFeed: (feedId: string, url: string, streamType?: 'RTSP' | 'RTMP' | 'HLS' | 'MP4') => void;
   terminateFeed: (id: string) => void;
   resumeFeed: (id: string) => void;
   removeFeed: (id: string) => void;
@@ -254,15 +256,17 @@ function detectStreamType(url: string): 'RTSP' | 'RTMP' | 'HLS' | 'MP4' {
 export const useFeedStore = create<FeedState>()(
   persist(
     (set, get) => ({
-      feeds: INITIAL_FEEDS,
+      // ONLY mission-ingested feeds are shown (no hardcoded folder video feeds)
+      feeds: [],
       telemetry: {},
-      pinnedFeedIds: INITIAL_FEEDS.filter(f => f.isPinned).map(f => f.id),
-      activeFeedId: 'f-01',
+      pinnedFeedIds: [],
+      activeFeedId: null,
       gridLayout: 4,
       modalityOverride: {},
 
       addFeed: (input) => {
-        const type = input.streamType || detectStreamType(input.videoSrc);
+        const hasSrc = Boolean(input.videoSrc && input.videoSrc.trim());
+        const type = input.streamType || (hasSrc ? detectStreamType(input.videoSrc) : 'RTMP');
         const newId = `feed-custom-${Date.now()}`;
         const uav = input.uavCode || `UAV-${String(get().feeds.length + 1).padStart(2, '0')}`;
         const newFeed: Feed = {
@@ -271,21 +275,80 @@ export const useFeedStore = create<FeedState>()(
           missionCode: input.missionCode || 'M-2026-LIVE',
           label: input.label || `${uav} Live Feed`,
           modality: input.modality || 'RGB',
-          state: 'LIVE',
-          streamUrl: input.videoSrc,
-          videoSrc: input.videoSrc,
-          streamType: type,
+          state: hasSrc ? 'LIVE' : 'NO_SIGNAL',
+          streamUrl: hasSrc ? input.videoSrc : undefined,
+          videoSrc: hasSrc ? input.videoSrc : '',
+          streamType: hasSrc ? type : undefined,
           isTerminated: false,
-          latencyMs: type === 'RTSP' || type === 'RTMP' ? 140 : 45,
-          fpsCurrent: 30,
+          latencyMs: hasSrc ? (type === 'RTSP' || type === 'RTMP' ? 140 : 45) : undefined,
+          fpsCurrent: hasSrc ? 30 : 0,
           fpsTarget: 30,
-          bitrateMbps: 4.5,
-          resolution: '1920x1080',
-          lastFrameAt: new Date().toISOString(),
+          bitrateMbps: hasSrc ? 4.5 : 0,
+          resolution: hasSrc ? '1920x1080' : 'N/A',
+          lastFrameAt: hasSrc ? new Date().toISOString() : undefined,
         };
         set(state => ({
           feeds: [newFeed, ...state.feeds],
           activeFeedId: newId,
+        }));
+      },
+
+      syncMissionFeed: (sortie) => {
+        const hasStream = Boolean(sortie.videoSourceUrl && sortie.videoSourceUrl.trim());
+        const type = sortie.videoSourceType === 'UPLOAD' ? 'MP4' : (sortie.videoSourceType as 'RTSP' | 'RTMP' | 'HLS' | 'MP4');
+        const feedId = sortie.id;
+
+        const newFeed: Feed = {
+          id: feedId,
+          uavCode: sortie.droneCode,
+          missionCode: sortie.missionId,
+          label: sortie.name,
+          modality: 'RGB',
+          state: hasStream ? 'LIVE' : 'NO_SIGNAL',
+          streamUrl: hasStream ? sortie.videoSourceUrl : undefined,
+          videoSrc: hasStream ? sortie.videoSourceUrl : '',
+          streamType: hasStream ? type : undefined,
+          isTerminated: false,
+          latencyMs: hasStream ? (type === 'RTSP' || type === 'RTMP' ? 140 : 45) : undefined,
+          fpsCurrent: hasStream ? 30 : 0,
+          fpsTarget: 30,
+          bitrateMbps: hasStream ? 4.5 : 0,
+          resolution: hasStream ? '1920x1080' : 'N/A',
+          lastFrameAt: hasStream ? new Date().toISOString() : undefined,
+        };
+
+        set(state => {
+          const exists = state.feeds.some(f => f.id === feedId);
+          const nextFeeds = exists
+            ? state.feeds.map(f => (f.id === feedId ? { ...f, ...newFeed } : f))
+            : [newFeed, ...state.feeds];
+          return {
+            feeds: nextFeeds,
+            activeFeedId: state.activeFeedId ?? feedId,
+          };
+        });
+      },
+
+      attachStreamToFeed: (feedId, url, streamType) => {
+        const type = streamType || detectStreamType(url);
+        set(state => ({
+          feeds: state.feeds.map(f => {
+            if (f.id !== feedId) return f;
+            return {
+              ...f,
+              videoSrc: url,
+              streamUrl: url,
+              streamType: type,
+              state: 'LIVE',
+              isTerminated: false,
+              latencyMs: type === 'RTSP' || type === 'RTMP' ? 140 : 45,
+              fpsCurrent: 30,
+              fpsTarget: 30,
+              bitrateMbps: 4.5,
+              resolution: '1920x1080',
+              lastFrameAt: new Date().toISOString(),
+            };
+          }),
         }));
       },
 
@@ -299,24 +362,48 @@ export const useFeedStore = create<FeedState>()(
       resumeFeed: (id) =>
         set(state => ({
           feeds: state.feeds.map(f =>
-            f.id === id ? { ...f, state: 'LIVE', isTerminated: false } : f
+            f.id === id ? { ...f, state: f.videoSrc ? 'LIVE' : 'NO_SIGNAL', isTerminated: false } : f
           ),
         })),
 
       removeFeed: (id) =>
         set(state => ({
           feeds: state.feeds.filter(f => f.id !== id),
-          activeFeedId: state.activeFeedId === id ? (state.feeds[0]?.id ?? null) : state.activeFeedId,
+          activeFeedId: state.activeFeedId === id ? (state.feeds.filter(f => f.id !== id)[0]?.id ?? null) : state.activeFeedId,
         })),
 
-      restoreDefaultFeeds: () =>
+      restoreDefaultFeeds: () => {
+        // Sync purely from active missions (no folder feeds)
+        const activeSorties = useMissionStore.getState().activeMissions;
+        const missionFeeds: Feed[] = activeSorties.map(s => {
+          const hasStream = Boolean(s.videoSourceUrl && s.videoSourceUrl.trim());
+          const type = s.videoSourceType === 'UPLOAD' ? 'MP4' : (s.videoSourceType as 'RTSP' | 'RTMP' | 'HLS' | 'MP4');
+          return {
+            id: s.id,
+            uavCode: s.droneCode,
+            missionCode: s.missionId,
+            label: s.name,
+            modality: 'RGB',
+            state: hasStream ? 'LIVE' : 'NO_SIGNAL',
+            streamUrl: hasStream ? s.videoSourceUrl : undefined,
+            videoSrc: hasStream ? s.videoSourceUrl : '',
+            streamType: hasStream ? type : undefined,
+            isTerminated: false,
+            fpsCurrent: hasStream ? 30 : 0,
+            fpsTarget: 30,
+            bitrateMbps: hasStream ? 4.5 : 0,
+            resolution: hasStream ? '1920x1080' : 'N/A',
+            lastFrameAt: hasStream ? new Date().toISOString() : undefined,
+          };
+        });
         set({
-          feeds: INITIAL_FEEDS,
-          activeFeedId: 'f-01',
-        }),
+          feeds: missionFeeds,
+          activeFeedId: missionFeeds[0]?.id ?? null,
+        });
+      },
 
       updateFeed: (feed) =>
-        set(state => ({ feeds: state.feeds.map(f => f.id === feed.id ? feed : f) })),
+        set(state => ({ feeds: state.feeds.map(f => (f.id === feed.id ? feed : f)) })),
 
       updateTelemetry: (sample) =>
         set(state => ({ telemetry: { ...state.telemetry, [sample.feedId]: sample } })),
@@ -335,7 +422,7 @@ export const useFeedStore = create<FeedState>()(
         set(state => ({ modalityOverride: { ...state.modalityOverride, [feedId]: modality } })),
     }),
     {
-      name: 'sqeye-feeds-v2',
+      name: 'sqeye-mission-feeds-v3',
       partialize: (state) => ({
         feeds: state.feeds,
         pinnedFeedIds: state.pinnedFeedIds,
@@ -396,14 +483,125 @@ export const useHealthStore = create<HealthState>((set) => ({
 interface MissionState {
   missions: Mission[];
   activeMissionId: string | null;
+  activeMissions: MissionSortie[];
+  historyMissions: MissionSortie[];
   setActiveMission: (id: string | null) => void;
+  startMission: (sortie: MissionSortie) => void;
+  stopMission: (id: string) => void;
+  attachStreamToMission: (id: string, url: string, type?: VideoSourceType) => void;
+  deleteHistoryMission: (id: string) => void;
 }
 
-export const useMissionStore = create<MissionState>((set) => ({
-  missions: MISSIONS,
-  activeMissionId: 'm-01',
-  setActiveMission: (id) => set({ activeMissionId: id }),
-}));
+export const useMissionStore = create<MissionState>()(
+  persist(
+    (set, get) => ({
+      missions: MISSIONS,
+      activeMissionId: 'm-01',
+      activeMissions: [],
+      historyMissions: [
+        {
+          id: 'msn-h-1',
+          missionId: 'MSN-20261012-1430-00-BRAVO',
+          name: 'Kovalam Tourist Beach Perimeter Scan',
+          droneId: 'uav-02',
+          droneCode: 'UAV-02',
+          squadron: 'BRAVO',
+          videoSourceType: 'RTSP',
+          pilotName: 'SI Manesh V.',
+          location: 'Kovalam Light House Beach',
+          status: 'COMPLETED',
+          serverIngestion: true,
+          cognitiveBypass: false,
+          startedAt: new Date(Date.now() - 22 * 3600 * 1000).toISOString(),
+          endedAt: new Date(Date.now() - 21 * 3600 * 1000).toISOString(),
+          durationMin: 58,
+        },
+        {
+          id: 'msn-h-2',
+          missionId: 'MSN-20261012-0915-00-ALPHA',
+          name: 'Poovar Estuary Joint Maritime Patrol',
+          droneId: 'uav-03',
+          droneCode: 'UAV-03',
+          squadron: 'ALPHA',
+          videoSourceType: 'RTMP',
+          pilotName: 'ASI Pradeep K.',
+          location: 'Poovar Golden Sand Estuary',
+          status: 'COMPLETED',
+          serverIngestion: true,
+          cognitiveBypass: false,
+          startedAt: new Date(Date.now() - 28 * 3600 * 1000).toISOString(),
+          endedAt: new Date(Date.now() - 27 * 3600 * 1000).toISOString(),
+          durationMin: 74,
+        },
+        {
+          id: 'msn-h-3',
+          missionId: 'MSN-20261011-1820-00-CHARLIE',
+          name: 'Vizhinjam International Terminal Basin Night Patrol',
+          droneId: 'uav-04',
+          droneCode: 'UAV-04',
+          squadron: 'CHARLIE',
+          videoSourceType: 'UPLOAD',
+          srtFileName: 'DJI_0442_Vizhinjam.srt',
+          pilotName: 'SI Ramesh Kumar',
+          location: 'Vizhinjam Terminal Breakwater',
+          status: 'COMPLETED',
+          serverIngestion: true,
+          cognitiveBypass: true,
+          startedAt: new Date(Date.now() - 44 * 3600 * 1000).toISOString(),
+          endedAt: new Date(Date.now() - 43 * 3600 * 1000).toISOString(),
+          durationMin: 62,
+        },
+      ],
+
+      setActiveMission: (id) => set({ activeMissionId: id }),
+
+      startMission: (sortie) => {
+        set(state => ({
+          activeMissions: [sortie, ...state.activeMissions],
+        }));
+        // Sync feed into useFeedStore
+        useFeedStore.getState().syncMissionFeed(sortie);
+      },
+
+      stopMission: (id) => {
+        const mission = get().activeMissions.find(m => m.id === id);
+        if (!mission) return;
+        const completed: MissionSortie = {
+          ...mission,
+          status: 'COMPLETED',
+          endedAt: new Date().toISOString(),
+        };
+        set(state => ({
+          activeMissions: state.activeMissions.filter(m => m.id !== id),
+          historyMissions: [completed, ...state.historyMissions],
+        }));
+        // Remove from active feeds
+        useFeedStore.getState().removeFeed(id);
+      },
+
+      attachStreamToMission: (id, url, type = 'RTMP') => {
+        set(state => ({
+          activeMissions: state.activeMissions.map(m =>
+            m.id === id ? { ...m, videoSourceUrl: url, videoSourceType: type } : m
+          ),
+        }));
+        useFeedStore.getState().attachStreamToFeed(id, url, type === 'UPLOAD' ? 'MP4' : (type as any));
+      },
+
+      deleteHistoryMission: (id) =>
+        set(state => ({
+          historyMissions: state.historyMissions.filter(m => m.id !== id),
+        })),
+    }),
+    {
+      name: 'sqeye-missions-v3',
+      partialize: (state) => ({
+        activeMissions: state.activeMissions,
+        historyMissions: state.historyMissions,
+      }),
+    }
+  )
+);
 
 // ─── Training Mode & Guided Tours (RFP §13; proposal 5.1.35) ───
 

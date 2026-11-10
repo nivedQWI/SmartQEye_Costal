@@ -1,16 +1,18 @@
 // ============================================================
 // SmartQEye Coastal — Mission Control Page (/missions)
-// Standardized Drone Mission Management & Video Ingestion
+// Multi-Mission Concurrent UAV Deployment & Real-Time Stream Ingestion
 // ============================================================
 
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Anchor, Play, Square, RefreshCw, Upload, Video,
-  Radio, Shield, Trash2, Clock, AlertCircle, FileText
+  Radio, Shield, Trash2, Clock, AlertCircle, FileText,
+  Grid, ExternalLink, CheckCircle2, ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, useMissionStore, useFeedStore } from '@/lib/store';
 import { can } from '@/lib/roleConfig';
 import type { MissionSortie, Squadron, VideoSourceType } from '@/types';
 
@@ -26,8 +28,21 @@ function generateMissionId(squadron: Squadron): string {
 }
 
 export default function MissionsPage() {
+  const navigate = useNavigate();
   const { user, devRole } = useAuthStore();
   const activeRole = user?.role ?? devRole ?? 'OPERATOR';
+
+  // Global Multi-Mission Store
+  const {
+    activeMissions,
+    historyMissions,
+    startMission,
+    stopMission,
+    deleteHistoryMission,
+  } = useMissionStore();
+
+  const { feeds } = useFeedStore();
+
   const [squadron, setSquadron] = useState<Squadron>('ALPHA');
   const [missionName, setMissionName] = useState('');
   const [missionId, setMissionId] = useState(generateMissionId('ALPHA'));
@@ -36,12 +51,14 @@ export default function MissionsPage() {
   const [videoSourceUrl, setVideoSourceUrl] = useState('');
   const [stagedVideoFile, setStagedVideoFile] = useState<string | null>(null);
   const [stagedVideoUrl, setStagedVideoUrl] = useState<string | null>(null);
-  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
-  const [activeVideoTitle, setActiveVideoTitle] = useState<string | null>(null);
-  const [videoError, setVideoError] = useState<string | null>(null);
   const [srtFile, setSrtFile] = useState<string | null>(null);
   const [pilotName, setPilotName] = useState('');
   const [location, setLocation] = useState('');
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  // Selected preview mission from active missions
+  const [selectedPreviewMissionId, setSelectedPreviewMissionId] = useState<string | null>(null);
+  const previewMission = activeMissions.find(m => m.id === selectedPreviewMissionId) ?? activeMissions[0] ?? null;
 
   // Refs for video management and safe object URL lifecycle
   const objectUrlRef = useRef<string | null>(null);
@@ -52,66 +69,7 @@ export default function MissionsPage() {
   const [serverIngestion, setServerIngestion] = useState(true);
   const [cognitiveBypass, setCognitiveBypass] = useState(false);
 
-  // Active mission state (blank initially, user enters details and starts mission)
-  const [activeMission, setActiveMission] = useState<MissionSortie | null>(null);
-
-  // Historical Missions
-  const [historyMissions, setHistoryMissions] = useState<MissionSortie[]>([
-    {
-      id: 'msn-h-1',
-      missionId: 'MSN-20261012-1430-00-BRAVO',
-      name: 'Kovalam Tourist Beach Perimeter Scan',
-      droneId: UAVS[1].id,
-      droneCode: UAVS[1].droneCode,
-      squadron: 'BRAVO',
-      videoSourceType: 'RTSP',
-      pilotName: 'SI Manesh V.',
-      location: 'Kovalam Light House Beach',
-      status: 'COMPLETED',
-      serverIngestion: true,
-      cognitiveBypass: false,
-      startedAt: new Date(Date.now() - 22 * 3600 * 1000).toISOString(),
-      endedAt: new Date(Date.now() - 21 * 3600 * 1000).toISOString(),
-      durationMin: 58,
-    },
-    {
-      id: 'msn-h-2',
-      missionId: 'MSN-20261012-0915-00-ALPHA',
-      name: 'Poovar Estuary Joint Maritime Patrol',
-      droneId: UAVS[2].id,
-      droneCode: UAVS[2].droneCode,
-      squadron: 'ALPHA',
-      videoSourceType: 'RTMP',
-      pilotName: 'ASI Pradeep K.',
-      location: 'Poovar Golden Sand Estuary',
-      status: 'COMPLETED',
-      serverIngestion: true,
-      cognitiveBypass: false,
-      startedAt: new Date(Date.now() - 28 * 3600 * 1000).toISOString(),
-      endedAt: new Date(Date.now() - 27 * 3600 * 1000).toISOString(),
-      durationMin: 74,
-    },
-    {
-      id: 'msn-h-3',
-      missionId: 'MSN-20261011-1820-00-CHARLIE',
-      name: 'Vizhinjam International Terminal Basin Night Patrol',
-      droneId: UAVS[3].id,
-      droneCode: UAVS[3].droneCode,
-      squadron: 'CHARLIE',
-      videoSourceType: 'UPLOAD',
-      srtFileName: 'DJI_0442_Vizhinjam.srt',
-      pilotName: 'SI Ramesh Kumar',
-      location: 'Vizhinjam Terminal Breakwater',
-      status: 'COMPLETED',
-      serverIngestion: true,
-      cognitiveBypass: true,
-      startedAt: new Date(Date.now() - 44 * 3600 * 1000).toISOString(),
-      endedAt: new Date(Date.now() - 43 * 3600 * 1000).toISOString(),
-      durationMin: 62,
-    },
-  ]);
-
-  // Video file selected in the New Mission form (staged until Start Mission is clicked)
+  // Video file selected in the New Mission form
   function handleFormFileSelect(file: File) {
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
@@ -120,7 +78,6 @@ export default function MissionsPage() {
     objectUrlRef.current = url;
     setStagedVideoFile(file.name);
     setStagedVideoUrl(url);
-    setVideoError(null);
   }
 
   function handleClearFormVideo() {
@@ -130,11 +87,10 @@ export default function MissionsPage() {
     }
     setStagedVideoFile(null);
     setStagedVideoUrl(null);
-    setVideoError(null);
     if (formFileInputRef.current) formFileInputRef.current.value = '';
   }
 
-  // Only revoke object URL on actual component unmount
+  // Cleanup object URL on unmount
   useEffect(() => {
     return () => {
       if (objectUrlRef.current) {
@@ -156,15 +112,20 @@ export default function MissionsPage() {
   function handleStartMission(e: React.FormEvent) {
     e.preventDefault();
     const drone = UAVS.find(u => u.id === selectedDroneId) ?? UAVS[0];
-    const newMission: MissionSortie = {
+
+    const resolvedVideoUrl = videoSourceType === 'UPLOAD'
+      ? (stagedVideoUrl || stagedVideoFile || undefined)
+      : (videoSourceUrl.trim() || undefined);
+
+    const newSortie: MissionSortie = {
       id: `msn-${Date.now()}`,
       missionId,
-      name: missionName.trim() || 'Coastal Surveillance Mission',
+      name: missionName.trim() || `${drone.droneCode} Coastal Surveillance Sortie`,
       droneId: drone.id,
       droneCode: drone.droneCode,
       squadron,
       videoSourceType,
-      videoSourceUrl: videoSourceType === 'UPLOAD' ? (stagedVideoFile ?? undefined) : videoSourceUrl,
+      videoSourceUrl: resolvedVideoUrl,
       srtFileName: srtFile ?? undefined,
       pilotName: pilotName.trim() || 'Officer In-Charge',
       location: location.trim() || 'Kerala Coastal Sector',
@@ -177,38 +138,21 @@ export default function MissionsPage() {
       startedAt: new Date().toISOString(),
       durationMin: 1,
     };
-    setActiveMission(newMission);
 
-    // Only start playing the video when Start Mission is clicked
-    if (videoSourceType === 'UPLOAD' && stagedVideoUrl) {
-      setActiveVideoUrl(stagedVideoUrl);
-      setActiveVideoTitle(stagedVideoFile);
-      setVideoError(null);
-    } else {
-      setActiveVideoUrl(null);
-      setActiveVideoTitle(null);
-      setVideoError(null);
-    }
+    startMission(newSortie);
+    setSelectedPreviewMissionId(newSortie.id);
 
+    // Show temporary confirmation
+    setSuccessToast(`Mission ${newSortie.missionId} successfully deployed! Video feed active on Fleet Wall.`);
+    setTimeout(() => setSuccessToast(null), 6000);
+
+    // Reset form for next mission
+    setMissionName('');
+    setVideoSourceUrl('');
+    setStagedVideoFile(null);
+    setStagedVideoUrl(null);
+    if (formFileInputRef.current) formFileInputRef.current.value = '';
     handleRegenerateId();
-  }
-
-  function handleStopMission() {
-    if (!activeMission) return;
-    const completed: MissionSortie = {
-      ...activeMission,
-      status: 'COMPLETED',
-      endedAt: new Date().toISOString(),
-    };
-    setHistoryMissions([completed, ...historyMissions]);
-    setActiveMission(null);
-    setActiveVideoUrl(null);
-    setActiveVideoTitle(null);
-    setVideoError(null);
-  }
-
-  function handleDeleteMission(id: string) {
-    setHistoryMissions(historyMissions.filter(s => s.id !== id));
   }
 
   const selectedDrone = UAVS.find(u => u.id === selectedDroneId) ?? UAVS[0];
@@ -218,82 +162,176 @@ export default function MissionsPage() {
       {/* ── Page Header ── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>
-            Mission Control
-          </h1>
-          <p className="text-xs opacity-70" style={{ color: 'var(--text-muted)' }}>
-            Start and terminate drone surveillance missions, configure ingestion, and manage mission flight logs
+          <div className="flex items-center gap-2">
+            <Anchor className="w-5 h-5 text-sky-500" />
+            <h1 className="font-serif text-2xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>
+              Mission Control &amp; Deployment
+            </h1>
+          </div>
+          <p className="text-xs opacity-70 mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            Deploy concurrent drone surveillance sorties · Ingest RTMP, RTSP &amp; MP4 video feeds directly to Tactical Fleet Wall
           </p>
         </div>
+
+        {/* Fleet Wall Shortcut Link */}
+        <button
+          onClick={() => navigate('/fleet')}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-md transition-all active:scale-95 cursor-pointer"
+        >
+          <Grid className="w-4 h-4" />
+          <span>Go to Fleet Wall ({feeds.length} Streams Active)</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
-      {/* ══════════════════════════════════════════════════
-          TOP: ACTIVE MISSION STATUS BANNER
-         ══════════════════════════════════════════════════ */}
-      {activeMission ? (
-        <div
-          className="rounded-2xl p-4 border flex items-center justify-between flex-wrap gap-4 shadow-md"
-          style={{
-            background: 'linear-gradient(135deg, rgba(43, 127, 166, 0.08) 0%, rgba(238, 223, 181, 0.25) 100%)',
-            borderColor: 'var(--sea-400)',
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-500/15 border border-emerald-500 text-emerald-600 dark:text-emerald-400">
-              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-500 text-white">
-                  LIVE MISSION ACTIVE
-                </span>
-                <span className="font-mono text-xs font-semibold opacity-75">{activeMission.missionId}</span>
-                <span className="text-xs px-2 py-0.5 rounded font-mono font-bold"
-                  style={{ background: 'var(--sand-200)', color: 'var(--ink-900)' }}>
-                  SQUADRON {activeMission.squadron}
-                </span>
-              </div>
-              <h2 className="font-serif text-lg font-bold mt-0.5" style={{ color: 'var(--text)' }}>
-                {activeMission.name}
-              </h2>
-              <div className="flex items-center gap-4 text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                <span>Drone: <strong className="font-mono">{activeMission.droneCode}</strong></span>
-                <span>Pilot: <strong>{activeMission.pilotName}</strong></span>
-                <span>Location: <strong>{activeMission.location}</strong></span>
-                <span>Stream: <strong>{activeMission.bitrateMbps} Mbps @ {activeMission.fps} FPS</strong></span>
-              </div>
-            </div>
-          </div>
-
-          {can(activeRole, 'START_STOP_MISSION') && (
-            <div className="flex items-center gap-3 ml-auto">
-              <button
-                onClick={handleStopMission}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
-              >
-                <Square className="w-4 h-4 fill-white" />
-                Stop Mission
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div
-          className="rounded-2xl p-4 border flex items-center justify-between text-xs opacity-80"
-          style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
-        >
+      {/* Success Notification */}
+      {successToast && (
+        <div className="p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 text-xs font-mono flex items-center justify-between shadow-sm animate-in fade-in">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-500" />
-            <span>No drone mission currently active. Configure and launch a mission below.</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>{successToast}</span>
           </div>
+          <button
+            onClick={() => navigate('/fleet')}
+            className="underline font-bold hover:text-white cursor-pointer ml-3 flex items-center gap-1"
+          >
+            <span>View Feeds</span>
+            <ExternalLink className="w-3 h-3" />
+          </button>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════
-          MAIN CENTER: SPLIT 2 COLUMNS
+          ACTIVE MISSIONS PANEL (Supports Multiple Concurrent Sorties)
+         ══════════════════════════════════════════════════ */}
+      <div
+        className="rounded-2xl p-4 border shadow-sm flex flex-col gap-3"
+        style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            <h2 className="font-serif text-sm font-bold" style={{ color: 'var(--text)' }}>
+              Active Concurrent Missions ({activeMissions.length})
+            </h2>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-sky-500/15 text-sky-400 border border-sky-500/30">
+              ALL FEEDS STREAMED TO FLEET WALL
+            </span>
+          </div>
+
+          {activeMissions.length > 0 && (
+            <button
+              onClick={() => navigate('/fleet')}
+              className="text-xs font-mono text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>View All on Fleet Wall</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+
+        {activeMissions.length === 0 ? (
+          <div className="py-6 flex flex-col items-center justify-center text-center text-xs opacity-70">
+            <AlertCircle className="w-8 h-8 text-amber-500 mb-2 opacity-80" />
+            <p className="font-semibold text-slate-300">No UAV missions currently active</p>
+            <p className="text-[11px] text-slate-400 mt-0.5 max-w-md">
+              Configure mission parameters and provide an RTMP, RTSP, or MP4 video feed below, then click &ldquo;Deploy Mission&rdquo; to start streaming.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+            {activeMissions.map(m => {
+              const hasVideo = Boolean(m.videoSourceUrl && m.videoSourceUrl.trim());
+              const isSelected = previewMission?.id === m.id;
+
+              return (
+                <div
+                  key={m.id}
+                  onClick={() => setSelectedPreviewMissionId(m.id)}
+                  className={cn(
+                    'p-3.5 rounded-xl border flex flex-col justify-between gap-3 transition-all cursor-pointer relative shadow-xs',
+                    isSelected
+                      ? 'border-sky-500 bg-sky-950/20 ring-1 ring-sky-500'
+                      : 'border-white/10 hover:border-white/30 bg-black/30'
+                  )}
+                >
+                  <div>
+                    {/* Header: Drone Code & Status */}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs font-extrabold text-sky-400">
+                          {m.droneCode}
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sand-200 text-ink-900 font-bold"
+                          style={{ background: 'var(--sand-200)', color: 'var(--ink-900)' }}>
+                          SQ {m.squadron}
+                        </span>
+                      </div>
+
+                      {hasVideo ? (
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          LIVE {m.videoSourceType}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                          NO SIGNAL
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="font-serif text-xs font-bold truncate text-slate-100" title={m.name}>
+                      {m.name}
+                    </h3>
+                    <div className="text-[10px] font-mono text-slate-400 mt-1 space-y-0.5">
+                      <div className="truncate"><b>Loc:</b> {m.location}</div>
+                      <div><b>Pilot:</b> {m.pilotName}</div>
+                      <div className="truncate opacity-75 font-mono text-[9px]">{m.missionId}</div>
+                    </div>
+                  </div>
+
+                  {/* Card Actions */}
+                  <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/fleet`);
+                      }}
+                      className="text-[11px] font-mono text-sky-400 hover:text-sky-300 flex items-center gap-1 cursor-pointer font-bold"
+                    >
+                      <Grid className="w-3 h-3" />
+                      <span>View Stream</span>
+                    </button>
+
+                    {can(activeRole, 'START_STOP_MISSION') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          stopMission(m.id);
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-mono font-bold text-red-300 hover:bg-red-950/60 border border-red-500/30 transition-colors cursor-pointer"
+                        title="Stop and terminate this mission"
+                      >
+                        <Square className="w-3 h-3 fill-red-400" />
+                        <span>Stop</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ══════════════════════════════════════════════════
+          MAIN CENTER: SPLIT 2 COLUMNS (DEPLOY FORM + PREVIEW)
          ══════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* ── LEFT FORM: NEW MISSION (2 Columns Span) ── */}
+        {/* ── LEFT FORM: DEPLOY NEW MISSION (2 Columns Span) ── */}
         <div
           className="lg:col-span-2 rounded-2xl p-5 border shadow-sm flex flex-col justify-between"
           style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
@@ -301,10 +339,10 @@ export default function MissionsPage() {
           <div>
             <div className="flex items-center justify-between pb-3 border-b mb-4" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2">
-                <Anchor className="w-5 h-5" style={{ color: 'var(--sea-600)' }} />
-                <h2 className="font-serif text-base font-bold">New Mission</h2>
+                <Anchor className="w-5 h-5 text-sky-500" />
+                <h2 className="font-serif text-base font-bold">Deploy New Mission Sortie</h2>
               </div>
-              <span className="text-xs opacity-60 font-mono">Standardized Protocol v2.4</span>
+              <span className="text-xs opacity-60 font-mono">Standardized Protocol v2.5</span>
             </div>
 
             <form onSubmit={handleStartMission} className="space-y-4">
@@ -312,7 +350,7 @@ export default function MissionsPage() {
                 {/* Mission Name */}
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
-                    Mission Name
+                    Mission Name / Operation Title
                   </label>
                   <input
                     type="text"
@@ -396,7 +434,7 @@ export default function MissionsPage() {
                 {/* Video Source Type */}
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
-                    Video Source Type
+                    Video Stream Source Type
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {[
@@ -426,17 +464,23 @@ export default function MissionsPage() {
                 {videoSourceType !== 'UPLOAD' ? (
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
-                      {videoSourceType} Endpoint URL
+                      {videoSourceType} Endpoint URL (Leave blank to deploy with NO SIGNAL)
                     </label>
                     <input
                       type="text"
-                      required
                       value={videoSourceUrl}
                       onChange={e => setVideoSourceUrl(e.target.value)}
-                      placeholder={videoSourceType === 'RTMP' ? 'Enter RTMP URL (e.g. rtmp://server:1935/live/feed)' : 'Enter RTSP URL (e.g. rtsp://user:pass@camera/stream)'}
+                      placeholder={
+                        videoSourceType === 'RTMP'
+                          ? 'e.g. rtmp://127.0.0.1:1935/live/uav01'
+                          : 'e.g. rtsp://user:pass@camera.coastal.gov.in:554/live'
+                      }
                       className="w-full px-3 py-2 rounded-xl text-sm border font-mono outline-none"
                       style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                     />
+                    <p className="text-[11px] opacity-60 mt-1">
+                      Tip: If URL is omitted, the mission will deploy in NO SIGNAL state ready for carrier lock.
+                    </p>
                   </div>
                 ) : (
                   <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -446,7 +490,6 @@ export default function MissionsPage() {
                       <input
                         ref={formFileInputRef}
                         type="file"
-                        required={!stagedVideoFile}
                         accept="video/mp4,video/webm,video/quicktime,video/*"
                         onChange={e => {
                           const file = e.target.files?.[0];
@@ -529,14 +572,18 @@ export default function MissionsPage() {
                   />
                 </div>
               </div>
+
               {can(activeRole, 'START_STOP_MISSION') && (
-                <div className="pt-3 flex justify-end">
+                <div className="pt-3 flex items-center justify-between border-t border-white/10">
+                  <span className="text-xs font-mono opacity-60">
+                    Active Sorties: {activeMissions.length}
+                  </span>
                   <button
                     type="submit"
                     className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-[var(--sea-600)] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
                   >
                     <Play className="w-4 h-4 fill-white" />
-                    Start Mission
+                    Deploy Mission &amp; Ingest Stream
                   </button>
                 </div>
               )}
@@ -544,64 +591,127 @@ export default function MissionsPage() {
           </div>
         </div>
 
-        {/* ── RIGHT PANEL: TRANSMISSION CONTROLS & UPLOADED VIDEO PLAYER ── */}
+        {/* ── RIGHT PANEL: MISSION PREVIEW & TRANSMISSION CONTROLS ── */}
         <div className="space-y-4 flex flex-col">
-          {/* Transmission Controls Card */}
+          {/* Active Preview Card */}
           <div
-            className="rounded-2xl p-5 border shadow-sm"
-            style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
+            className="rounded-2xl p-4 border shadow-sm flex flex-col justify-between"
+            style={{ background: 'var(--raised)', borderColor: 'var(--line)', minHeight: '260px' }}
           >
-            <div className="flex items-center gap-2 pb-3 border-b mb-4" style={{ borderColor: 'var(--line)' }}>
-              <Shield className="w-4 h-4 text-[var(--sea-600)]" />
-              <h3 className="font-serif text-sm font-bold">Transmission &amp; Pipeline</h3>
+            <div className="flex items-center justify-between pb-2 mb-2 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex items-center gap-2">
+                <Video className="w-4 h-4 text-sky-500" />
+                <h4 className="font-serif text-xs font-bold uppercase tracking-wider">
+                  {previewMission ? `Stream Monitor (${previewMission.droneCode})` : 'Mission Monitor'}
+                </h4>
+              </div>
+
+              {previewMission?.videoSourceUrl ? (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  FEED LIVE
+                </span>
+              ) : previewMission ? (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  NO SIGNAL
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded opacity-60" style={{ background: 'var(--sand-200)', color: 'var(--ink-800)' }}>
+                  STANDBY
+                </span>
+              )}
             </div>
 
-            <div className="space-y-4">
+            {/* Video Viewport */}
+            <div
+              className="flex-1 rounded-xl overflow-hidden relative flex flex-col items-center justify-center border bg-black/95 min-h-[160px]"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              {previewMission && previewMission.videoSourceUrl ? (
+                <video
+                  ref={videoRef}
+                  key={previewMission.videoSourceUrl}
+                  src={previewMission.videoSourceUrl}
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full max-h-[220px] object-contain rounded-xl"
+                />
+              ) : previewMission ? (
+                <div className="flex flex-col items-center justify-center text-center p-4">
+                  <Radio className="w-8 h-8 text-amber-400 animate-pulse mb-2" />
+                  <p className="text-xs text-amber-300 font-bold">NO CAMERA SIGNAL DETECTED</p>
+                  <p className="text-[11px] font-mono text-slate-400 max-w-[220px] mt-1">
+                    No stream URL provided for {previewMission.droneCode}. Tile on Fleet Wall displays tactical NO SIGNAL.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center p-4">
+                  <Video className="w-8 h-8 opacity-40 text-sky-400 mb-2" />
+                  <p className="text-xs text-white/90 font-semibold">Awaiting Mission Launch</p>
+                  <p className="text-[11px] text-white/50 max-w-[230px] mt-1 leading-normal">
+                    Uploaded video or stream link will play here once you deploy a mission.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {previewMission && (
+              <div className="pt-2 mt-2 border-t text-[11px] font-mono flex items-center justify-between" style={{ borderColor: 'var(--line)' }}>
+                <span className="truncate max-w-[200px] text-emerald-400 font-semibold" title={previewMission.name}>
+                  {previewMission.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/fleet')}
+                  className="text-sky-400 hover:underline flex items-center gap-1 font-bold"
+                >
+                  Fleet Wall →
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Transmission Controls Card */}
+          <div
+            className="rounded-2xl p-4 border shadow-sm"
+            style={{ background: 'var(--raised)', borderColor: 'var(--line)' }}
+          >
+            <div className="flex items-center gap-2 pb-2 border-b mb-3" style={{ borderColor: 'var(--line)' }}>
+              <Shield className="w-4 h-4 text-sky-500" />
+              <h3 className="font-serif text-xs font-bold uppercase tracking-wider">Transmission &amp; Gateway</h3>
+            </div>
+
+            <div className="space-y-3">
               {/* Server Ingestion Toggle */}
-              <div className="flex items-center justify-between p-3 rounded-xl border" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
-                <div className="pr-2">
-                  <div className="text-xs font-bold">Server Ingestion</div>
-                  <div className="text-[11px] opacity-70">Stream raw telemetry &amp; video to media gateway</div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl border" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
+                <div>
+                  <div className="text-xs font-bold">MediaMTX Server Ingestion</div>
+                  <div className="text-[10px] opacity-70">Push stream to low-latency media gateway</div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setServerIngestion(!serverIngestion)}
                   className={cn(
-                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0 cursor-pointer',
+                    'w-10 h-5 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0 cursor-pointer',
                     serverIngestion ? 'bg-emerald-600' : 'bg-gray-400'
                   )}
                 >
-                  <span className={cn('w-4 h-4 rounded-full bg-white transition-transform shadow', serverIngestion ? 'translate-x-5' : 'translate-x-0')} />
-                </button>
-              </div>
-
-              {/* Cognitive Pipeline Bypass */}
-              <div className="flex items-center justify-between p-3 rounded-xl border" style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}>
-                <div className="pr-2">
-                  <div className="text-xs font-bold">Cognitive Pipeline Bypass</div>
-                  <div className="text-[11px] opacity-70">Bypass heavy neural analytics for raw stream archival</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setCognitiveBypass(!cognitiveBypass)}
-                  className={cn(
-                    'w-11 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0 cursor-pointer',
-                    cognitiveBypass ? 'bg-amber-600' : 'bg-gray-400'
-                  )}
-                >
-                  <span className={cn('w-4 h-4 rounded-full bg-white transition-transform shadow', cognitiveBypass ? 'translate-x-5' : 'translate-x-0')} />
+                  <span className={cn('w-3.5 h-3.5 rounded-full bg-white transition-transform shadow', serverIngestion ? 'translate-x-4' : 'translate-x-0')} />
                 </button>
               </div>
 
               {/* Status Spec */}
-              <div className="text-[11px] space-y-2 p-3 rounded-xl font-mono" style={{ background: 'var(--sand-100)', color: 'var(--ink-800)' }}>
+              <div className="text-[11px] space-y-1.5 p-2.5 rounded-xl font-mono" style={{ background: 'var(--sand-100)', color: 'var(--ink-800)' }}>
                 <div className="flex justify-between">
-                  <span>Protocol:</span>
-                  <strong>{videoSourceType} Over TLS</strong>
+                  <span>Selected Drone:</span>
+                  <strong>{selectedDrone.droneCode}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span>Target Drone:</span>
-                  <strong>{selectedDrone.droneCode}</strong>
+                  <span>Squadron:</span>
+                  <strong>{squadron}</strong>
                 </div>
                 <div className="flex justify-between">
                   <span>Telemetry Sync:</span>
@@ -609,109 +719,6 @@ export default function MissionsPage() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* ── Mission Video Stream Panel (Plays active mission video) ── */}
-          <div
-            className="rounded-2xl p-4 border shadow-sm flex flex-col justify-between"
-            style={{ background: 'var(--raised)', borderColor: 'var(--line)', minHeight: '300px' }}
-          >
-            <div className="flex items-center justify-between pb-2 mb-2 border-b" style={{ borderColor: 'var(--line)' }}>
-              <div className="flex items-center gap-2">
-                <Video className="w-4 h-4 text-[var(--sea-600)]" />
-                <h4 className="font-serif text-xs font-bold uppercase tracking-wider">
-                  Mission Video Stream
-                </h4>
-              </div>
-              {activeMission && activeVideoUrl && !videoError ? (
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  LIVE STREAM
-                </span>
-              ) : activeMission && !videoError ? (
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-600 border border-cyan-500/30 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
-                  INGESTION ACTIVE
-                </span>
-              ) : videoError ? (
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-500 border border-red-500/30">
-                  CODEC ERROR
-                </span>
-              ) : (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded opacity-60" style={{ background: 'var(--sand-200)', color: 'var(--ink-800)' }}>
-                  AWAITING MISSION
-                </span>
-              )}
-            </div>
-
-            {/* Video Canvas / Player Area */}
-            <div
-              className="flex-1 rounded-xl overflow-hidden relative flex flex-col items-center justify-center border bg-black/95 min-h-[190px]"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              {activeMission && activeVideoUrl && !videoError ? (
-                <video
-                  ref={videoRef}
-                  key={activeVideoUrl}
-                  src={activeVideoUrl}
-                  controls
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="auto"
-                  onLoadedData={() => {
-                    if (videoRef.current) {
-                      videoRef.current.play().catch(err => console.log('Autoplay deferred:', err));
-                    }
-                  }}
-                  onError={() => {
-                    setVideoError('The browser could not decode this video. Browsers natively support MP4 (H.264), WebM, or MOV formats. Raw .ts/.mkv streams require conversion.');
-                  }}
-                  className="w-full h-full max-h-[230px] object-contain rounded-xl"
-                />
-              ) : activeMission && videoError ? (
-                <div className="p-4 text-center flex flex-col items-center justify-center">
-                  <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
-                  <p className="text-xs text-red-400 font-semibold mb-1">Playback Error</p>
-                  <p className="text-[11px] text-white/70 max-w-[240px] leading-relaxed">{videoError}</p>
-                </div>
-              ) : activeMission && !activeVideoUrl ? (
-                <div className="flex flex-col items-center justify-center text-center p-4">
-                  <Radio className="w-8 h-8 text-cyan-400 animate-pulse mb-2" />
-                  <p className="text-xs text-white/90 font-semibold">Live Ingestion Feed Active</p>
-                  <p className="text-[11px] font-mono text-cyan-200/80 max-w-[230px] truncate mt-1">
-                    {activeMission.videoSourceUrl || `${activeMission.videoSourceType} Gateway Stream`}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2 text-[10px] font-mono text-emerald-400">
-                    <span>{activeMission.bitrateMbps} Mbps</span>
-                    <span>•</span>
-                    <span>{activeMission.fps} FPS</span>
-                    <span>•</span>
-                    <span>TLS Encrypted</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center p-4">
-                  <Video className="w-8 h-8 opacity-40 text-[var(--sea-400)] mb-2" />
-                  <p className="text-xs text-white/90 font-semibold">Awaiting Mission Launch</p>
-                  <p className="text-[11px] text-white/50 max-w-[230px] mt-1 leading-normal">
-                    Uploaded video will play here once you click &ldquo;Start Mission&rdquo;
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {activeMission && (
-              <div className="pt-2 mt-2 border-t text-[11px] font-mono flex items-center justify-between" style={{ borderColor: 'var(--line)' }}>
-                <span className="truncate max-w-[220px] text-emerald-600 font-semibold" title={activeVideoTitle ?? activeMission.name}>
-                  ✓ {activeVideoTitle ? activeVideoTitle : activeMission.name}
-                </span>
-                <span className="text-[10px] opacity-70 font-mono">
-                  {activeMission.droneCode}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -725,10 +732,10 @@ export default function MissionsPage() {
       >
         <div className="flex items-center justify-between pb-3 border-b mb-3" style={{ borderColor: 'var(--line)' }}>
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[var(--sea-600)]" />
+            <Clock className="w-4 h-4 text-sky-500" />
             <h3 className="font-serif text-sm font-bold">Historical Mission Log</h3>
           </div>
-          <span className="text-xs opacity-60">{historyMissions.length} logged missions</span>
+          <span className="text-xs opacity-60 font-mono">{historyMissions.length} completed missions logged</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -736,7 +743,7 @@ export default function MissionsPage() {
             <thead>
               <tr className="border-b font-mono opacity-60 uppercase text-[11px]" style={{ borderColor: 'var(--line)' }}>
                 <th className="py-2.5 px-3">Mission ID</th>
-                <th className="py-2.5 px-3">Name</th>
+                <th className="py-2.5 px-3">Operation Name</th>
                 <th className="py-2.5 px-3">UAV</th>
                 <th className="py-2.5 px-3">Squadron</th>
                 <th className="py-2.5 px-3">Pilot</th>
@@ -750,7 +757,7 @@ export default function MissionsPage() {
             <tbody>
               {historyMissions.map(s => (
                 <tr key={s.id} className="border-b transition-colors hover:bg-[var(--sand-100)]" style={{ borderColor: 'var(--line)' }}>
-                  <td className="py-2.5 px-3 font-mono font-bold" style={{ color: 'var(--sea-600)' }}>
+                  <td className="py-2.5 px-3 font-mono font-bold text-sky-600">
                     {s.missionId}
                   </td>
                   <td className="py-2.5 px-3 font-medium">
@@ -769,7 +776,7 @@ export default function MissionsPage() {
                   {can(activeRole, 'DELETE_MISSION') && (
                     <td className="py-2.5 px-3 text-right">
                       <button
-                        onClick={() => handleDeleteMission(s.id)}
+                        onClick={() => deleteHistoryMission(s.id)}
                         className="p-1 rounded text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                         title="Delete Mission Record"
                       >

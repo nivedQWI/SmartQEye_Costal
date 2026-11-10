@@ -29,16 +29,16 @@ export type RoleAction =
 export const ROLE_CONFIG: Record<UserRole, RoleConfigItem> = {
   OPERATOR: {
     landing: '/',
-    primary: ['/', '/fleet', '/live', '/map', '/alerts', '/missions', '/reports', '/health'],
+    primary: ['/', '/missions', '/fleet', '/live', '/map', '/alerts', '/reports', '/health'],
     demoPassword: 'admin123',
     allowedRoutes: [
       '/',
+      '/missions',
       '/fleet',
       '/live',
       '/recorded-analysis',
       '/alerts',
       '/alerts/:id',
-      '/missions',
       '/map',
       '/history',
       '/overview',
@@ -50,6 +50,8 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfigItem> = {
       '/incidents',
       '/incidents/:id',
       '/coastal-context',
+      '/contacts',
+      '/contacts/:id',
       '/health',
       '/models',
       '/admin',
@@ -151,6 +153,7 @@ export function getRoleDisplayName(role: UserRole): string {
 }
 
 export function canAccess(role: UserRole, path: string): boolean {
+  if (role === 'OPERATOR') return true; // Single operator has full access to all pages
   const allowed = ROLE_CONFIG[role]?.allowedRoutes ?? [];
   const normalized = path.replace(/\/+$/, '') || '/';
   if (allowed.includes(normalized)) return true;
@@ -176,5 +179,6 @@ export const ACTION_PERMISSIONS: Record<RoleAction, UserRole[]> = {
 };
 
 export function can(role: UserRole, action: RoleAction): boolean {
+  if (role === 'OPERATOR') return true; // Single operator has full action permissions
   return ACTION_PERMISSIONS[action]?.includes(role) ?? false;
 }

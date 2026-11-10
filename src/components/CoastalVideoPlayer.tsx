@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, memo } from 'react';
 import Hls from 'hls.js';
-import { Eye, Flame, Moon, AlertCircle, RefreshCw, Square, Play, ShieldAlert, Radio } from 'lucide-react';
+import { Eye, Flame, Moon, AlertCircle, RefreshCw, Square, Play, ShieldAlert, Radio, Plus, SignalLow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FILTER_PRESETS } from '@/lib/videoCatalog';
 import type { Modality, FeedState } from '@/types';
@@ -30,6 +30,7 @@ interface CoastalVideoPlayerProps {
   className?: string;
   style?: React.CSSProperties;
   onResume?: () => void;
+  onAttachStream?: () => void;
   onTimeUpdate?: (currentTime: number) => void;
 }
 
@@ -48,6 +49,7 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
   className,
   style,
   onResume,
+  onAttachStream,
   onTimeUpdate,
 }: CoastalVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -56,8 +58,9 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
 
   const isStopped = isTerminated || state === 'TERMINATED';
-  const isHls = src.includes('.m3u8') || streamType === 'HLS';
-  const isRtspOrRtmp = src.startsWith('rtsp://') || src.startsWith('rtmp://') || streamType === 'RTSP' || streamType === 'RTMP';
+  const isNoSignal = state === 'NO_SIGNAL' || !src || src.trim() === '';
+  const isHls = !isNoSignal && (src.includes('.m3u8') || streamType === 'HLS');
+  const isRtspOrRtmp = !isNoSignal && (src.startsWith('rtsp://') || src.startsWith('rtmp://') || streamType === 'RTSP' || streamType === 'RTMP');
 
   // Active modality: either overridden by user controls or determined by video classification
   const activeModality: Modality = filterOverride ?? modality;
@@ -68,7 +71,7 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
-    if (isStopped) {
+    if (isStopped || isNoSignal) {
       video.pause();
       setIsPlaying(false);
       return;
@@ -122,7 +125,7 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
         hlsRef.current = null;
       }
     };
-  }, [src, isStopped, isHls, autoPlay]);
+  }, [src, isStopped, isNoSignal, isHls, autoPlay]);
 
   function handleRetry() {
     setHasError(false);
@@ -252,6 +255,40 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
             >
               <Play className="w-3.5 h-3.5 fill-white" />
               Resume Stream
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ─── Tactical NO SIGNAL Overlay ─── */}
+      {!isStopped && isNoSignal && (
+        <div className="absolute inset-0 bg-[#060d15] flex flex-col items-center justify-center p-4 text-center z-25 overflow-hidden">
+          {/* Scanline pattern */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-20"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 3px)',
+            }}
+          />
+          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-2 relative">
+            <Radio className="w-7 h-7 animate-pulse text-amber-400" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+          </div>
+          <div className="font-mono text-xs font-extrabold text-amber-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse" />
+            NO SIGNAL DETECTED
+          </div>
+          <p className="text-[10px] font-mono text-slate-400 max-w-[220px] leading-relaxed mb-3">
+            Camera carrier offline · No active RTSP or RTMP stream inputted for this sortie
+          </p>
+          {onAttachStream && (
+            <button
+              type="button"
+              onClick={onAttachStream}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-sky-600 hover:bg-sky-500 text-white cursor-pointer shadow-md transition-all active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Attach Stream Link
             </button>
           )}
         </div>

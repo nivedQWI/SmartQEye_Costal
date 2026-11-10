@@ -72,7 +72,7 @@ const FeedTile = memo(function FeedTile({ feed, isActive, isFocus: _isFocus, onC
           </div>
         ) : (
           <CoastalVideoPlayer
-            src={feed.videoSrc || '/videos/RGB_1.mp4'}
+            src={feed.videoSrc || ''}
             modality={feed.modality}
             autoPlay={true}
             muted={true}
@@ -155,7 +155,7 @@ function FocusMode({ feed, onExit }: { feed: Feed; onExit: () => void }) {
         {/* Video viewport with CoastalVideoPlayer */}
         <div className="flex-1 relative bg-black overflow-hidden flex flex-col">
           <CoastalVideoPlayer
-            src={feed.videoSrc || '/videos/RGB_1.mp4'}
+            src={feed.videoSrc || ''}
             modality={feed.modality}
             autoPlay={true}
             muted={true}
@@ -439,18 +439,44 @@ export default function LiveMonitor() {
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Feed grid */}
-        <div className={cn('flex-1 overflow-hidden p-3 grid gap-3', LAYOUT_COLS[gridLayout])}>
-          {displayFeeds.map(feed => (
-            <FeedTile
-              key={feed.id}
-              feed={feed}
-              isActive={feed.id === activeFeedId}
-              isFocus={false}
-              onClick={() => setActiveFeed(feed.id)}
-              onDoubleClick={() => { setActiveFeed(feed.id); setFocusMode(true); }}
-              showOverlays={showOverlays}
-            />
-          ))}
+        <div className={cn('flex-1 overflow-hidden p-3', displayFeeds.length === 0 ? 'flex items-center justify-center' : cn('grid gap-3', LAYOUT_COLS[gridLayout]))}>
+          {displayFeeds.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center mb-3">
+                <Video className="w-6 h-6" />
+              </div>
+              <h3 className="font-serif text-base font-bold text-slate-200">No Ingested Video Feeds Available</h3>
+              <p className="text-xs font-mono text-slate-400 max-w-sm mt-1 mb-4">
+                Video feeds appear live when surveillance sorties are launched in Mission Control or ingested via RTSP/RTMP.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => navigate('/missions')}
+                  className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold shadow-md cursor-pointer"
+                >
+                  Go to Mission Control
+                </button>
+                <button
+                  onClick={() => navigate('/fleet')}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 font-mono text-xs font-bold cursor-pointer"
+                >
+                  Tactical Fleet Wall
+                </button>
+              </div>
+            </div>
+          ) : (
+            displayFeeds.map(feed => (
+              <FeedTile
+                key={feed.id}
+                feed={feed}
+                isActive={feed.id === activeFeedId}
+                isFocus={false}
+                onClick={() => setActiveFeed(feed.id)}
+                onDoubleClick={() => { setActiveFeed(feed.id); setFocusMode(true); }}
+                showOverlays={showOverlays}
+              />
+            ))
+          )}
         </div>
 
         {/* Selected feed details */}

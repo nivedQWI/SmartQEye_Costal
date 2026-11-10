@@ -49,15 +49,16 @@ export default function LoginPage() {
   async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (!username || !password) {
-      setError('Username and password are required.');
-      return;
+    setLoading(true);
+    try {
+      const operatorUser = authApi.getMockUsers().find(u => u.role === 'OPERATOR') ?? authApi.getMockUsers()[0];
+      await login(operatorUser.username, password || 'admin123', '000000');
+      navigate('/');
+    } catch {
+      setError('Authentication failed. Please check credentials.');
+    } finally {
+      setLoading(false);
     }
-    if (password !== ROLE_CONFIG[selectedRole].demoPassword) {
-      setError('Incorrect password for the selected role.');
-      return;
-    }
-    setStep('mfa');
   }
 
   async function handleMfa(e: React.FormEvent) {
@@ -78,9 +79,9 @@ export default function LoginPage() {
   async function handleSSO() {
     setLoading(true);
     try {
-      const roleMockUser = authApi.getMockUsers().find(u => u.role === selectedRole) ?? authApi.getMockUsers()[0];
-      await login(roleMockUser.username, 'demo', '000000');
-      navigate(ROLE_CONFIG[roleMockUser.role].landing);
+      const operatorUser = authApi.getMockUsers().find(u => u.role === 'OPERATOR') ?? authApi.getMockUsers()[0];
+      await login(operatorUser.username, 'admin123', '000000');
+      navigate('/');
     } finally {
       setLoading(false);
     }
@@ -149,32 +150,20 @@ export default function LoginPage() {
                 </h2>
               </div>
 
-              {/* Role selection dropdown */}
-              <div className="mb-4">
-                <label
-                  htmlFor="login-role"
-                  className="block text-xs font-semibold mb-1.5"
-                  style={{ color: 'var(--ink-800)' }}
-                >
-                  Role
-                </label>
-                <select
-                  id="login-role"
-                  value={selectedRole}
-                  onChange={e => handleRoleChange(e.target.value as UserRole)}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm border transition-colors outline-none focus:ring-2 focus:ring-[var(--sea-600)] shadow-xs cursor-pointer"
-                  style={{
-                    background: 'var(--sand-50)',
-                    borderColor: 'var(--sand-300)',
-                    color: 'var(--ink-900)',
-                  }}
-                >
-                  {ROLES_LIST.map(role => (
-                    <option key={role} value={role}>
-                      {getRoleDisplayName(role)}
-                    </option>
-                  ))}
-                </select>
+              {/* Single Operator Station Banner */}
+              <div className="mb-4 p-3 rounded-xl border flex items-center justify-between" style={{ background: 'var(--sand-100)', borderColor: 'var(--sand-300)' }}>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--sea-600)] text-white flex items-center justify-center font-bold font-mono text-xs">
+                    OP
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold" style={{ color: 'var(--ink-900)' }}>Officer Rajan K.</div>
+                    <div className="text-[10px] font-mono opacity-70" style={{ color: 'var(--ink-700)' }}>Tactical Operator (Full Operations Access)</div>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  ALL PAGES ACTIVE
+                </span>
               </div>
 
               {/* SSO Button */}
