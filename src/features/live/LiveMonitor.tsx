@@ -72,6 +72,7 @@ const FeedTile = memo(function FeedTile({ feed, isActive, isFocus: _isFocus, onC
           </div>
         ) : (
           <CoastalVideoPlayer
+            feedId={feed.id}
             src={feed.videoSrc || ''}
             modality={feed.modality}
             autoPlay={true}
@@ -155,6 +156,7 @@ function FocusMode({ feed, onExit }: { feed: Feed; onExit: () => void }) {
         {/* Video viewport with CoastalVideoPlayer */}
         <div className="flex-1 relative bg-black overflow-hidden flex flex-col">
           <CoastalVideoPlayer
+            feedId={feed.id}
             src={feed.videoSrc || ''}
             modality={feed.modality}
             autoPlay={true}

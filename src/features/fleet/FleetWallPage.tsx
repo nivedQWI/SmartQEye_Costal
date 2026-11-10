@@ -4,7 +4,7 @@
 // RTSP, RTMP, HLS, and MP4 video streams with Operator Termination & No Signal handling
 // ============================================================
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Monitor, Plus, Square, Play, Trash2, Filter, Layers, Maximize2,
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { CoastalVideoPlayer } from '@/components/CoastalVideoPlayer';
 import { AddStreamModal } from '@/components/AddStreamModal';
 import { useFeedStore, useMissionStore } from '@/lib/store';
+import { resolveVideoUrl, saveUploadedVideo, removeUploadedVideo } from '@/lib/videoStorage';
 import { getFeedPlace } from '@/lib/feedLocations';
 import type { Feed, FeedState } from '@/types';
 
@@ -31,6 +32,24 @@ export default function FleetWallPage() {
   const [attachFeedTarget, setAttachFeedTarget] = useState<Feed | null>(null);
   const [attachStreamUrl, setAttachStreamUrl] = useState('');
   const [attachStreamType, setAttachStreamType] = useState<'RTMP' | 'RTSP' | 'HLS' | 'MP4'>('RTMP');
+  const [attachFileInput, setAttachFileInput] = useState<File | null>(null);
+
+  // Auto-rehydrate any expired blob URLs from IndexedDB on page load/refresh
+  useEffect(() => {
+    let mounted = true;
+    feeds.forEach(async feed => {
+      if (feed.videoSrc && feed.videoSrc.startsWith('blob:')) {
+        const recovered = await resolveVideoUrl(feed.id, feed.videoSrc);
+        if (mounted && recovered && recovered !== feed.videoSrc) {
+          useFeedStore.getState().updateFeed({
+            ...feed,
+            videoSrc: recovered,
+          });
+        }
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
 
   // Filter feeds based on operator selection
   const filteredFeeds = useMemo(() => {
@@ -62,12 +81,19 @@ export default function FleetWallPage() {
     return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
   }, [gridColumns, filteredFeeds.length]);
 
-  function handleAttachStreamSubmit(e: React.FormEvent) {
+  async function handleAttachStreamSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!attachFeedTarget || !attachStreamUrl.trim()) return;
-    attachStreamToFeed(attachFeedTarget.id, attachStreamUrl.trim(), attachStreamType);
+    if (!attachFeedTarget) return;
+
+    if (attachStreamType === 'MP4' && attachFileInput) {
+      const url = await saveUploadedVideo(attachFeedTarget.id, attachFileInput);
+      attachStreamToFeed(attachFeedTarget.id, url, 'MP4');
+    } else if (attachStreamUrl.trim()) {
+      attachStreamToFeed(attachFeedTarget.id, attachStreamUrl.trim(), attachStreamType);
+    }
     setAttachFeedTarget(null);
     setAttachStreamUrl('');
+    setAttachFileInput(null);
   }
 
   return (
@@ -336,6 +362,7 @@ export default function FleetWallPage() {
                       </div>
                     ) : (
                       <CoastalVideoPlayer
+                        feedId={feed.id}
                         src={feed.videoSrc || ''}
                         modality={feed.modality}
                         state={feed.state}
@@ -417,6 +444,7 @@ export default function FleetWallPage() {
                       {/* End Mission Button */}
                       <button
                         onClick={() => {
+                          removeUploadedVideo(feed.id);
                           stopMission(feed.id);
                           removeFeed(feed.id);
                         }}
@@ -480,27 +508,60 @@ export default function FleetWallPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] text-slate-300 font-bold mb-1">
-                  Endpoint URL
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={attachStreamUrl}
-                  onChange={e => setAttachStreamUrl(e.target.value)}
-                  placeholder={
-                    attachStreamType === 'RTMP'
-                      ? 'rtmp://127.0.0.1:1935/live/uav01'
-                      : attachStreamType === 'RTSP'
-                      ? 'rtsp://user:pass@camera.coastal.gov.in:554/live'
-                      : attachStreamType === 'HLS'
-                      ? 'https://stream.coastal.gov.in/live/stream.m3u8'
-                      : 'https://domain.com/video.mp4'
-                  }
-                  className="w-full px-3 py-2 rounded-xl border border-white/20 bg-black/40 text-white outline-none focus:border-sky-500 font-mono text-xs"
-                />
-              </div>
+              {attachStreamType === 'MP4' ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] text-slate-300 font-bold mb-1">
+                      Upload Video File (MP4 / WebM)
+                    </label>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/*"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setAttachFileInput(file);
+                          setAttachStreamUrl(file.name);
+                        }
+                      }}
+                      className="w-full text-xs text-slate-300 cursor-pointer"
+                    />
+                    {attachFileInput && (
+                      <p className="text-[10px] text-emerald-400 font-semibold mt-1">
+                        ✓ Selected: {attachFileInput.name}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-[10px] opacity-60 text-center">— OR URL —</div>
+                  <input
+                    type="text"
+                    value={attachStreamUrl}
+                    onChange={e => setAttachStreamUrl(e.target.value)}
+                    placeholder="https://domain.com/video.mp4"
+                    className="w-full px-3 py-2 rounded-xl border border-white/20 bg-black/40 text-white outline-none focus:border-sky-500 font-mono text-xs"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-[11px] text-slate-300 font-bold mb-1">
+                    {attachStreamType} Endpoint URL
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={attachStreamUrl}
+                    onChange={e => setAttachStreamUrl(e.target.value)}
+                    placeholder={
+                      attachStreamType === 'RTMP'
+                        ? 'rtmp://127.0.0.1:1935/live/uav01'
+                        : attachStreamType === 'RTSP'
+                        ? 'rtsp://user:pass@camera.coastal.gov.in:554/live'
+                        : 'https://stream.coastal.gov.in/live/stream.m3u8'
+                    }
+                    className="w-full px-3 py-2 rounded-xl border border-white/20 bg-black/40 text-white outline-none focus:border-sky-500 font-mono text-xs"
+                  />
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
                 <button

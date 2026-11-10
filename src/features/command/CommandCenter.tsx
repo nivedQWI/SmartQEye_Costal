@@ -371,6 +371,7 @@ export default function CommandCenter() {
                     {/* Feed Player */}
                     <div className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center">
                       <CoastalVideoPlayer
+                        feedId={feed.id}
                         src={feed.videoSrc || ''}
                         modality={feed.modality}
                         state={feed.state}

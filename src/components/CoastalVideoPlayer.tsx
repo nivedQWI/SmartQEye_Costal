@@ -1,22 +1,25 @@
 // ============================================================
 // SmartQEye Coastal — Universal Coastal Video & Stream Player
 // Supports:
-// - Direct MP4 local & remote video files
+// - Direct MP4 local & remote video files & persistent IndexedDB blobs
 // - HLS (.m3u8) streams via hls.js
 // - RTSP / RTMP proxy streams via MediaMTX or WebRTC
 // - Hardware-accelerated Optical / Thermal / Night Vision filters
 // - Operator Stream Termination & Resume controls
+// - Auto-recovery for reloaded user-uploaded videos
 // ============================================================
 
 import { useState, useRef, useEffect, memo } from 'react';
 import Hls from 'hls.js';
-import { Eye, Flame, Moon, AlertCircle, RefreshCw, Square, Play, ShieldAlert, Radio, Plus, SignalLow } from 'lucide-react';
+import { Eye, Flame, Moon, AlertCircle, RefreshCw, Square, Play, ShieldAlert, Radio, Plus, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FILTER_PRESETS } from '@/lib/videoCatalog';
+import { resolveVideoUrl } from '@/lib/videoStorage';
 import type { Modality, FeedState } from '@/types';
 
 interface CoastalVideoPlayerProps {
   src: string;
+  feedId?: string;
   modality?: Modality;
   filterOverride?: Modality | null;
   state?: FeedState;
@@ -36,6 +39,7 @@ interface CoastalVideoPlayerProps {
 
 export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
   src,
+  feedId,
   modality = 'RGB',
   filterOverride = null,
   state = 'LIVE',
@@ -54,13 +58,21 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
 }: CoastalVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const [activeSrc, setActiveSrc] = useState(src);
   const [hasError, setHasError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const isRecoveringRef = useRef(false);
+
+  // Keep activeSrc updated when src changes
+  useEffect(() => {
+    setActiveSrc(src);
+    setHasError(false);
+  }, [src]);
 
   const isStopped = isTerminated || state === 'TERMINATED';
-  const isNoSignal = state === 'NO_SIGNAL' || !src || src.trim() === '';
-  const isHls = !isNoSignal && (src.includes('.m3u8') || streamType === 'HLS');
-  const isRtspOrRtmp = !isNoSignal && (src.startsWith('rtsp://') || src.startsWith('rtmp://') || streamType === 'RTSP' || streamType === 'RTMP');
+  const isNoSignal = state === 'NO_SIGNAL' || !activeSrc || activeSrc.trim() === '';
+  const isHls = !isNoSignal && (activeSrc.includes('.m3u8') || streamType === 'HLS');
+  const isRtspOrRtmp = !isNoSignal && (activeSrc.startsWith('rtsp://') || activeSrc.startsWith('rtmp://') || streamType === 'RTSP' || streamType === 'RTMP');
 
   // Active modality: either overridden by user controls or determined by video classification
   const activeModality: Modality = filterOverride ?? modality;
@@ -89,7 +101,7 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
       if (Hls.isSupported()) {
         const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
         hlsRef.current = hls;
-        hls.loadSource(src);
+        hls.loadSource(activeSrc);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           if (autoPlay) video.play().catch(() => {});
@@ -101,13 +113,12 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native Safari HLS
-        video.src = src;
+        video.src = activeSrc;
         if (autoPlay) video.play().catch(() => {});
       }
     } else {
-      // Direct MP4 or proxy stream
-      video.src = src;
+      // Direct MP4 or object URL or proxy stream
+      video.src = activeSrc;
       video.currentTime = 0;
       if (autoPlay) {
         const playPromise = video.play();
@@ -125,15 +136,55 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
         hlsRef.current = null;
       }
     };
-  }, [src, isStopped, isNoSignal, isHls, autoPlay]);
+  }, [activeSrc, isStopped, isNoSignal, isHls, autoPlay]);
 
-  function handleRetry() {
+  // Automatic recovery from IndexedDB for blob URLs that expired across reloads
+  const handlePlaybackError = async () => {
+    if (isStopped) return;
+    if (feedId && !isRecoveringRef.current) {
+      isRecoveringRef.current = true;
+      try {
+        const recovered = await resolveVideoUrl(feedId, activeSrc);
+        if (recovered && recovered !== activeSrc) {
+          setActiveSrc(recovered);
+          setHasError(false);
+          if (videoRef.current) {
+            videoRef.current.src = recovered;
+            videoRef.current.load();
+            videoRef.current.play().catch(() => {});
+          }
+          isRecoveringRef.current = false;
+          return;
+        }
+      } catch (err) {
+        console.warn('[CoastalVideoPlayer] Recovery error:', err);
+      }
+      isRecoveringRef.current = false;
+    }
+    setHasError(true);
+  };
+
+  const handleRetry = async () => {
     setHasError(false);
+    if (feedId) {
+      try {
+        const recovered = await resolveVideoUrl(feedId, activeSrc);
+        if (recovered) {
+          setActiveSrc(recovered);
+          if (videoRef.current) {
+            videoRef.current.src = recovered;
+            videoRef.current.load();
+            videoRef.current.play().catch(() => {});
+            return;
+          }
+        }
+      } catch {}
+    }
     if (videoRef.current) {
       videoRef.current.load();
       videoRef.current.play().catch(() => {});
     }
-  }
+  };
 
   return (
     <div className={cn('relative w-full h-full overflow-hidden bg-black flex items-center justify-center', className)} style={style}>
@@ -152,9 +203,7 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
           setHasError(false);
           if (!isStopped) videoRef.current?.play().catch(() => {});
         }}
-        onError={() => {
-          if (!isStopped) setHasError(true);
-        }}
+        onError={handlePlaybackError}
         onTimeUpdate={() => {
           if (onTimeUpdate && videoRef.current) {
             onTimeUpdate(videoRef.current.currentTime);
@@ -193,7 +242,7 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
       )}
 
       {/* Tactical HUD Overlay (if enabled) */}
-      {showHudOverlay && !isStopped && (
+      {showHudOverlay && !isStopped && !isNoSignal && (
         <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 z-10">
           <div className="flex items-center justify-between">
             <span
@@ -294,13 +343,13 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
         </div>
       )}
 
-      {/* ─── RTSP / RTMP Connection Notice (when starting or waiting) ─── */}
+      {/* ─── RTSP / RTMP Connection Notice ─── */}
       {!isStopped && hasError && isRtspOrRtmp && (
         <div className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-3 text-center z-20">
           <ShieldAlert className="w-6 h-6 text-sky-400 mb-1" />
           <span className="text-xs font-mono text-white/90 font-bold">RTSP / RTMP Source Ingesting</span>
           <span className="text-[10px] font-mono text-sky-300/70 max-w-[200px] mt-0.5 mb-2 truncate">
-            {src}
+            {activeSrc}
           </span>
           <span className="text-[9px] font-mono text-slate-400 max-w-[220px] mb-3">
             Connecting via MediaMTX gateway. Ingesting stream packet stream.
@@ -308,28 +357,43 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
           <button
             type="button"
             onClick={handleRetry}
-            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-mono bg-sky-600 hover:bg-sky-500 text-white cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-mono bg-sky-600 hover:bg-sky-500 text-white cursor-pointer shadow-sm"
           >
             <RefreshCw className="w-3 h-3" /> Reconnect Ingestion
           </button>
         </div>
       )}
 
-      {/* Generic Error state fallback */}
+      {/* Generic Error state fallback / Session Reconnection */}
       {!isStopped && hasError && !isRtspOrRtmp && (
-        <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center p-3 text-center z-20">
+        <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-3 text-center z-20">
           <AlertCircle className="w-6 h-6 text-amber-500 mb-1" />
-          <span className="text-xs font-mono text-white/90 font-bold">Stream Connecting</span>
-          <span className="text-[10px] font-mono text-white/50 max-w-[180px] mt-0.5 mb-2 truncate">
-            {src.split('/').pop()}
+          <span className="text-xs font-mono text-white/90 font-bold">
+            {activeSrc.startsWith('blob:') ? 'Uploaded Video Session Reload Needed' : 'Stream Reconnecting'}
           </span>
-          <button
-            type="button"
-            onClick={handleRetry}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-mono bg-white/10 hover:bg-white/20 text-white cursor-pointer"
-          >
-            <RefreshCw className="w-3 h-3" /> Reconnect
-          </button>
+          <span className="text-[10px] font-mono text-white/50 max-w-[220px] mt-0.5 mb-3 leading-relaxed">
+            {activeSrc.startsWith('blob:')
+              ? 'Click below to reload video from persistent storage'
+              : (activeSrc.split('/').pop() || activeSrc)}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRetry}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-sky-600 hover:bg-sky-500 text-white cursor-pointer shadow-md transition-all active:scale-95"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Reconnect Video
+            </button>
+            {onAttachStream && (
+              <button
+                type="button"
+                onClick={onAttachStream}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-mono bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+              >
+                <Upload className="w-3 h-3" /> Re-attach
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { UAVS } from '@/lib/mockData';
 import { useAuthStore, useMissionStore, useFeedStore } from '@/lib/store';
+import { saveUploadedVideo, removeUploadedVideo } from '@/lib/videoStorage';
 import { can } from '@/lib/roleConfig';
 import type { MissionSortie, Squadron, VideoSourceType } from '@/types';
 
@@ -49,6 +50,7 @@ export default function MissionsPage() {
   const [selectedDroneId, setSelectedDroneId] = useState(UAVS[0].id);
   const [videoSourceType, setVideoSourceType] = useState<VideoSourceType>('RTMP');
   const [videoSourceUrl, setVideoSourceUrl] = useState('');
+  const [stagedRawFile, setStagedRawFile] = useState<File | null>(null);
   const [stagedVideoFile, setStagedVideoFile] = useState<string | null>(null);
   const [stagedVideoUrl, setStagedVideoUrl] = useState<string | null>(null);
   const [srtFile, setSrtFile] = useState<string | null>(null);
@@ -71,9 +73,7 @@ export default function MissionsPage() {
 
   // Video file selected in the New Mission form
   function handleFormFileSelect(file: File) {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-    }
+    setStagedRawFile(file);
     const url = URL.createObjectURL(file);
     objectUrlRef.current = url;
     setStagedVideoFile(file.name);
@@ -81,24 +81,11 @@ export default function MissionsPage() {
   }
 
   function handleClearFormVideo() {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-    }
+    setStagedRawFile(null);
     setStagedVideoFile(null);
     setStagedVideoUrl(null);
     if (formFileInputRef.current) formFileInputRef.current.value = '';
   }
-
-  // Cleanup object URL on unmount
-  useEffect(() => {
-    return () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
-    };
-  }, []);
 
   function handleRegenerateId(sq = squadron) {
     setMissionId(generateMissionId(sq));
@@ -109,16 +96,24 @@ export default function MissionsPage() {
     handleRegenerateId(sq);
   }
 
-  function handleStartMission(e: React.FormEvent) {
+  async function handleStartMission(e: React.FormEvent) {
     e.preventDefault();
     const drone = UAVS.find(u => u.id === selectedDroneId) ?? UAVS[0];
+    const sortieId = `msn-${Date.now()}`;
 
-    const resolvedVideoUrl = videoSourceType === 'UPLOAD'
-      ? (stagedVideoUrl || stagedVideoFile || undefined)
-      : (videoSourceUrl.trim() || undefined);
+    let resolvedVideoUrl: string | undefined = undefined;
+    if (videoSourceType === 'UPLOAD') {
+      if (stagedRawFile) {
+        resolvedVideoUrl = await saveUploadedVideo(sortieId, stagedRawFile);
+      } else if (stagedVideoUrl) {
+        resolvedVideoUrl = stagedVideoUrl;
+      }
+    } else if (videoSourceUrl.trim()) {
+      resolvedVideoUrl = videoSourceUrl.trim();
+    }
 
     const newSortie: MissionSortie = {
-      id: `msn-${Date.now()}`,
+      id: sortieId,
       missionId,
       name: missionName.trim() || `${drone.droneCode} Coastal Surveillance Sortie`,
       droneId: drone.id,
@@ -149,8 +144,10 @@ export default function MissionsPage() {
     // Reset form for next mission
     setMissionName('');
     setVideoSourceUrl('');
+    setStagedRawFile(null);
     setStagedVideoFile(null);
     setStagedVideoUrl(null);
+    objectUrlRef.current = null;
     if (formFileInputRef.current) formFileInputRef.current.value = '';
     handleRegenerateId();
   }
