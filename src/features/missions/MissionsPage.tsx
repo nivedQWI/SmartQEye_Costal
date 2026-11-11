@@ -435,10 +435,11 @@ export default function MissionsPage() {
                   <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
                     Video Stream Source Type
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
                       { type: 'RTMP' as VideoSourceType, label: 'RTMP Live Feed', icon: Radio },
                       { type: 'RTSP' as VideoSourceType, label: 'RTSP Stream URL', icon: Video },
+                      { type: 'HLS' as VideoSourceType, label: 'HLS Stream (.m3u8)', icon: Video },
                       { type: 'UPLOAD' as VideoSourceType, label: 'Video File Upload', icon: Upload },
                     ].map(st => (
                       <button
@@ -471,14 +472,16 @@ export default function MissionsPage() {
                       onChange={e => setVideoSourceUrl(e.target.value)}
                       placeholder={
                         videoSourceType === 'RTMP'
-                          ? 'e.g. rtmp://127.0.0.1:1935/live/uav01'
+                          ? 'e.g. rtmp://localhost:1935/live/dronefeed'
+                          : videoSourceType === 'HLS'
+                          ? 'e.g. http://localhost:8888/live/dronefeed/index.m3u8'
                           : 'e.g. rtsp://user:pass@camera.coastal.gov.in:554/live'
                       }
                       className="w-full px-3 py-2 rounded-xl text-sm border font-mono outline-none"
                       style={{ background: 'var(--panel)', borderColor: 'var(--line)', color: 'var(--text)' }}
                     />
                     <p className="text-[11px] opacity-60 mt-1">
-                      Tip: If URL is omitted, the mission will deploy in NO SIGNAL state ready for carrier lock.
+                      Tip: RTMP &amp; RTSP streams published to MediaMTX are automatically converted to browser HLS streams.
                     </p>
                   </div>
                 ) : (

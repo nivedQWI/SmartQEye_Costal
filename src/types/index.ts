@@ -477,7 +477,7 @@ export type TranslationKey = string;
 // ─── Mission Control (Costal Police docx) ──────────────────
 
 export type Squadron = 'ALPHA' | 'BRAVO' | 'CHARLIE' | 'DELTA';
-export type VideoSourceType = 'RTMP' | 'RTSP' | 'UPLOAD';
+export type VideoSourceType = 'RTMP' | 'RTSP' | 'HLS' | 'UPLOAD';
 
 export interface MissionSortie {
   id: string;

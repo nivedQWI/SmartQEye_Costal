@@ -9,13 +9,46 @@
 // - Auto-recovery for reloaded user-uploaded videos
 // ============================================================
 
-import { useState, useRef, useEffect, memo } from 'react';
+import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import Hls from 'hls.js';
 import { Eye, Flame, Moon, AlertCircle, RefreshCw, Square, Play, ShieldAlert, Radio, Plus, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FILTER_PRESETS } from '@/lib/videoCatalog';
 import { resolveVideoUrl } from '@/lib/videoStorage';
 import type { Modality, FeedState } from '@/types';
+
+/**
+ * Resolves any stream URL (RTMP, RTSP, HLS, or direct video) into a browser-playable URL.
+ * Automatically converts MediaMTX RTSP/RTMP URLs to their corresponding HLS stream.
+ */
+export function resolvePlayableStream(rawSrc: string, declaredType?: string): { url: string; isHls: boolean } {
+  if (!rawSrc || !rawSrc.trim()) return { url: '', isHls: false };
+  const trimmed = rawSrc.trim();
+
+  // If already an HLS URL (.m3u8)
+  if (trimmed.includes('.m3u8') || declaredType === 'HLS') {
+    return { url: trimmed, isHls: true };
+  }
+
+  // Auto-translate MediaMTX RTMP/RTSP streams to HLS for browser playback
+  // Handles:
+  // rtmp://host.docker.internal:1935/live/dronefeed -> http://localhost:8888/live/dronefeed/index.m3u8
+  // rtmp://localhost:1935/live/dronefeed            -> http://localhost:8888/live/dronefeed/index.m3u8
+  // rtsp://localhost:8554/live/dronefeed            -> http://localhost:8888/live/dronefeed/index.m3u8
+  // rtsp://127.0.0.1:8554/live/dronefeed            -> http://localhost:8888/live/dronefeed/index.m3u8
+  const rtmpOrRtsp = trimmed.match(/^(?:rtmp|rtsp):\/\/([^/:]+)(?::\d+)?\/(.+)$/i);
+  if (rtmpOrRtsp) {
+    let host = rtmpOrRtsp[1];
+    const path = rtmpOrRtsp[2].replace(/\/+$/, '');
+    if (host === 'host.docker.internal' || host === '127.0.0.1') {
+      host = 'localhost';
+    }
+    const cleanPath = path.endsWith('.m3u8') ? path : `${path}/index.m3u8`;
+    return { url: `http://${host}:8888/${cleanPath}`, isHls: true };
+  }
+
+  return { url: trimmed, isHls: false };
+}
 
 interface CoastalVideoPlayerProps {
   src: string;
@@ -71,7 +104,11 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
 
   const isStopped = isTerminated || state === 'TERMINATED';
   const isNoSignal = state === 'NO_SIGNAL' || !activeSrc || activeSrc.trim() === '';
-  const isHls = !isNoSignal && (activeSrc.includes('.m3u8') || streamType === 'HLS');
+
+  // Auto-resolve stream (transforms RTMP/RTSP MediaMTX links to playable HLS index.m3u8)
+  const resolved = useMemo(() => resolvePlayableStream(activeSrc, streamType), [activeSrc, streamType]);
+  const playableSrc = resolved.url;
+  const isHls = !isNoSignal && resolved.isHls;
   const isRtspOrRtmp = !isNoSignal && (activeSrc.startsWith('rtsp://') || activeSrc.startsWith('rtmp://') || streamType === 'RTSP' || streamType === 'RTMP');
 
   // Active modality: either overridden by user controls or determined by video classification
@@ -97,11 +134,11 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
       hlsRef.current = null;
     }
 
-    if (isHls) {
+    if (isHls && playableSrc) {
       if (Hls.isSupported()) {
         const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
         hlsRef.current = hls;
-        hls.loadSource(activeSrc);
+        hls.loadSource(playableSrc);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           if (autoPlay) video.play().catch(() => {});
@@ -113,12 +150,12 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = activeSrc;
+        video.src = playableSrc;
         if (autoPlay) video.play().catch(() => {});
       }
-    } else {
+    } else if (playableSrc) {
       // Direct MP4 or object URL or proxy stream
-      video.src = activeSrc;
+      video.src = playableSrc;
       video.currentTime = 0;
       if (autoPlay) {
         const playPromise = video.play();
@@ -136,7 +173,7 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
         hlsRef.current = null;
       }
     };
-  }, [activeSrc, isStopped, isNoSignal, isHls, autoPlay]);
+  }, [playableSrc, isStopped, isNoSignal, isHls, autoPlay]);
 
   // Automatic recovery from IndexedDB for blob URLs that expired across reloads
   const handlePlaybackError = async () => {
