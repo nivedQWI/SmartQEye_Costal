@@ -145,8 +145,21 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
         });
         hls.on(Hls.Events.ERROR, (_evt, data) => {
           if (data.fatal) {
-            setHasError(true);
-            hls.destroy();
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.warn('[HLS] Network error, recovering...', data);
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.warn('[HLS] Media error, recovering...', data);
+                hls.recoverMediaError();
+                break;
+              default:
+                console.error('[HLS] Fatal error:', data);
+                setHasError(true);
+                hls.destroy();
+                break;
+            }
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
