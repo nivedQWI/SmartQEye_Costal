@@ -11,44 +11,57 @@ import { useAuthStore } from '@/lib/store';
 import { canAccess, ROLE_CONFIG } from '@/lib/roleConfig';
 import type { UserRole } from '@/types';
 
-// Lazy-loaded pages
-const LoginPage             = lazy(() => import('@/features/login/LoginPage'));
-const CommandCenter         = lazy(() => import('@/features/command/CommandCenter'));
-const LiveMonitor           = lazy(() => import('@/features/live/LiveMonitor'));
-const AlertQueue            = lazy(() => import('@/features/alerts/AlertQueue'));
-const AlertDetail           = lazy(() => import('@/features/alerts/AlertDetail'));
-const MapGIS                = lazy(() => import('@/features/map/MapGIS'));
-const HistoryPlayback       = lazy(() => import('@/features/history/HistoryPlayback'));
-const SystemHealthPage      = lazy(() => import('@/features/health/SystemHealth'));
-const StyleGuide            = lazy(() => import('@/features/styleguide/StyleGuide'));
+// Eagerly loaded primary operational pages (Instantaneous 0ms switching, no network latency)
+import LoginPage from '@/features/login/LoginPage';
+import CommandCenter from '@/features/command/CommandCenter';
+import MissionsPage from '@/features/missions/MissionsPage';
+import FleetWallPage from '@/features/fleet/FleetWallPage';
+import LiveMonitor from '@/features/live/LiveMonitor';
+import OverviewDashboard from '@/features/overview/OverviewDashboard';
+import AlertQueue from '@/features/alerts/AlertQueue';
+import MapGIS from '@/features/map/MapGIS';
 
-// Upgraded Production & AI Analytics Pages (Costal Police .docx)
-const MissionsPage          = lazy(() => import('@/features/missions/MissionsPage'));
-const ReportsPage           = lazy(() => import('@/features/reports/ReportsPage'));
-const AIModelsPage          = lazy(() => import('@/features/models/AIModelsPage'));
-const CrowdAnalyticsPage    = lazy(() => import('@/features/crowd/CrowdAnalyticsPage'));
-const VehicleMaritimePage   = lazy(() => import('@/features/vehicle-maritime/VehicleMaritimePage'));
-const PersonReidPage        = lazy(() => import('@/features/person-reid/PersonReidPage'));
-const IntrusionDetectionPage = lazy(() => import('@/features/intrusion/IntrusionDetectionPage'));
-const AnomalyMonitorPage    = lazy(() => import('@/features/anomaly/AnomalyMonitorPage'));
-const OverviewDashboard     = lazy(() => import('@/features/overview/OverviewDashboard'));
-const CoastalContextPage    = lazy(() => import('@/features/coastal-context/CoastalContextPage'));
-const RecordedAnalysisPage  = lazy(() => import('@/features/recorded-analysis/RecordedAnalysisPage'));
+// Resilient dynamic loader with automatic retry on chunk network hiccups
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) {
+  return lazy(async () => {
+    try {
+      return await factory();
+    } catch (error) {
+      console.warn('[Router] Chunk load error, retrying module import...', error);
+      await new Promise(res => setTimeout(res, 250));
+      return await factory();
+    }
+  });
+}
 
-// New Phase pages (RFP Compliance & Platform Architecture)
-const FleetWallPage         = lazy(() => import('@/features/fleet/FleetWallPage'));
-const ContactsPage          = lazy(() => import('@/features/contacts/ContactsPage'));
-const ContactDetailPage     = lazy(() => import('@/features/contacts/ContactDetailPage'));
-const IncidentsPage         = lazy(() => import('@/features/incidents/IncidentsPage'));
-const ZonesConfigPage       = lazy(() => import('@/features/config/ZonesConfigPage'));
-const AlertConfigPage       = lazy(() => import('@/features/config/AlertConfigPage'));
-const DeploymentPage        = lazy(() => import('@/features/platform/DeploymentPage'));
-const IntegrationsPage      = lazy(() => import('@/features/platform/IntegrationsPage'));
-const AdminPage             = lazy(() => import('@/features/admin/AdminPage'));
-const AuditLogPage          = lazy(() => import('@/features/platform/AuditLogPage'));
-const AcceptancePage        = lazy(() => import('@/features/platform/AcceptancePage'));
-const HelpCenterPage        = lazy(() => import('@/features/help/HelpCenterPage'));
-const NotFoundPage          = lazy(() => import('@/features/error/NotFoundPage'));
+// Resilient lazy-loaded secondary and platform pages
+const AlertDetail            = lazyWithRetry(() => import('@/features/alerts/AlertDetail'));
+const HistoryPlayback        = lazyWithRetry(() => import('@/features/history/HistoryPlayback'));
+const SystemHealthPage       = lazyWithRetry(() => import('@/features/health/SystemHealth'));
+const StyleGuide             = lazyWithRetry(() => import('@/features/styleguide/StyleGuide'));
+const ReportsPage            = lazyWithRetry(() => import('@/features/reports/ReportsPage'));
+const AIModelsPage           = lazyWithRetry(() => import('@/features/models/AIModelsPage'));
+const CrowdAnalyticsPage     = lazyWithRetry(() => import('@/features/crowd/CrowdAnalyticsPage'));
+const VehicleMaritimePage    = lazyWithRetry(() => import('@/features/vehicle-maritime/VehicleMaritimePage'));
+const PersonReidPage         = lazyWithRetry(() => import('@/features/person-reid/PersonReidPage'));
+const IntrusionDetectionPage = lazyWithRetry(() => import('@/features/intrusion/IntrusionDetectionPage'));
+const AnomalyMonitorPage     = lazyWithRetry(() => import('@/features/anomaly/AnomalyMonitorPage'));
+const CoastalContextPage     = lazyWithRetry(() => import('@/features/coastal-context/CoastalContextPage'));
+const RecordedAnalysisPage   = lazyWithRetry(() => import('@/features/recorded-analysis/RecordedAnalysisPage'));
+const ContactsPage           = lazyWithRetry(() => import('@/features/contacts/ContactsPage'));
+const ContactDetailPage      = lazyWithRetry(() => import('@/features/contacts/ContactDetailPage'));
+const IncidentsPage          = lazyWithRetry(() => import('@/features/incidents/IncidentsPage'));
+const ZonesConfigPage        = lazyWithRetry(() => import('@/features/config/ZonesConfigPage'));
+const AlertConfigPage        = lazyWithRetry(() => import('@/features/config/AlertConfigPage'));
+const DeploymentPage         = lazyWithRetry(() => import('@/features/platform/DeploymentPage'));
+const IntegrationsPage       = lazyWithRetry(() => import('@/features/platform/IntegrationsPage'));
+const AdminPage              = lazyWithRetry(() => import('@/features/admin/AdminPage'));
+const AuditLogPage           = lazyWithRetry(() => import('@/features/platform/AuditLogPage'));
+const AcceptancePage         = lazyWithRetry(() => import('@/features/platform/AcceptancePage'));
+const HelpCenterPage         = lazyWithRetry(() => import('@/features/help/HelpCenterPage'));
+const NotFoundPage           = lazyWithRetry(() => import('@/features/error/NotFoundPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {

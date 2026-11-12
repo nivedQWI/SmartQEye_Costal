@@ -66,14 +66,21 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   );
 }
 
-export function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
+export function RouteErrorBoundary({
+  children,
+  resetKeys,
+}: {
+  children: React.ReactNode;
+  resetKeys?: any[];
+}) {
   return (
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
+      resetKeys={resetKeys}
       onError={(error, info) => {
         // Safe logging of component stack in debug mode
         if (import.meta.env.DEV) {
-          // Dev only
+          console.error('[RouteErrorBoundary caught]:', error, info);
         }
       }}
     >

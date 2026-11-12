@@ -182,8 +182,17 @@ export const CoastalVideoPlayer = memo(function CoastalVideoPlayer({
 
     return () => {
       if (hlsRef.current) {
-        hlsRef.current.destroy();
+        try {
+          hlsRef.current.destroy();
+        } catch {}
         hlsRef.current = null;
+      }
+      if (video) {
+        try {
+          video.pause();
+          video.removeAttribute('src');
+          video.load();
+        } catch {}
       }
     };
   }, [playableSrc, isStopped, isNoSignal, isHls, autoPlay]);

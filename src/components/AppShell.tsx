@@ -3,7 +3,7 @@
 // Adaptive UI, Dynamic Role Navigation & HarbourBar
 // ============================================================
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Anchor, LayoutDashboard, Monitor, Bell, Map, History,
@@ -161,6 +161,58 @@ const NAV_SECTIONS: NavSection[] = [
 ];
 
 const ROLES: UserRole[] = ['OPERATOR', 'SUPERVISOR', 'SYS_ADMIN', 'AUDITOR'];
+
+// Tactical Route Preloaders for zero-latency instant transitions
+const ROUTE_PRELOADERS: Record<string, () => Promise<any>> = {
+  '/reports': () => import('@/features/reports/ReportsPage'),
+  '/models': () => import('@/features/models/AIModelsPage'),
+  '/crowd-analytics': () => import('@/features/crowd/CrowdAnalyticsPage'),
+  '/vehicle-maritime': () => import('@/features/vehicle-maritime/VehicleMaritimePage'),
+  '/person-reid': () => import('@/features/person-reid/PersonReidPage'),
+  '/intrusion-detection': () => import('@/features/intrusion/IntrusionDetectionPage'),
+  '/anomaly-monitor': () => import('@/features/anomaly/AnomalyMonitorPage'),
+  '/coastal-context': () => import('@/features/coastal-context/CoastalContextPage'),
+  '/recorded-analysis': () => import('@/features/recorded-analysis/RecordedAnalysisPage'),
+  '/incidents': () => import('@/features/incidents/IncidentsPage'),
+  '/config/zones': () => import('@/features/config/ZonesConfigPage'),
+  '/config/alerts': () => import('@/features/config/AlertConfigPage'),
+  '/deployment': () => import('@/features/platform/DeploymentPage'),
+  '/integrations': () => import('@/features/platform/IntegrationsPage'),
+  '/admin': () => import('@/features/admin/AdminPage'),
+  '/audit': () => import('@/features/platform/AuditLogPage'),
+  '/acceptance': () => import('@/features/platform/AcceptancePage'),
+  '/help': () => import('@/features/help/HelpCenterPage'),
+  '/history': () => import('@/features/history/HistoryPlayback'),
+  '/health': () => import('@/features/health/SystemHealth'),
+};
+
+function prefetchRoute(to: string) {
+  try {
+    ROUTE_PRELOADERS[to]?.();
+  } catch {}
+}
+
+function PageContentSkeleton() {
+  return (
+    <div
+      className="flex flex-col items-center justify-center h-full w-full gap-3 select-none"
+      style={{ background: 'var(--bg)', color: 'var(--text-muted)' }}
+    >
+      <div className="relative flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-[var(--line)] border-t-[var(--sea-600)] animate-spin" />
+        <div className="absolute w-2 h-2 rounded-full bg-[var(--sea-600)]" />
+      </div>
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--sea-600)]">
+          Connecting Tactical View
+        </span>
+        <span className="text-[11px] font-mono text-[var(--text-muted)]">
+          Synchronising coastal telemetry and operational feeds...
+        </span>
+      </div>
+    </div>
+  );
+}
 
 // ─── AppShell ─────────────────────────────────────────────────
 
@@ -352,6 +404,8 @@ export function AppShell() {
                           key={item.to}
                           to={item.to}
                           end={item.to === '/'}
+                          onMouseEnter={() => prefetchRoute(item.to)}
+                          onFocus={() => prefetchRoute(item.to)}
                           className={({ isActive }) => cn(
                             'flex items-center gap-3 mx-1 my-0.5 rounded-lg transition-all duration-150 group relative',
                             collapsed ? 'px-0 justify-center h-10' : 'px-3 py-2',
@@ -759,10 +813,12 @@ export function AppShell() {
             <main
               id="main-content"
               tabIndex={-1}
-              className="flex-1 overflow-hidden min-h-0 outline-none"
+              className="flex-1 overflow-hidden min-h-0 outline-none relative"
             >
-              <RouteErrorBoundary>
-                <Outlet />
+              <RouteErrorBoundary key={location.pathname} resetKeys={[location.pathname]}>
+                <Suspense fallback={<PageContentSkeleton />}>
+                  <Outlet />
+                </Suspense>
               </RouteErrorBoundary>
             </main>
 
